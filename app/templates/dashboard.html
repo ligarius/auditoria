@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <div class="col-md-3">
+        <div class="card text-bg-primary">
+            <div class="card-body">
+                <h5>Total Auditorías</h5>
+                <p class="display-6">{{ total_audits }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-warning">
+            <div class="card-body">
+                <h5>Hallazgos abiertos</h5>
+                <p class="display-6">{{ open_findings }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success">
+            <div class="card-body">
+                <h5>Hallazgos cerrados</h5>
+                <p class="display-6">{{ closed_findings }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info">
+            <div class="card-body">
+                <h5>Auditorías en curso</h5>
+                <p class="display-6">{{ audits_in_progress }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="mt-4">
+    <a class="btn btn-outline-primary" href="/audits">Ver auditorías</a>
+    <a class="btn btn-outline-secondary" href="/reports">Ver reportes</a>
+</div>
+{% endblock %}

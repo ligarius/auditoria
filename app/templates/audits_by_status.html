@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Auditorías{% endblock %}
+{% block content %}
+<h1 class="mb-3">Auditorías en estado: {{ status }}</h1>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Responsable</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for audit in audits %}
+        <tr>
+            <td>{{ audit.name }}</td>
+            <td>{{ audit.audit_type }}</td>
+            <td>{{ audit.start_date or '-' }}</td>
+            <td>{{ audit.end_date or '-' }}</td>
+            <td>{{ audit.responsible.full_name if audit.responsible else '-' }}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="5">No hay auditorías en este estado.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

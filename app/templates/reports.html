@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+<h1 class="mb-4">Reportes</h1>
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5>Auditorías</h5>
+                <p>Consulta el estado general de las auditorías.</p>
+                <div class="d-grid gap-2">
+                    <a class="btn btn-outline-primary" href="/reports/audits/en_curso">En curso</a>
+                    <a class="btn btn-outline-success" href="/reports/audits/cerrada">Cerradas</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5>Exportar hallazgos</h5>
+                <p>Descarga los hallazgos registrados para su análisis.</p>
+                <div class="d-grid gap-2">
+                    <a class="btn btn-outline-secondary" href="/reports/findings/csv">Descargar CSV</a>
+                    <a class="btn btn-outline-secondary" href="/reports/findings/pdf">Descargar PDF</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

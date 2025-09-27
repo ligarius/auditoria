@@ -39,7 +39,10 @@ projectRouter.post('/', requireRole('admin', 'consultor'), async (req, res) => {
 
 projectRouter.put('/:projectId', requireRole('admin', 'consultor'), async (req, res) => {
   await enforceProjectAccess(req.user, req.params.projectId);
-  const project = await projectService.update(req.params.projectId, req.body, req.user!.id);
+  const project = await projectService.update(req.params.projectId, req.body, {
+    id: req.user!.id,
+    role: req.user!.role
+  });
   res.json(project);
 });
 

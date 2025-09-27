@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 import { prisma } from '../../core/config/db.js';
 
 export const auditService = {
@@ -9,8 +11,8 @@ export const auditService = {
         action,
         userId,
         projectId,
-        oldValue,
-        newValue
+        oldValue: oldValue as Prisma.InputJsonValue,
+        newValue: newValue as Prisma.InputJsonValue
       }
     });
   },

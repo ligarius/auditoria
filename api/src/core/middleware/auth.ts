@@ -68,7 +68,7 @@ export const requireProjectMembership = (paramOrBodyKey = 'projectId') => {
       await enforceProjectAccess(req.user, projectId);
     } catch (error) {
       if (error instanceof HttpError) {
-        return res.status(error.statusCode).json({ title: error.message });
+        return res.status(error.status).json({ title: error.message });
       }
       throw error;
     }

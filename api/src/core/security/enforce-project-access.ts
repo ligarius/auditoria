@@ -3,7 +3,10 @@ import { HttpError } from '../errors/http-error.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 export const enforceProjectAccess = async (
-  user: AuthenticatedRequest['user'] | undefined,
+  user:
+    | (Pick<NonNullable<AuthenticatedRequest['user']>, 'id' | 'role'> &
+        Partial<Pick<NonNullable<AuthenticatedRequest['user']>, 'email' | 'projects'>>)
+    | undefined,
   projectId: string
 ) => {
   if (!user) {

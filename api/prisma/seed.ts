@@ -32,6 +32,7 @@ async function main() {
 
   const adminPassword = await hashPassword('admin123');
   const consultantPassword = await hashPassword('consultor123');
+  const clientPassword = await hashPassword('cliente123');
 
   const admin = await prisma.user.create({
     data: { name: 'Admin', email: 'admin@nustrial.com', role: 'admin', passwordHash: adminPassword }
@@ -39,14 +40,19 @@ async function main() {
   const consultant = await prisma.user.create({
     data: { name: 'Consultor Demo', email: 'consultor@nustrial.com', role: 'consultor', passwordHash: consultantPassword }
   });
+  const client = await prisma.user.create({
+    data: { name: 'Cliente Demo', email: 'cliente@nustrial.com', role: 'cliente', passwordHash: clientPassword }
+  });
 
-  const company = await prisma.company.create({ data: { name: 'Nutrial' } });
+  const nutrial = await prisma.company.create({ data: { name: 'Nutrial', taxId: '76.543.210-9' } });
+  const demoCorp = await prisma.company.create({ data: { name: 'DemoCorp', taxId: '12.345.678-5' } });
 
   const project = await prisma.project.create({
     data: {
       name: 'Nutrial – Auditoría 2025',
       status: 'En progreso',
-      companyId: company.id,
+      companyId: nutrial.id,
+      ownerId: consultant.id,
       startDate: new Date(),
       settings: { enabledFeatures: ['reception', 'picking', 'dispatch'] }
     }
@@ -56,9 +62,21 @@ async function main() {
     data: {
       name: 'Nutrial – Diagnóstico Express',
       status: 'Planificado',
-      companyId: company.id,
+      companyId: nutrial.id,
+      ownerId: consultant.id,
       startDate: new Date(),
       settings: { enabledFeatures: [] }
+    }
+  });
+
+  const demoProject = await prisma.project.create({
+    data: {
+      name: 'DemoCorp – Levantamiento Inicial',
+      status: 'Planificado',
+      companyId: demoCorp.id,
+      ownerId: admin.id,
+      startDate: new Date(),
+      settings: { enabledFeatures: ['dispatch'] }
     }
   });
 
@@ -66,8 +84,11 @@ async function main() {
     data: [
       { userId: admin.id, projectId: project.id, role: 'Admin' },
       { userId: consultant.id, projectId: project.id, role: 'ConsultorLider' },
+      { userId: client.id, projectId: project.id, role: 'Invitado' },
       { userId: admin.id, projectId: simplifiedProject.id, role: 'Admin' },
-      { userId: consultant.id, projectId: simplifiedProject.id, role: 'ConsultorLider' }
+      { userId: consultant.id, projectId: simplifiedProject.id, role: 'ConsultorLider' },
+      { userId: client.id, projectId: simplifiedProject.id, role: 'Invitado' },
+      { userId: admin.id, projectId: demoProject.id, role: 'Admin' }
     ]
   });
 

@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import ProcessesTab from './ProcessesTab';
@@ -16,6 +16,11 @@ describe('ProcessesTab', () => {
   afterEach(() => {
     vi.resetAllMocks();
   });
+
+  const LocationProbe = () => {
+    const location = useLocation();
+    return <span data-testid="location">{location.pathname}</span>;
+  };
 
   it('renders the Recepción sub-tab when enabled', async () => {
     (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { enabled: ['reception', 'picking'] } });
@@ -49,5 +54,29 @@ describe('ProcessesTab', () => {
     expect(
       screen.getByText('No hay sub-módulos de procesos habilitados para este proyecto.')
     ).toBeInTheDocument();
+  });
+
+  it('no longer fuerza la navegación a Procesos cuando se visita otro módulo', async () => {
+    (api.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { enabled: ['reception'] } });
+
+    render(
+      <MemoryRouter initialEntries={['/projects/project-c/kpis']}>
+        <Routes>
+          <Route
+            path="/projects/:id/*"
+            element={
+              <>
+                <ProcessesTab projectId="project-c" />
+                <LocationProbe />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith('/projects/project-c/features'));
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/projects/project-c/kpis');
   });
 });

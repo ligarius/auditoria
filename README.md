@@ -8,14 +8,15 @@ Suite full-stack para gestionar auditorías multi-proyecto con módulos especial
 2. [Requisitos](#requisitos)
 3. [Configuración local](#configuración-local)
 4. [Docker](#docker)
-5. [Variables de entorno](#variables-de-entorno)
-6. [Usuarios demo](#usuarios-demo)
-7. [Módulos clave](#módulos-clave)
-8. [Scripts útiles](#scripts-útiles)
-9. [OpenAPI](#openapi)
-10. [Tests](#tests)
-11. [Seeds](#seeds)
-12. [Capturas](#capturas)
+5. [Semilla de datos (Dev)](#semilla-de-datos-dev)
+6. [Variables de entorno](#variables-de-entorno)
+7. [Usuarios demo](#usuarios-demo)
+8. [Módulos clave](#módulos-clave)
+9. [Scripts útiles](#scripts-útiles)
+10. [OpenAPI](#openapi)
+11. [Tests](#tests)
+12. [Seeds](#seeds)
+13. [Capturas](#capturas)
 
 ## Arquitectura
 
@@ -63,8 +64,29 @@ curl http://localhost:4000/api/health
 ## Docker
 
 ```bash
-docker-compose up --build
+docker compose up -d --build
 ```
+
+## Semilla de datos (Dev)
+
+1. Levanta servicios:
+   ```bash
+   docker compose up -d --build
+   ```
+2. Aplica migraciones:
+   ```bash
+   docker compose exec api npm run migrate:deploy
+   ```
+3. Ejecuta seed:
+   ```bash
+   docker compose exec api npm run seed
+   ```
+
+Usuarios por defecto:
+
+- `admin@demo.com` / `Cambiar123!`
+- `consultor@demo.com` / `Cambiar123!`
+- `cliente@demo.com` / `Cambiar123!`
 
 ## Variables de entorno
 
@@ -82,9 +104,9 @@ Recuerda copiar cada archivo `*.env.example` a `.env` y personalizarlo según tu
 
 | Email | Rol | Contraseña |
 | --- | --- | --- |
-| admin@nustrial.com | Admin | admin123 |
-| consultor@nustrial.com | Consultor | consultor123 |
-| cliente@nustrial.com | Cliente | cliente123 |
+| admin@demo.com | Admin | Cambiar123! |
+| consultor@demo.com | Consultor | Cambiar123! |
+| cliente@demo.com | Cliente | Cambiar123! |
 
 ## Módulos clave
 
@@ -153,11 +175,11 @@ npm run test
 
 ## Seeds
 
-Ejecuta `npm run seed` en `api` para poblar la base con los proyectos demo:
+El seed `npm run seed` (o `docker compose exec api npm run seed`) crea:
 
-- **Nutrial – Auditoría 2025** con Recepción/Picking/Despacho habilitados.
-- **Nutrial – Diagnóstico Express** sin features de procesos activadas (ideal para validar UI condicional).
-- **DemoCorp – Levantamiento Inicial** asociado a una segunda empresa demo con feature `dispatch` activo.
+- Empresas demo **Nutrial** y **DemoCorp**.
+- Usuarios `admin@demo.com`, `consultor@demo.com` y `cliente@demo.com` con contraseña `Cambiar123!`.
+- Proyecto **Nutrial – Auditoría 2025** con `settings.enabledFeatures = ['reception', 'picking', 'dispatch']` y memberships según roles.
 
 ## Capturas
 

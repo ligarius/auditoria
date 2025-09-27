@@ -12,13 +12,11 @@ RUN npm ci
 RUN npx prisma generate
 
 # --- build ---
-FROM deps AS build
+FROM node:18-bullseye-slim AS build
 WORKDIR /usr/src/app
+COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
-# Build del server (usando esbuild como dejaste)
 RUN npm run build
-# Transpila el seed TS a JS para runtime (evita ts-node en producción)
-RUN npx esbuild prisma/seed.ts --platform=node --bundle --format=cjs --outfile=dist/seed.cjs
 
 # --- runner ---
 FROM node:18-bullseye-slim AS runner

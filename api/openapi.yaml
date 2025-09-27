@@ -1,0 +1,178 @@
+openapi: 3.0.3
+info:
+  title: Auditoría Nutrial API
+  version: 2.0.0
+servers:
+  - url: http://localhost:4000/api
+paths:
+  /auth/login:
+    post:
+      summary: Inicia sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Tokens emitidos
+  /auth/refresh:
+    post:
+      summary: Refresca tokens
+      responses:
+        '200':
+          description: Token renovado
+  /projects:
+    get:
+      summary: Lista proyectos del usuario
+    post:
+      summary: Crea proyecto
+  /projects/{projectId}:
+    get:
+      summary: Obtiene proyecto
+    put:
+      summary: Actualiza proyecto
+    delete:
+      summary: Elimina proyecto
+  /projects/{projectId}/invite:
+    post:
+      summary: Invita miembro
+  /data-request/{projectId}:
+    get:
+      summary: Lista checklist
+    post:
+      summary: Crea ítem
+  /data-request/{projectId}/{itemId}:
+    put:
+      summary: Actualiza ítem
+    delete:
+      summary: Elimina ítem
+  /surveys/{projectId}:
+    get:
+      summary: Lista encuestas
+    post:
+      summary: Crea encuesta
+  /surveys/questions/{surveyId}:
+    post:
+      summary: Crea pregunta
+  /surveys/{surveyId}/public-response:
+    post:
+      summary: Responde encuesta pública
+  /surveys/{projectId}/{surveyId}/summary:
+    get:
+      summary: Resumen de encuesta
+  /interviews/{projectId}:
+    get:
+      summary: Lista entrevistas
+    post:
+      summary: Crea entrevista
+  /interviews/{projectId}/{interviewId}:
+    put:
+      summary: Actualiza entrevista
+    delete:
+      summary: Elimina entrevista
+  /interviews/{projectId}/{interviewId}/audio:
+    post:
+      summary: Sube audio
+  /process-assets/{projectId}:
+    get:
+      summary: Lista procesos
+    post:
+      summary: Crea proceso
+  /process-assets/{projectId}/{processId}:
+    put:
+      summary: Actualiza proceso
+    delete:
+      summary: Elimina proceso
+  /process-assets/{projectId}/{processId}/file:
+    post:
+      summary: Adjunta BPMN
+  /systems/{category}/{projectId}:
+    get:
+      summary: Lista datos de sistemas
+    post:
+      summary: Crea registro
+  /systems/{category}/{projectId}/{itemId}:
+    put:
+      summary: Actualiza registro
+    delete:
+      summary: Elimina registro
+  /receptions/{projectId}:
+    get:
+      summary: Lista recepciones
+    post:
+      summary: Crea recepción
+  /receptions/{projectId}/{receptionId}:
+    put:
+      summary: Actualiza recepción
+    delete:
+      summary: Elimina recepción
+  /receptions/{projectId}/metrics/summary:
+    get:
+      summary: Métricas agregadas
+  /risks/{projectId}:
+    get:
+      summary: Lista riesgos
+    post:
+      summary: Crea riesgo
+  /risks/{projectId}/{riskId}:
+    put:
+      summary: Actualiza riesgo
+    delete:
+      summary: Elimina riesgo
+  /findings/{projectId}:
+    get:
+      summary: Lista hallazgos
+    post:
+      summary: Crea hallazgo
+  /findings/{projectId}/{findingId}:
+    put:
+      summary: Actualiza hallazgo
+    delete:
+      summary: Elimina hallazgo
+  /poc/{projectId}:
+    get:
+      summary: Lista POC
+    post:
+      summary: Crea POC
+  /poc/{projectId}/{itemId}:
+    put:
+      summary: Actualiza POC
+    delete:
+      summary: Elimina POC
+  /decisions/{projectId}:
+    get:
+      summary: Lista decisiones
+    post:
+      summary: Crea decisión
+  /decisions/{projectId}/{decisionId}:
+    put:
+      summary: Actualiza decisión
+    delete:
+      summary: Elimina decisión
+  /kpis/{projectId}:
+    get:
+      summary: Lista KPIs
+    post:
+      summary: Crea KPI
+  /kpis/{projectId}/{kpiId}:
+    put:
+      summary: Actualiza KPI
+    delete:
+      summary: Elimina KPI
+  /export/excel:
+    get:
+      summary: Exporta Excel ZIP
+  /export/pdf:
+    get:
+      summary: Exporta PDF
+  /audit/{projectId}:
+    get:
+      summary: Audit trail del proyecto
+components: {}

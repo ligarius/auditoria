@@ -1,43 +1,88 @@
-# Auditoría MVP
+# Auditoría Nutrial v2
 
-Aplicación web minimalista para gestionar auditorías internas y externas. Construida con FastAPI, SQLite y Bootstrap.
+Suite full-stack para gestionar auditorías multi-proyecto con módulos especializados, RBAC por proyecto y exportables ejecutivos.
 
-## Características
+## Arquitectura
 
-- Gestión de usuarios y roles (Administrador, Auditor, Cliente/Área auditada).
-- Creación y seguimiento de auditorías con checklist, actividades y responsables.
-- Registro de hallazgos con criticidad, evidencia adjunta y estados.
-- Planes de acción con responsables, fechas compromiso y seguimiento de cumplimiento.
-- Reportes básicos: dashboard, auditorías por estado, exportación de hallazgos a CSV y PDF.
+```
+/api (Node.js + Express + Prisma)
+/web (React + Vite + Tailwind)
+```
+
+- **API**: Express + Prisma (PostgreSQL), JWT auth, RBAC por Membership, exportaciones Excel/PDF, audit trail.
+- **Web**: React + Vite + Tailwind/shadcn ready para tabs funcionales por módulo.
+- **Infra**: Docker Compose con Postgres + API + Web.
 
 ## Requisitos
 
-- Python 3.10+
+- Node.js 18+
+- Docker (opcional) / Docker Compose
 
-Instala las dependencias:
-
-```bash
-pip install -r requirements.txt
-```
-
-## Ejecución
-
-Inicia el servidor de desarrollo:
+## Configuración local
 
 ```bash
-uvicorn app.main:app --reload
+cd api
+cp .env.example .env
+npm install
+npx prisma migrate dev
+npm run seed
+npm run dev
 ```
 
-Visita `http://localhost:8000`. Usuario administrador por defecto:
+En otra terminal:
 
-- **Usuario:** `admin`
-- **Contraseña:** `admin`
+```bash
+cd web
+npm install
+npm run dev
+```
 
-## Estructura de la base de datos
+La API corre en `http://localhost:4000/api` y el front en `http://localhost:5173`.
 
-La aplicación utiliza SQLite por defecto y crea el archivo `auditoria.db` automáticamente. Se generan las tablas necesarias para usuarios, auditorías, checklist, actividades, hallazgos y planes de acción.
+### Docker
 
-## Notas
+```bash
+docker-compose up --build
+```
 
-- Los archivos de evidencia se almacenan en `app/static/evidence`.
-- Las exportaciones se generan en `app/static` para ser descargadas.
+## Usuarios demo
+
+| Email | Rol | Contraseña |
+| --- | --- | --- |
+| admin@nustrial.com | Admin | admin123 |
+| consultor@nustrial.com | Consultor Líder | consultor123 |
+
+## Módulos clave
+
+- Datos Pre-Kickoff (Checklist)
+- Encuestas (preguntas Likert/abiertas, respuestas públicas)
+- Entrevistas (adjuntos de audio)
+- Procesos (BPMN/links)
+- Sistemas (Inventario, Cobertura, Integraciones, Data, Seguridad, Performance, Costos con TCO 3y)
+- Recepción de camiones (dwell/unload/idle + métricas)
+- Riesgos (RAG por severidad)
+- Hallazgos & Acciones (RACI, Kanban)
+- POC / Pilotos
+- Decision Log
+- KPIs y dashboard
+- Exportables Excel ZIP + PDF ejecutivo
+- Audit trail
+
+## OpenAPI
+
+Consulta `api/openapi.yaml` para la especificación detallada de endpoints.
+
+## Tests
+
+```bash
+cd api
+npm run test
+```
+
+## Seeds
+
+Ejecuta `npm run seed` en `api` para poblar la base con el escenario Nutrial 2025.
+
+## Capturas
+
+Incluye tabs por módulo en `/projects/:id` para navegar todo el alcance del proyecto.

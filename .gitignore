@@ -1,0 +1,10 @@
+node_modules
+.env
+api/storage
+api/tmp
+web/node_modules
+api/node_modules
+dist
+api/dist
+web/dist
+api/coverage

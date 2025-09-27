@@ -27,9 +27,5 @@ export default function ProjectsRedirect() {
     resolveProject();
   }, [navigate]);
 
-  return (
-    <div className="p-6 text-slate-600">
-      Cargando proyecto...
-    </div>
-  );
+  return <div className="p-6 text-slate-600">Cargando proyecto...</div>;
 }

@@ -1,7 +1,8 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 
 import api from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface Finding {
   id: string;
@@ -30,7 +31,7 @@ const initialForm = {
   responsibleR: '',
   accountableA: '',
   targetDate: '',
-  evidence: ''
+  evidence: '',
 };
 
 export default function FindingsTab({ projectId }: FindingsTabProps) {
@@ -41,21 +42,23 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState<string | null>(null);
 
-  const loadFindings = async () => {
+  const loadFindings = useCallback(async () => {
     try {
-      const response = await api.get<Finding[]>('/findings', { params: { projectId } });
+      const response = await api.get<Finding[]>('/findings', {
+        params: { projectId },
+      });
       setFindings(response.data);
       setError(null);
-    } catch (err: any) {
-      setError(err?.response?.data?.title || 'No se pudieron cargar los hallazgos');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'No se pudieron cargar los hallazgos'));
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     if (projectId) {
-      loadFindings();
+      void loadFindings();
     }
-  }, [projectId]);
+  }, [projectId, loadFindings]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -71,23 +74,27 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
         effortDays: form.effortDays ? Number(form.effortDays) : undefined,
         responsibleR: form.responsibleR,
         accountableA: form.accountableA,
-        targetDate: form.targetDate ? new Date(form.targetDate).toISOString() : undefined,
-        evidence: form.evidence || undefined
+        targetDate: form.targetDate
+          ? new Date(form.targetDate).toISOString()
+          : undefined,
+        evidence: form.evidence || undefined,
       });
       setForm(initialForm);
       await loadFindings();
-    } catch (err: any) {
-      setError(err?.response?.data?.title || 'No se pudo crear el hallazgo');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'No se pudo crear el hallazgo'));
     }
   };
 
   const updateFinding = async (id: string, data: Partial<Finding>) => {
     try {
       const response = await api.patch<Finding>(`/findings/${id}`, data);
-      setFindings((prev) => prev.map((item) => (item.id === id ? response.data : item)));
+      setFindings((prev) =>
+        prev.map((item) => (item.id === id ? response.data : item))
+      );
       setError(null);
-    } catch (err: any) {
-      setError(err?.response?.data?.title || 'No se pudo actualizar el hallazgo');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'No se pudo actualizar el hallazgo'));
     }
   };
 
@@ -96,20 +103,25 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
       await api.delete(`/findings/${id}`);
       setFindings((prev) => prev.filter((item) => item.id !== id));
       setError(null);
-    } catch (err: any) {
-      setError(err?.response?.data?.title || 'No se pudo eliminar el hallazgo');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'No se pudo eliminar el hallazgo'));
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-900">Hallazgos y acciones</h2>
+        <h2 className="text-xl font-semibold text-slate-900">
+          Hallazgos y acciones
+        </h2>
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
 
       {canEdit && (
-        <form onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-slate-200 p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-3 rounded-lg border border-slate-200 p-4"
+        >
           <h3 className="text-lg font-medium text-slate-800">Nuevo hallazgo</h3>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="flex flex-col text-sm md:col-span-2">
@@ -117,7 +129,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <input
                 className="mt-1 rounded border px-3 py-2"
                 value={form.title}
-                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, title: e.target.value }))
+                }
                 required
               />
             </label>
@@ -126,7 +140,12 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <textarea
                 className="mt-1 rounded border px-3 py-2"
                 value={form.recommendation}
-                onChange={(e) => setForm((prev) => ({ ...prev, recommendation: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    recommendation: e.target.value,
+                  }))
+                }
                 required
               />
             </label>
@@ -135,7 +154,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <input
                 className="mt-1 rounded border px-3 py-2"
                 value={form.impact}
-                onChange={(e) => setForm((prev) => ({ ...prev, impact: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, impact: e.target.value }))
+                }
                 required
               />
             </label>
@@ -144,7 +165,12 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <select
                 className="mt-1 rounded border px-3 py-2"
                 value={form.quickWin ? 'true' : 'false'}
-                onChange={(e) => setForm((prev) => ({ ...prev, quickWin: e.target.value === 'true' }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    quickWin: e.target.value === 'true',
+                  }))
+                }
               >
                 <option value="true">Sí</option>
                 <option value="false">No</option>
@@ -155,7 +181,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <input
                 className="mt-1 rounded border px-3 py-2"
                 value={form.responsibleR}
-                onChange={(e) => setForm((prev) => ({ ...prev, responsibleR: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, responsibleR: e.target.value }))
+                }
                 required
               />
             </label>
@@ -164,7 +192,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <input
                 className="mt-1 rounded border px-3 py-2"
                 value={form.accountableA}
-                onChange={(e) => setForm((prev) => ({ ...prev, accountableA: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, accountableA: e.target.value }))
+                }
                 required
               />
             </label>
@@ -175,7 +205,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
                 min={0}
                 className="mt-1 rounded border px-3 py-2"
                 value={form.effortDays}
-                onChange={(e) => setForm((prev) => ({ ...prev, effortDays: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, effortDays: e.target.value }))
+                }
               />
             </label>
             <label className="flex flex-col text-sm">
@@ -184,7 +216,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
                 type="date"
                 className="mt-1 rounded border px-3 py-2"
                 value={form.targetDate}
-                onChange={(e) => setForm((prev) => ({ ...prev, targetDate: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, targetDate: e.target.value }))
+                }
               />
             </label>
             <label className="flex flex-col text-sm md:col-span-2">
@@ -192,7 +226,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <input
                 className="mt-1 rounded border px-3 py-2"
                 value={form.evidence}
-                onChange={(e) => setForm((prev) => ({ ...prev, evidence: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, evidence: e.target.value }))
+                }
               />
             </label>
           </div>
@@ -209,12 +245,24 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
         <table className="min-w-full divide-y divide-slate-200 text-sm">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Título</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Impacto</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Quick win</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Estado</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Responsable</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Acciones</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Título
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Impacto
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Quick win
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Estado
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Responsable
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -222,7 +270,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <tr key={finding.id}>
                 <td className="px-3 py-2">
                   <p className="font-medium text-slate-800">{finding.title}</p>
-                  <p className="text-xs text-slate-500">{finding.recommendation}</p>
+                  <p className="text-xs text-slate-500">
+                    {finding.recommendation}
+                  </p>
                 </td>
                 <td className="px-3 py-2">{finding.impact}</td>
                 <td className="px-3 py-2">
@@ -230,10 +280,16 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
                     <input
                       type="checkbox"
                       checked={finding.quickWin}
-                      onChange={(e) => updateFinding(finding.id, { quickWin: e.target.checked })}
+                      onChange={(e) =>
+                        updateFinding(finding.id, {
+                          quickWin: e.target.checked,
+                        })
+                      }
                     />
+                  ) : finding.quickWin ? (
+                    'Sí'
                   ) : (
-                    finding.quickWin ? 'Sí' : 'No'
+                    'No'
                   )}
                 </td>
                 <td className="px-3 py-2">
@@ -241,7 +297,9 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
                     <select
                       className="rounded border px-2 py-1"
                       value={finding.status}
-                      onChange={(e) => updateFinding(finding.id, { status: e.target.value })}
+                      onChange={(e) =>
+                        updateFinding(finding.id, { status: e.target.value })
+                      }
                     >
                       <option value="Open">Open</option>
                       <option value="En progreso">En progreso</option>
@@ -268,7 +326,10 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
             ))}
             {findings.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
+                <td
+                  colSpan={6}
+                  className="px-3 py-6 text-center text-slate-500"
+                >
                   No hay hallazgos registrados.
                 </td>
               </tr>

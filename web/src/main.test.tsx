@@ -1,5 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import {
+  MemoryRouter,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router-dom';
 
 import { LegacyReceptionRedirect } from './main';
 
@@ -21,6 +27,8 @@ describe('LegacyReceptionRedirect', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByTestId('location')).toHaveTextContent('/projects/123/procesos/reception');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/projects/123/procesos/reception'
+    );
   });
 });

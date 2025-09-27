@@ -71,10 +71,11 @@ const ProcessesTab = ({ projectId }: ProcessesTabProps) => {
   const segments = location.pathname.split('/').filter(Boolean);
   const projectIndex = segments.indexOf(projectId);
   const subSegments = projectIndex >= 0 ? segments.slice(projectIndex + 1) : [];
+  const isInProcesses = subSegments[0] === 'procesos';
   const activeFeature = subSegments[1];
 
   useEffect(() => {
-    if (loading) return;
+    if (!isInProcesses || loading) return;
     if (!availableTabs.length) {
       if (activeFeature) {
         navigate(`/projects/${projectId}/procesos`, { replace: true });
@@ -84,9 +85,10 @@ const ProcessesTab = ({ projectId }: ProcessesTabProps) => {
     if (!activeFeature || !availableTabs.includes(activeFeature)) {
       navigate(`/projects/${projectId}/procesos/${availableTabs[0]}`, { replace: true });
     }
-  }, [activeFeature, availableTabs, loading, navigate, projectId]);
+  }, [activeFeature, availableTabs, isInProcesses, loading, navigate, projectId]);
 
   const currentFeature = availableTabs.includes(activeFeature ?? '') ? activeFeature ?? '' : availableTabs[0] ?? '';
+  const shouldRenderSubTabs = isInProcesses && availableTabs.length > 0 && currentFeature;
 
   const handleSubTabChange = (value: string) => {
     navigate(`/projects/${projectId}/procesos/${value}`);
@@ -110,7 +112,7 @@ const ProcessesTab = ({ projectId }: ProcessesTabProps) => {
         </div>
       )}
 
-      {availableTabs.length > 0 && currentFeature && (
+      {shouldRenderSubTabs && (
         <Tabs.Root value={currentFeature} onValueChange={handleSubTabChange} className="space-y-4">
           <Tabs.List className="flex flex-wrap gap-2 rounded-lg bg-slate-50 p-2">
             {availableTabs.map((feature) => (

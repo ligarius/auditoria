@@ -7,7 +7,7 @@ import { enforceProjectAccess } from '../../core/security/enforce-project-access
 
 export const projectService = {
   async listByUser(userId: string, role: string) {
-    const baseQuery = { include: { company: true } } as const;
+    const baseQuery = { include: { company: true, owner: { select: { id: true, name: true, email: true } } } } as const;
     if (role === 'admin') {
       return prisma.project.findMany(baseQuery);
     }
@@ -22,7 +22,11 @@ export const projectService = {
     await enforceProjectAccess(user, id);
     const project = await prisma.project.findUnique({
       where: { id },
-      include: { company: true, memberships: { include: { user: true } } }
+      include: {
+        company: true,
+        owner: { select: { id: true, name: true, email: true } },
+        memberships: { include: { user: true } }
+      }
     });
     if (!project) {
       throw new HttpError(404, 'Proyecto no encontrado');
@@ -41,14 +45,23 @@ export const projectService = {
     },
     user: { id: string; role: string }
   ) {
+    const companyExists = await prisma.company.findUnique({ where: { id: data.companyId }, select: { id: true } });
+    if (!companyExists) {
+      throw new HttpError(404, 'Empresa no encontrada');
+    }
+
     const payload = {
       ...data,
+      ownerId: user.id,
       settings: data.settings ?? { enabledFeatures: [] }
     } satisfies Prisma.ProjectUncheckedCreateInput;
 
     const project = await prisma.project.create({
       data: payload,
-      include: { company: true }
+      include: {
+        company: true,
+        owner: { select: { id: true, name: true, email: true } }
+      }
     });
     const membershipRole = user.role === 'admin' ? 'Admin' : 'ConsultorLider';
     await prisma.membership.upsert({
@@ -60,10 +73,16 @@ export const projectService = {
     return project;
   },
 
-  async update(id: string, data: Prisma.ProjectUncheckedUpdateInput, userId: string) {
+  async update(id: string, data: Prisma.ProjectUncheckedUpdateInput, user: { id: string; role: string }) {
     const before = await prisma.project.findUnique({ where: { id } });
+    if (!before) {
+      throw new HttpError(404, 'Proyecto no encontrado');
+    }
+    if (user.role !== 'admin' && before.ownerId !== user.id) {
+      throw new HttpError(403, 'Solo el propietario puede actualizar el proyecto');
+    }
     const project = await prisma.project.update({ where: { id }, data });
-    await auditService.record('Project', id, 'UPDATE', userId, id, before, project);
+    await auditService.record('Project', id, 'UPDATE', user.id, id, before, project);
     return project;
   },
 

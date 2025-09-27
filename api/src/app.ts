@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { authRouter } from './modules/auth/auth.router.js';
 import { projectRouter } from './modules/projects/project.router.js';
+import { companyRouter } from './modules/companies/company.router.js';
 import { dataRequestRouter } from './modules/dataRequest/data-request.router.js';
 import { surveyRouter } from './modules/surveys/survey.router.js';
 import { interviewRouter } from './modules/interviews/interview.router.js';
@@ -19,6 +20,7 @@ const appRouter = Router();
 
 appRouter.use('/auth', authRouter);
 appRouter.use('/projects', projectRouter);
+appRouter.use('/companies', companyRouter);
 appRouter.use('/data-request', dataRequestRouter);
 appRouter.use('/surveys', surveyRouter);
 appRouter.use('/interviews', interviewRouter);

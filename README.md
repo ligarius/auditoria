@@ -84,6 +84,7 @@ Recuerda copiar cada archivo `*.env.example` a `.env` y personalizarlo según tu
 | --- | --- | --- |
 | admin@nustrial.com | Admin | admin123 |
 | consultor@nustrial.com | Consultor | consultor123 |
+| cliente@nustrial.com | Cliente | cliente123 |
 
 ## Módulos clave
 
@@ -129,6 +130,15 @@ Consulta `api/openapi.yaml` para la especificación detallada de endpoints.
   - **Distribución** → `['reception', 'picking', 'dispatch']`
   - **Simple** → `[]`
 
+## Gestión de empresas
+
+- Endpoints REST autenticados con rol `admin`:
+  - `POST /api/companies` crear nueva empresa (name, taxId).
+  - `GET /api/companies` listar empresas con conteo de proyectos.
+  - `PUT /api/companies/:id` actualizar nombre/RUT.
+  - `DELETE /api/companies/:id` elimina si no tiene proyectos asociados.
+- Cada proyecto nuevo requiere `companyId` y asigna automáticamente al creador como propietario (`ownerId`).
+
 ## Tests
 
 ```bash
@@ -147,6 +157,7 @@ Ejecuta `npm run seed` en `api` para poblar la base con los proyectos demo:
 
 - **Nutrial – Auditoría 2025** con Recepción/Picking/Despacho habilitados.
 - **Nutrial – Diagnóstico Express** sin features de procesos activadas (ideal para validar UI condicional).
+- **DemoCorp – Levantamiento Inicial** asociado a una segunda empresa demo con feature `dispatch` activo.
 
 ## Capturas
 

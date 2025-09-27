@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "node -e \"require('esbuild').build({entryPoints:['src/server.ts'], platform:'node', format:'cjs', bundle:true, outfile:'dist/server.cjs', sourcemap:true})\"",
+    "build": "esbuild src/server.ts --platform=node --bundle --format=cjs --outfile=dist/server.cjs --sourcemap",
     "start": "node dist/server.cjs",
     "prisma": "prisma",
     "migrate:deploy": "prisma migrate deploy",

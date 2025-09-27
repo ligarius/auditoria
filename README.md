@@ -1,4 +1,4 @@
-# Auditoría Nutrial v2
+# Auditoría
 
 Suite full-stack para gestionar auditorías multi-proyecto con módulos especializados, RBAC por proyecto y exportables ejecutivos.
 

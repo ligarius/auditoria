@@ -8,3 +8,11 @@ dist
 api/dist
 web/dist
 api/coverage
+
+# build
+api/dist
+web/dist
+# envs
+*.env
+*.env.*
+.env.example

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import secrets
 from datetime import date, datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
@@ -15,7 +16,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
@@ -23,6 +24,8 @@ from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship, sessionmaker
 from starlette.middleware.sessions import SessionMiddleware
+
+from app.pdf_utils import generate_findings_pdf
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -544,26 +547,25 @@ def export_findings_csv(db: Session = Depends(get_db)):
 
 @app.get("/reports/findings/pdf")
 def export_findings_pdf(db: Session = Depends(get_db)):
-    from fpdf import FPDF
+    findings = (
+        db.query(Finding)
+        .join(Audit)
+        .with_entities(
+            Audit.name,
+            Finding.category,
+            Finding.description,
+            Finding.severity,
+            Finding.status,
+        )
+        .all()
+    )
 
-    pdf_path = BASE_DIR / "static" / "hallazgos.pdf"
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "Reporte de Hallazgos", ln=True, align="C")
-    pdf.ln(5)
-    pdf.set_font("Arial", size=10)
-
-    findings = db.query(Finding).join(Audit).with_entities(Audit.name, Finding.category, Finding.description, Finding.severity, Finding.status).all()
-    for audit_name, category, description, severity, status in findings:
-        pdf.set_font("Arial", "B", 10)
-        pdf.multi_cell(0, 6, f"Auditoría: {audit_name} | Categoría: {category} | Criticidad: {severity} | Estado: {status}")
-        pdf.set_font("Arial", size=9)
-        pdf.multi_cell(0, 5, f"Descripción: {description}")
-        pdf.ln(2)
-
-    pdf.output(str(pdf_path))
-    return FileResponse(pdf_path, filename="hallazgos.pdf")
+    pdf_bytes = generate_findings_pdf(findings)
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=hallazgos.pdf"},
+    )
 
 
 @app.exception_handler(HTTPException)

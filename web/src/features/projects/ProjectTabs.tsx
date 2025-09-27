@@ -2,6 +2,7 @@ import { FC } from 'react';
 
 import RisksTab from './tabs/RisksTab';
 import FindingsTab from './tabs/FindingsTab';
+import ProcessesTab from './tabs/ProcessesTab';
 
 interface TabComponentProps {
   projectId: string;
@@ -22,10 +23,9 @@ export const ProjectTabs: { value: string; label: string; component: FC<TabCompo
   { value: 'prekickoff', label: 'Datos Pre-Kickoff', component: makeSection('Datos Pre-Kickoff', 'Checklist y solicitudes de datos clave previas al kickoff.') },
   { value: 'surveys', label: 'Encuestas', component: makeSection('Encuestas', 'Gestiona cuestionarios y respuestas.') },
   { value: 'interviews', label: 'Entrevistas', component: makeSection('Entrevistas', 'Registra entrevistas y evidencias de audio.') },
-  { value: 'processes', label: 'Procesos', component: makeSection('Procesos', 'Administra BPMN y documentos de procesos.') },
+  { value: 'processes', label: 'Procesos', component: ProcessesTab },
   { value: 'systems', label: 'Sistemas', component: makeSection('Sistemas', 'Inventario, cobertura, integraciones y data.') },
   { value: 'security', label: 'Seguridad', component: makeSection('Seguridad', 'Postura, performance y costos/TCO.') },
-  { value: 'receptions', label: 'Recepción', component: makeSection('Recepción de camiones', 'Calcula dwell/unload/idle y KPIs.') },
   { value: 'risks', label: 'Riesgos', component: RisksTab },
   { value: 'findings', label: 'Hallazgos', component: FindingsTab },
   { value: 'poc', label: 'POC', component: makeSection('POC', 'Seguimiento de pilotos y DoD.') },

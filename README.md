@@ -90,9 +90,8 @@ Recuerda copiar cada archivo `*.env.example` a `.env` y personalizarlo según tu
 - Datos Pre-Kickoff (Checklist)
 - Encuestas (preguntas Likert/abiertas, respuestas públicas)
 - Entrevistas (adjuntos de audio)
-- Procesos (BPMN/links)
+- Procesos (BPMN/links + sub-módulos dinámicos como Recepción/Picking/Despacho)
 - Sistemas (Inventario, Cobertura, Integraciones, Data, Seguridad, Performance, Costos con TCO 3y)
-- Recepción de camiones (dwell/unload/idle + métricas)
 - Riesgos (RAG por severidad)
 - Hallazgos & Acciones (RACI, Kanban)
 - POC / Pilotos
@@ -121,16 +120,33 @@ Los scripts comparten nombres entre paquetes para simplificar la experiencia de 
 
 Consulta `api/openapi.yaml` para la especificación detallada de endpoints.
 
+## Features por proyecto
+
+- Cada proyecto incluye `settings.enabledFeatures` (JSON) para decidir qué sub-tabs de **Procesos** se renderizan.
+- Endpoint dedicado: `GET /api/projects/:id/features` → `{ enabled: string[] }`.
+- La ruta histórica `/projects/:id/reception` redirige automáticamente a `/projects/:id/procesos/reception`.
+- Plantillas sugeridas al crear proyectos desde la UI:
+  - **Distribución** → `['reception', 'picking', 'dispatch']`
+  - **Simple** → `[]`
+
 ## Tests
 
 ```bash
+# API
 cd api
+npm run test
+
+# Web
+cd web
 npm run test
 ```
 
 ## Seeds
 
-Ejecuta `npm run seed` en `api` para poblar la base con el escenario Nutrial 2025.
+Ejecuta `npm run seed` en `api` para poblar la base con los proyectos demo:
+
+- **Nutrial – Auditoría 2025** con Recepción/Picking/Despacho habilitados.
+- **Nutrial – Diagnóstico Express** sin features de procesos activadas (ideal para validar UI condicional).
 
 ## Capturas
 

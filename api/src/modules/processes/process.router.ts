@@ -4,6 +4,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 
 import { authenticate, requireProjectRole } from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 import { fileService } from '../files/file.service.js';
 import { processService } from './process.service.js';
 
@@ -19,10 +20,15 @@ const processRouter = Router();
 
 processRouter.use(authenticate);
 
-processRouter.get('/:projectId', requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM', 'Invitado']), async (req, res) => {
-  const processes = await processService.list(req.params.projectId);
-  res.json(processes);
-});
+processRouter.get(
+  '/:projectId',
+  requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM', 'Invitado']),
+  async (req, res) => {
+    await enforceProjectAccess(req.user, req.params.projectId);
+    const processes = await processService.list(req.params.projectId);
+    res.json(processes);
+  }
+);
 
 processRouter.post('/:projectId', requireProjectRole(['ConsultorLider', 'Auditor']), async (req, res) => {
   const processAsset = await processService.create(req.params.projectId, req.body, req.user!.id);

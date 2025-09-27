@@ -8,7 +8,11 @@ interface ProjectOption {
   name: string;
 }
 
-export default function ProjectPicker() {
+interface ProjectPickerProps {
+  refreshKey?: number;
+}
+
+export default function ProjectPicker({ refreshKey = 0 }: ProjectPickerProps) {
   const navigate = useNavigate();
   const { id } = useParams();
   const [items, setItems] = useState<ProjectOption[]>([]);
@@ -17,7 +21,7 @@ export default function ProjectPicker() {
     api.get('/projects').then((r) => {
       setItems(r.data || []);
     });
-  }, []);
+  }, [refreshKey]);
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const projectId = event.target.value;

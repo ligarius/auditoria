@@ -1,17 +1,72 @@
 import * as Tabs from '@radix-ui/react-tabs';
-import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { ProjectTabs } from '../features/projects/ProjectTabs';
 import ProjectPicker from '../components/ProjectPicker';
+import { ProjectTabs } from '../features/projects/ProjectTabs';
+import { PROCESS_SUBTABS } from '../features/projects/tabs/ProcessesTab';
 import { useAuth } from '../hooks/useAuth';
 import api from '../lib/api';
 
+interface ProjectSummary {
+  id: string;
+  name: string;
+  status?: string;
+  company?: { id: string; name: string };
+}
+
+const TAB_TO_PATH: Record<string, string> = {
+  prekickoff: '',
+  surveys: 'surveys',
+  interviews: 'interviews',
+  processes: 'procesos',
+  systems: 'systems',
+  security: 'security',
+  risks: 'risks',
+  findings: 'findings',
+  poc: 'poc',
+  decisions: 'decisions',
+  kpis: 'kpis',
+  export: 'export'
+};
+
+const PATH_TO_TAB = Object.entries(TAB_TO_PATH).reduce<Record<string, string>>((acc, [tab, path]) => {
+  acc[path || '__root__'] = tab;
+  return acc;
+}, {});
+
+const PROJECT_TEMPLATES = {
+  distribution: {
+    label: 'Distribución',
+    features: ['reception', 'picking', 'dispatch']
+  },
+  simple: {
+    label: 'Simple',
+    features: []
+  }
+} as const;
+
+type ProjectTemplateKey = keyof typeof PROJECT_TEMPLATES;
+
 export const ProjectPage = () => {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { role } = useAuth();
 
-  // Si todavía no usas ProtectedRoute, fuerza login si no hay token:
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const [showModal, setShowModal] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectStatus, setNewProjectStatus] = useState('En progreso');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
+  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplateKey>('distribution');
+
   useEffect(() => {
     if (!localStorage.getItem('token')) {
       window.location.href = '/login';
@@ -23,6 +78,53 @@ export const ProjectPage = () => {
       localStorage.setItem('lastProjectId', id);
     }
   }, [id]);
+
+  const fetchProjects = useCallback(async () => {
+    setLoadingProjects(true);
+    setProjectsError(null);
+    try {
+      const response = await api.get<ProjectSummary[]>('/projects');
+      setProjects(response.data ?? []);
+    } catch (error) {
+      console.error('No se pudieron cargar los proyectos', error);
+      setProjectsError('No se pudieron cargar los proyectos disponibles.');
+    } finally {
+      setLoadingProjects(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const companies = useMemo(() => {
+    const unique = new Map<string, string>();
+    projects.forEach((project) => {
+      if (project.company) {
+        unique.set(project.company.id, project.company.name);
+      }
+    });
+    return Array.from(unique, ([value, label]) => ({ id: value, name: label }));
+  }, [projects]);
+
+  useEffect(() => {
+    if (showModal) {
+      setCreateError(null);
+      setSelectedCompanyId((prev) => prev ?? companies[0]?.id);
+    }
+  }, [showModal, companies]);
+
+  const currentProject = useMemo(
+    () => projects.find((project) => project.id === id),
+    [projects, id]
+  );
+
+  const segments = location.pathname.split('/').filter(Boolean);
+  const subSegments = segments.slice(2);
+  const pathKey = subSegments[0] ?? '';
+  const activeTab = PATH_TO_TAB[pathKey || '__root__'] ?? 'prekickoff';
+
+  const canCreateProject = role === 'admin' || role === 'consultor';
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -50,19 +152,94 @@ export const ProjectPage = () => {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    if (!id) return;
+    const basePath = `/projects/${id}`;
+    const target = TAB_TO_PATH[value] ?? value;
+    if (!target) {
+      navigate(basePath);
+      return;
+    }
+    if (value === 'processes') {
+      const currentFeature = subSegments[1];
+      if (currentFeature) {
+        navigate(`${basePath}/${target}/${currentFeature}`);
+        return;
+      }
+    }
+    if (target === '') {
+      navigate(basePath);
+      return;
+    }
+    navigate(`${basePath}/${target}`);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setNewProjectName('');
+    setNewProjectStatus('En progreso');
+    setSelectedTemplate('distribution');
+    setSelectedCompanyId(undefined);
+    setCreateError(null);
+  };
+
+  const handleCreateProject = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedCompanyId || !newProjectName.trim()) {
+      setCreateError('Nombre y compañía son obligatorios.');
+      return;
+    }
+    setCreating(true);
+    setCreateError(null);
+    const template = PROJECT_TEMPLATES[selectedTemplate];
+    try {
+      const response = await api.post('/projects', {
+        name: newProjectName.trim(),
+        status: newProjectStatus,
+        companyId: selectedCompanyId,
+        settings: { enabledFeatures: template.features }
+      });
+      closeModal();
+      await fetchProjects();
+      setRefreshKey((value) => value + 1);
+      const createdId = response.data?.id as string | undefined;
+      if (createdId) {
+        navigate(`/projects/${createdId}`, { replace: true });
+        localStorage.setItem('lastProjectId', createdId);
+      }
+    } catch (error) {
+      console.error('No se pudo crear el proyecto', error);
+      setCreateError('No se pudo crear el proyecto. Intenta nuevamente.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const templateFeatures = PROJECT_TEMPLATES[selectedTemplate].features;
+
   return (
     <div className="min-h-screen p-6">
-      <header className="mb-6 flex items-center gap-4">
+      <header className="mb-6 flex flex-wrap items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Auditoría Nutrial</h1>
+          <h1 className="text-3xl font-bold text-slate-900">
+            {currentProject?.company?.name ?? 'Auditoría'} · {currentProject?.name ?? 'Proyecto'}
+          </h1>
           <p className="text-slate-600">Proyecto ID: {id}</p>
         </div>
-        <div className="ml-auto flex items-center gap-3">
-          <ProjectPicker />
-          {['admin', 'consultor'].includes(role) && (
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          <ProjectPicker refreshKey={refreshKey} />
+          {canCreateProject && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="rounded bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-200"
+            >
+              Nuevo proyecto
+            </button>
+          )}
+          {canCreateProject && (
             <button
               onClick={handleExport}
-              className="px-3 py-1 rounded bg-slate-900 text-white"
+              className="rounded bg-slate-900 px-3 py-1 text-sm font-medium text-white"
             >
               Exportar
             </button>
@@ -70,7 +247,7 @@ export const ProjectPage = () => {
           {localStorage.getItem('token') && (
             <button
               onClick={handleLogout}
-              className="px-3 py-1 rounded bg-black text-white"
+              className="rounded bg-black px-3 py-1 text-sm font-medium text-white"
             >
               Cerrar sesión
             </button>
@@ -78,7 +255,16 @@ export const ProjectPage = () => {
         </div>
       </header>
 
-      <Tabs.Root defaultValue="prekickoff" className="space-y-4">
+      {projectsError && (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{projectsError}</div>
+      )}
+      {loadingProjects && (
+        <div className="mb-4 rounded border border-slate-200 bg-white p-3 text-sm text-slate-500">
+          Cargando proyectos...
+        </div>
+      )}
+
+      <Tabs.Root value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <Tabs.List className="flex flex-wrap gap-2 rounded-lg bg-white p-2 shadow">
           {ProjectTabs.map((tab) => (
             <Tabs.Trigger
@@ -92,15 +278,120 @@ export const ProjectPage = () => {
         </Tabs.List>
 
         {ProjectTabs.map((tab) => (
-          <Tabs.Content
-            key={tab.value}
-            value={tab.value}
-            className="rounded-lg bg-white p-6 shadow"
-          >
+          <Tabs.Content key={tab.value} value={tab.value} className="rounded-lg bg-white p-6 shadow">
             <tab.component projectId={id ?? ''} />
           </Tabs.Content>
         ))}
       </Tabs.Root>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">Nuevo proyecto</h2>
+                <p className="text-sm text-slate-500">
+                  Selecciona la compañía destino y la plantilla de procesos habilitados.
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200"
+              >
+                Cerrar
+              </button>
+            </div>
+            <form onSubmit={handleCreateProject} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="project-name">
+                  Nombre del proyecto
+                </label>
+                <input
+                  id="project-name"
+                  type="text"
+                  value={newProjectName}
+                  onChange={(event) => setNewProjectName(event.target.value)}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="project-status">
+                  Estado
+                </label>
+                <select
+                  id="project-status"
+                  value={newProjectStatus}
+                  onChange={(event) => setNewProjectStatus(event.target.value)}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                >
+                  <option value="Planificado">Planificado</option>
+                  <option value="En progreso">En progreso</option>
+                  <option value="Cerrado">Cerrado</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="project-company">
+                  Compañía
+                </label>
+                <select
+                  id="project-company"
+                  value={selectedCompanyId ?? ''}
+                  onChange={(event) => setSelectedCompanyId(event.target.value || undefined)}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                  required
+                  disabled={!companies.length}
+                >
+                  {!companies.length && <option value="">No hay compañías disponibles</option>}
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="project-template">
+                  Plantilla
+                </label>
+                <select
+                  id="project-template"
+                  value={selectedTemplate}
+                  onChange={(event) => setSelectedTemplate(event.target.value as ProjectTemplateKey)}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                >
+                  {Object.entries(PROJECT_TEMPLATES).map(([key, template]) => (
+                    <option key={key} value={key}>
+                      {template.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-slate-500">
+                  Features habilitadas: {templateFeatures.length ? templateFeatures.map((feature) => PROCESS_SUBTABS[feature] ?? feature).join(', ') : 'Ninguna'}
+                </p>
+              </div>
+              {createError && <p className="text-sm text-red-600">{createError}</p>}
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="rounded bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200"
+                  disabled={creating}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+                  disabled={creating || !companies.length}
+                >
+                  {creating ? 'Creando...' : 'Crear proyecto'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

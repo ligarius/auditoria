@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { prisma } from '../config/db.js';
 import { HttpError } from '../errors/http-error.js';
 import { verifyAccessToken } from '../utils/jwt.js';
+import { prisma } from '../config/db.js';
+import { enforceProjectAccess } from '../security/enforce-project-access.js';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -63,14 +64,13 @@ export const requireProjectMembership = (paramOrBodyKey = 'projectId') => {
       return res.status(400).json({ title: 'projectId requerido' });
     }
 
-    const membership = await prisma.membership.findUnique({
-      where: {
-        userId_projectId: { userId: req.user.id, projectId }
+    try {
+      await enforceProjectAccess(req.user, projectId);
+    } catch (error) {
+      if (error instanceof HttpError) {
+        return res.status(error.statusCode).json({ title: error.message });
       }
-    });
-
-    if (!membership) {
-      return res.status(403).json({ title: 'Sin acceso al proyecto' });
+      throw error;
     }
 
     (req as AuthenticatedRequest & { projectId: string }).projectId = projectId;

@@ -3,9 +3,13 @@ import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { ProjectTabs } from '../features/projects/ProjectTabs';
+import ProjectPicker from '../components/ProjectPicker';
+import { useAuth } from '../hooks/useAuth';
+import api from '../lib/api';
 
 export const ProjectPage = () => {
   const { id } = useParams();
+  const { role } = useAuth();
 
   // Si todavía no usas ProtectedRoute, fuerza login si no hay token:
   useEffect(() => {
@@ -14,9 +18,36 @@ export const ProjectPage = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (id) {
+      localStorage.setItem('lastProjectId', id);
+    }
+  }, [id]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('lastProjectId');
     window.location.href = '/login';
+  };
+
+  const handleExport = async () => {
+    if (!id) return;
+    try {
+      const res = await api.get(`/export/excel`, {
+        params: { projectId: id },
+        responseType: 'blob'
+      });
+      const blob = new Blob([res.data]);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `auditoria_${id}.zip`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('No se pudo exportar el proyecto', error);
+    }
   };
 
   return (
@@ -26,7 +57,16 @@ export const ProjectPage = () => {
           <h1 className="text-3xl font-bold text-slate-900">Auditoría Nutrial</h1>
           <p className="text-slate-600">Proyecto ID: {id}</p>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
+          <ProjectPicker />
+          {['admin', 'consultor'].includes(role) && (
+            <button
+              onClick={handleExport}
+              className="px-3 py-1 rounded bg-slate-900 text-white"
+            >
+              Exportar
+            </button>
+          )}
           {localStorage.getItem('token') && (
             <button
               onClick={handleLogout}

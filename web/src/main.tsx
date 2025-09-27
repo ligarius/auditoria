@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './auth/ProtectedRoute';
 import Login from './pages/Login';
 import {ProjectPage} from './pages/ProjectPage';
+import ProjectsRedirect from './pages/ProjectsRedirect';
 import './index.css';
 
 function AppRouter() {
@@ -12,10 +13,11 @@ function AppRouter() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Navigate to="/projects/demo" replace />} />
+          <Route path="/" element={<ProjectsRedirect />} />
+          <Route path="/projects" element={<ProjectsRedirect />} />
           <Route path="/projects/:id" element={<ProjectPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/projects/demo" replace />} />
+        <Route path="*" element={<Navigate to="/projects" replace />} />
       </Routes>
     </BrowserRouter>
   );

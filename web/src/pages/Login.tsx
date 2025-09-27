@@ -16,9 +16,26 @@ export default function Login() {
     try {
       const r = await api.post("/auth/login", { email, password });
       const token = r.data?.accessToken || r.data?.token;
+      const role = r.data?.user?.role;
       if (!token) throw new Error("Respuesta sin token");
       localStorage.setItem("token", token);
-      nav("/projects/demo", { replace: true }); // o a la lista si ya existe
+      localStorage.setItem("role", role || "viewer");
+      let targetProject = localStorage.getItem("lastProjectId") || "";
+      try {
+        const projectsRes = await api.get("/projects");
+        const firstProject = projectsRes.data?.[0];
+        if (firstProject?.id) {
+          targetProject = firstProject.id;
+          localStorage.setItem("lastProjectId", targetProject);
+        }
+      } catch (projectError) {
+        console.error("No se pudieron cargar proyectos", projectError);
+      }
+      if (targetProject) {
+        nav(`/projects/${targetProject}`, { replace: true });
+      } else {
+        nav("/projects", { replace: true });
+      }
     } catch (e: any) {
       setErr(e?.response?.data?.title || e?.message || "Error de login");
     } finally {

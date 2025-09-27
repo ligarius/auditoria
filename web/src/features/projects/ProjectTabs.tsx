@@ -1,5 +1,8 @@
 import { FC } from 'react';
 
+import RisksTab from './tabs/RisksTab';
+import FindingsTab from './tabs/FindingsTab';
+
 interface TabComponentProps {
   projectId: string;
 }
@@ -23,8 +26,8 @@ export const ProjectTabs: { value: string; label: string; component: FC<TabCompo
   { value: 'systems', label: 'Sistemas', component: makeSection('Sistemas', 'Inventario, cobertura, integraciones y data.') },
   { value: 'security', label: 'Seguridad', component: makeSection('Seguridad', 'Postura, performance y costos/TCO.') },
   { value: 'receptions', label: 'Recepción', component: makeSection('Recepción de camiones', 'Calcula dwell/unload/idle y KPIs.') },
-  { value: 'risks', label: 'Riesgos', component: makeSection('Riesgos', 'Matriz RAG y mitigaciones.') },
-  { value: 'findings', label: 'Hallazgos', component: makeSection('Hallazgos', 'Kanban de acciones con RACI.') },
+  { value: 'risks', label: 'Riesgos', component: RisksTab },
+  { value: 'findings', label: 'Hallazgos', component: FindingsTab },
   { value: 'poc', label: 'POC', component: makeSection('POC', 'Seguimiento de pilotos y DoD.') },
   { value: 'decisions', label: 'Decisiones', component: makeSection('Decision Log', 'Registro de decisiones clave y aprobadores.') },
   { value: 'kpis', label: 'KPIs', component: makeSection('KPIs', 'Seguimiento de indicadores y metas.') },

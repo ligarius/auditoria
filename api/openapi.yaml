@@ -5,6 +5,12 @@ info:
 servers:
   - url: http://localhost:4000/api
 paths:
+  /health:
+    get:
+      summary: Verifica el estado del servicio
+      responses:
+        '200':
+          description: Servicio disponible
   /auth/login:
     post:
       summary: Inicia sesión
@@ -116,26 +122,162 @@ paths:
   /receptions/{projectId}/metrics/summary:
     get:
       summary: Métricas agregadas
-  /risks/{projectId}:
+  /risks:
     get:
-      summary: Lista riesgos
+      summary: Lista riesgos por proyecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: projectId
+          schema:
+            type: string
+          required: true
+          description: ID del proyecto
+        - in: query
+          name: rag
+          schema:
+            type: string
+          required: false
+          description: Filtro opcional por color RAG
+      responses:
+        '200':
+          description: Listado de riesgos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Risk'
     post:
-      summary: Crea riesgo
-  /risks/{projectId}/{riskId}:
-    put:
-      summary: Actualiza riesgo
+      summary: Crea un riesgo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskCreate'
+      responses:
+        '201':
+          description: Riesgo creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Risk'
+  /risks/{id}:
+    patch:
+      summary: Actualiza un riesgo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskUpdate'
+      responses:
+        '200':
+          description: Riesgo actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Risk'
     delete:
-      summary: Elimina riesgo
-  /findings/{projectId}:
+      summary: Elimina un riesgo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '204':
+          description: Eliminado correctamente
+  /findings:
     get:
-      summary: Lista hallazgos
+      summary: Lista hallazgos por proyecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: projectId
+          schema:
+            type: string
+          required: true
+          description: ID del proyecto
+      responses:
+        '200':
+          description: Listado de hallazgos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Finding'
     post:
-      summary: Crea hallazgo
-  /findings/{projectId}/{findingId}:
-    put:
-      summary: Actualiza hallazgo
+      summary: Crea un hallazgo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindingCreate'
+      responses:
+        '201':
+          description: Hallazgo creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Finding'
+  /findings/{id}:
+    patch:
+      summary: Actualiza un hallazgo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindingUpdate'
+      responses:
+        '200':
+          description: Hallazgo actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Finding'
     delete:
-      summary: Elimina hallazgo
+      summary: Elimina un hallazgo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '204':
+          description: Eliminado correctamente
   /poc/{projectId}:
     get:
       summary: Lista POC
@@ -175,4 +317,194 @@ paths:
   /audit/{projectId}:
     get:
       summary: Audit trail del proyecto
-components: {}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Risk:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        probability:
+          type: integer
+        impact:
+          type: integer
+        severity:
+          type: integer
+        rag:
+          type: string
+        mitigation:
+          type: string
+          nullable: true
+        owner:
+          type: string
+          nullable: true
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - projectId
+        - category
+        - description
+        - probability
+        - impact
+        - severity
+        - rag
+    RiskCreate:
+      type: object
+      required:
+        - projectId
+        - category
+        - description
+        - probability
+        - impact
+      properties:
+        projectId:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        probability:
+          type: integer
+        impact:
+          type: integer
+        mitigation:
+          type: string
+        owner:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+    RiskUpdate:
+      type: object
+      properties:
+        category:
+          type: string
+        description:
+          type: string
+        probability:
+          type: integer
+        impact:
+          type: integer
+        severity:
+          type: integer
+        rag:
+          type: string
+        mitigation:
+          type: string
+        owner:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+    Finding:
+      type: object
+      properties:
+        id:
+          type: string
+        projectId:
+          type: string
+        title:
+          type: string
+        evidence:
+          type: string
+          nullable: true
+        impact:
+          type: string
+        recommendation:
+          type: string
+        quickWin:
+          type: boolean
+        effortDays:
+          type: integer
+          nullable: true
+        responsibleR:
+          type: string
+          nullable: true
+        accountableA:
+          type: string
+          nullable: true
+        targetDate:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+      required:
+        - id
+        - projectId
+        - title
+        - impact
+        - recommendation
+        - quickWin
+        - status
+    FindingCreate:
+      type: object
+      required:
+        - projectId
+        - title
+        - impact
+        - recommendation
+        - responsibleR
+        - accountableA
+      properties:
+        projectId:
+          type: string
+        title:
+          type: string
+        evidence:
+          type: string
+        impact:
+          type: string
+        recommendation:
+          type: string
+        quickWin:
+          type: boolean
+        effortDays:
+          type: integer
+        responsibleR:
+          type: string
+        accountableA:
+          type: string
+        targetDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+    FindingUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        evidence:
+          type: string
+        impact:
+          type: string
+        recommendation:
+          type: string
+        quickWin:
+          type: boolean
+        effortDays:
+          type: integer
+        responsibleR:
+          type: string
+        accountableA:
+          type: string
+        targetDate:
+          type: string
+          format: date-time
+        status:
+          type: string

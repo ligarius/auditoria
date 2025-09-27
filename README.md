@@ -54,6 +54,12 @@ npm run dev
 
 La API corre en `http://localhost:4000/api` y el front en `http://localhost:5173`.
 
+Para verificar el estado de la API una vez levantada, ejecuta:
+
+```bash
+curl http://localhost:4000/api/health
+```
+
 ## Docker
 
 ```bash
@@ -77,7 +83,7 @@ Recuerda copiar cada archivo `*.env.example` a `.env` y personalizarlo según tu
 | Email | Rol | Contraseña |
 | --- | --- | --- |
 | admin@nustrial.com | Admin | admin123 |
-| consultor@nustrial.com | Consultor Líder | consultor123 |
+| consultor@nustrial.com | Consultor | consultor123 |
 
 ## Módulos clave
 

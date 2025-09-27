@@ -27,23 +27,26 @@ const TAB_TO_PATH: Record<string, string> = {
   poc: 'poc',
   decisions: 'decisions',
   kpis: 'kpis',
-  export: 'export'
+  export: 'export',
 };
 
-const PATH_TO_TAB = Object.entries(TAB_TO_PATH).reduce<Record<string, string>>((acc, [tab, path]) => {
-  acc[path || '__root__'] = tab;
-  return acc;
-}, {});
+const PATH_TO_TAB = Object.entries(TAB_TO_PATH).reduce<Record<string, string>>(
+  (acc, [tab, path]) => {
+    acc[path || '__root__'] = tab;
+    return acc;
+  },
+  {}
+);
 
 const PROJECT_TEMPLATES = {
   distribution: {
     label: 'Distribución',
-    features: ['reception', 'picking', 'dispatch']
+    features: ['reception', 'picking', 'dispatch'],
   },
   simple: {
     label: 'Simple',
-    features: []
-  }
+    features: [],
+  },
 } as const;
 
 type ProjectTemplateKey = keyof typeof PROJECT_TEMPLATES;
@@ -64,8 +67,11 @@ export const ProjectPage = () => {
   const [creating, setCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectStatus, setNewProjectStatus] = useState('En progreso');
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(undefined);
-  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplateKey>('distribution');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<ProjectTemplateKey>('distribution');
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -138,7 +144,7 @@ export const ProjectPage = () => {
     try {
       const res = await api.get(`/export/excel`, {
         params: { projectId: id },
-        responseType: 'blob'
+        responseType: 'blob',
       });
       const blob = new Blob([res.data]);
       const url = URL.createObjectURL(blob);
@@ -183,7 +189,9 @@ export const ProjectPage = () => {
     setCreateError(null);
   };
 
-  const handleCreateProject = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateProject = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
     if (!selectedCompanyId || !newProjectName.trim()) {
       setCreateError('Nombre y compañía son obligatorios.');
@@ -197,7 +205,7 @@ export const ProjectPage = () => {
         name: newProjectName.trim(),
         status: newProjectStatus,
         companyId: selectedCompanyId,
-        settings: { enabledFeatures: template.features }
+        settings: { enabledFeatures: template.features },
       });
       closeModal();
       await fetchProjects();
@@ -222,12 +230,21 @@ export const ProjectPage = () => {
       <header className="mb-6 flex flex-wrap items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            {currentProject?.company?.name ?? 'Auditoría'} · {currentProject?.name ?? 'Proyecto'}
+            {currentProject?.company?.name ?? 'Auditoría'} ·{' '}
+            {currentProject?.name ?? 'Proyecto'}
           </h1>
           <p className="text-slate-600">Proyecto ID: {id}</p>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-3">
           <ProjectPicker refreshKey={refreshKey} />
+          {role === 'admin' && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="rounded bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-200"
+            >
+              Panel admin
+            </button>
+          )}
           {canCreateProject && (
             <button
               onClick={() => setShowModal(true)}
@@ -256,7 +273,9 @@ export const ProjectPage = () => {
       </header>
 
       {projectsError && (
-        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{projectsError}</div>
+        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {projectsError}
+        </div>
       )}
       {loadingProjects && (
         <div className="mb-4 rounded border border-slate-200 bg-white p-3 text-sm text-slate-500">
@@ -264,7 +283,11 @@ export const ProjectPage = () => {
         </div>
       )}
 
-      <Tabs.Root value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+      <Tabs.Root
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-4"
+      >
         <Tabs.List className="flex flex-wrap gap-2 rounded-lg bg-white p-2 shadow">
           {ProjectTabs.map((tab) => (
             <Tabs.Trigger
@@ -278,7 +301,11 @@ export const ProjectPage = () => {
         </Tabs.List>
 
         {ProjectTabs.map((tab) => (
-          <Tabs.Content key={tab.value} value={tab.value} className="rounded-lg bg-white p-6 shadow">
+          <Tabs.Content
+            key={tab.value}
+            value={tab.value}
+            className="rounded-lg bg-white p-6 shadow"
+          >
             <tab.component projectId={id ?? ''} />
           </Tabs.Content>
         ))}
@@ -289,9 +316,12 @@ export const ProjectPage = () => {
           <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">Nuevo proyecto</h2>
+                <h2 className="text-xl font-semibold text-slate-900">
+                  Nuevo proyecto
+                </h2>
                 <p className="text-sm text-slate-500">
-                  Selecciona la compañía destino y la plantilla de procesos habilitados.
+                  Selecciona la compañía destino y la plantilla de procesos
+                  habilitados.
                 </p>
               </div>
               <button
@@ -303,7 +333,10 @@ export const ProjectPage = () => {
             </div>
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="project-name">
+                <label
+                  className="mb-1 block text-sm font-medium text-slate-700"
+                  htmlFor="project-name"
+                >
                   Nombre del proyecto
                 </label>
                 <input
@@ -316,7 +349,10 @@ export const ProjectPage = () => {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="project-status">
+                <label
+                  className="mb-1 block text-sm font-medium text-slate-700"
+                  htmlFor="project-status"
+                >
                   Estado
                 </label>
                 <select
@@ -331,18 +367,25 @@ export const ProjectPage = () => {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="project-company">
+                <label
+                  className="mb-1 block text-sm font-medium text-slate-700"
+                  htmlFor="project-company"
+                >
                   Compañía
                 </label>
                 <select
                   id="project-company"
                   value={selectedCompanyId ?? ''}
-                  onChange={(event) => setSelectedCompanyId(event.target.value || undefined)}
+                  onChange={(event) =>
+                    setSelectedCompanyId(event.target.value || undefined)
+                  }
                   className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                   required
                   disabled={!companies.length}
                 >
-                  {!companies.length && <option value="">No hay compañías disponibles</option>}
+                  {!companies.length && (
+                    <option value="">No hay compañías disponibles</option>
+                  )}
                   {companies.map((company) => (
                     <option key={company.id} value={company.id}>
                       {company.name}
@@ -351,13 +394,20 @@ export const ProjectPage = () => {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="project-template">
+                <label
+                  className="mb-1 block text-sm font-medium text-slate-700"
+                  htmlFor="project-template"
+                >
                   Plantilla
                 </label>
                 <select
                   id="project-template"
                   value={selectedTemplate}
-                  onChange={(event) => setSelectedTemplate(event.target.value as ProjectTemplateKey)}
+                  onChange={(event) =>
+                    setSelectedTemplate(
+                      event.target.value as ProjectTemplateKey
+                    )
+                  }
                   className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 >
                   {Object.entries(PROJECT_TEMPLATES).map(([key, template]) => (
@@ -367,10 +417,17 @@ export const ProjectPage = () => {
                   ))}
                 </select>
                 <p className="mt-2 text-xs text-slate-500">
-                  Features habilitadas: {templateFeatures.length ? templateFeatures.map((feature) => PROCESS_SUBTABS[feature] ?? feature).join(', ') : 'Ninguna'}
+                  Features habilitadas:{' '}
+                  {templateFeatures.length
+                    ? templateFeatures
+                        .map((feature) => PROCESS_SUBTABS[feature] ?? feature)
+                        .join(', ')
+                    : 'Ninguna'}
                 </p>
               </div>
-              {createError && <p className="text-sm text-red-600">{createError}</p>}
+              {createError && (
+                <p className="text-sm text-red-600">{createError}</p>
+              )}
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
@@ -395,4 +452,3 @@ export const ProjectPage = () => {
     </div>
   );
 };
-

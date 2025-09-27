@@ -5,6 +5,7 @@ import ProtectedRoute from './auth/ProtectedRoute';
 import Login from './pages/Login';
 import { ProjectPage } from './pages/ProjectPage';
 import ProjectsRedirect from './pages/ProjectsRedirect';
+import AdminDashboard from './pages/AdminDashboard';
 import './index.css';
 
 export function LegacyReceptionRedirect() {
@@ -19,8 +20,12 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<ProjectsRedirect />} />
           <Route path="/projects" element={<ProjectsRedirect />} />
-          <Route path="/projects/:id/reception" element={<LegacyReceptionRedirect />} />
+          <Route
+            path="/projects/:id/reception"
+            element={<LegacyReceptionRedirect />}
+          />
           <Route path="/projects/:id/*" element={<ProjectPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Route>
         <Route path="*" element={<Navigate to="/projects" replace />} />
       </Routes>
@@ -28,7 +33,8 @@ export function AppRouter() {
   );
 }
 
-const container = typeof document !== 'undefined' ? document.getElementById('root') : null;
+const container =
+  typeof document !== 'undefined' ? document.getElementById('root') : null;
 
 if (container) {
   ReactDOM.createRoot(container).render(

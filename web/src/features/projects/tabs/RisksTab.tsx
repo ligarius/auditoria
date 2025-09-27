@@ -1,7 +1,8 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 
 import api from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface Risk {
   id: string;
@@ -27,7 +28,7 @@ const initialForm = {
   impact: 1,
   mitigation: '',
   owner: '',
-  dueDate: ''
+  dueDate: '',
 };
 
 export default function RisksTab({ projectId }: RisksTabProps) {
@@ -38,21 +39,23 @@ export default function RisksTab({ projectId }: RisksTabProps) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState<string | null>(null);
 
-  const loadRisks = async () => {
+  const loadRisks = useCallback(async () => {
     try {
-      const response = await api.get<Risk[]>('/risks', { params: { projectId } });
+      const response = await api.get<Risk[]>('/risks', {
+        params: { projectId },
+      });
       setRisks(response.data);
       setError(null);
-    } catch (err: any) {
-      setError(err?.response?.data?.title || 'No se pudieron cargar los riesgos');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'No se pudieron cargar los riesgos'));
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     if (projectId) {
-      loadRisks();
+      void loadRisks();
     }
-  }, [projectId]);
+  }, [projectId, loadRisks]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -67,22 +70,26 @@ export default function RisksTab({ projectId }: RisksTabProps) {
         impact: Number(form.impact),
         mitigation: form.mitigation || undefined,
         owner: form.owner || undefined,
-        dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined
+        dueDate: form.dueDate
+          ? new Date(form.dueDate).toISOString()
+          : undefined,
       });
       setForm(initialForm);
       await loadRisks();
-    } catch (err: any) {
-      setError(err?.response?.data?.title || 'No se pudo crear el riesgo');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'No se pudo crear el riesgo'));
     }
   };
 
   const updateRisk = async (id: string, data: Partial<Risk>) => {
     try {
       const response = await api.patch<Risk>(`/risks/${id}`, data);
-      setRisks((prev) => prev.map((item) => (item.id === id ? response.data : item)));
+      setRisks((prev) =>
+        prev.map((item) => (item.id === id ? response.data : item))
+      );
       setError(null);
-    } catch (err: any) {
-      setError(err?.response?.data?.title || 'No se pudo actualizar el riesgo');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'No se pudo actualizar el riesgo'));
     }
   };
 
@@ -91,20 +98,25 @@ export default function RisksTab({ projectId }: RisksTabProps) {
       await api.delete(`/risks/${id}`);
       setRisks((prev) => prev.filter((item) => item.id !== id));
       setError(null);
-    } catch (err: any) {
-      setError(err?.response?.data?.title || 'No se pudo eliminar el riesgo');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'No se pudo eliminar el riesgo'));
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-900">Riesgos del proyecto</h2>
+        <h2 className="text-xl font-semibold text-slate-900">
+          Riesgos del proyecto
+        </h2>
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
 
       {canEdit && (
-        <form onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-slate-200 p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-3 rounded-lg border border-slate-200 p-4"
+        >
           <h3 className="text-lg font-medium text-slate-800">Nuevo riesgo</h3>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="flex flex-col text-sm">
@@ -112,7 +124,9 @@ export default function RisksTab({ projectId }: RisksTabProps) {
               <input
                 className="mt-1 rounded border px-3 py-2"
                 value={form.category}
-                onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, category: e.target.value }))
+                }
                 required
               />
             </label>
@@ -124,7 +138,12 @@ export default function RisksTab({ projectId }: RisksTabProps) {
                 max={5}
                 className="mt-1 rounded border px-3 py-2"
                 value={form.probability}
-                onChange={(e) => setForm((prev) => ({ ...prev, probability: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    probability: Number(e.target.value),
+                  }))
+                }
                 required
               />
             </label>
@@ -136,7 +155,12 @@ export default function RisksTab({ projectId }: RisksTabProps) {
                 max={5}
                 className="mt-1 rounded border px-3 py-2"
                 value={form.impact}
-                onChange={(e) => setForm((prev) => ({ ...prev, impact: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    impact: Number(e.target.value),
+                  }))
+                }
                 required
               />
             </label>
@@ -145,7 +169,9 @@ export default function RisksTab({ projectId }: RisksTabProps) {
               <input
                 className="mt-1 rounded border px-3 py-2"
                 value={form.owner}
-                onChange={(e) => setForm((prev) => ({ ...prev, owner: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, owner: e.target.value }))
+                }
               />
             </label>
             <label className="flex flex-col text-sm md:col-span-2">
@@ -153,7 +179,9 @@ export default function RisksTab({ projectId }: RisksTabProps) {
               <textarea
                 className="mt-1 rounded border px-3 py-2"
                 value={form.description}
-                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, description: e.target.value }))
+                }
                 required
               />
             </label>
@@ -162,7 +190,9 @@ export default function RisksTab({ projectId }: RisksTabProps) {
               <input
                 className="mt-1 rounded border px-3 py-2"
                 value={form.mitigation}
-                onChange={(e) => setForm((prev) => ({ ...prev, mitigation: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, mitigation: e.target.value }))
+                }
               />
             </label>
             <label className="flex flex-col text-sm">
@@ -171,7 +201,9 @@ export default function RisksTab({ projectId }: RisksTabProps) {
                 type="date"
                 className="mt-1 rounded border px-3 py-2"
                 value={form.dueDate}
-                onChange={(e) => setForm((prev) => ({ ...prev, dueDate: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, dueDate: e.target.value }))
+                }
               />
             </label>
           </div>
@@ -188,14 +220,30 @@ export default function RisksTab({ projectId }: RisksTabProps) {
         <table className="min-w-full divide-y divide-slate-200 text-sm">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Categoría</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Descripción</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Prob.</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Impacto</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Severidad</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">RAG</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Mitigación</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">Acciones</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Categoría
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Descripción
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Prob.
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Impacto
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Severidad
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                RAG
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Mitigación
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-slate-600">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -211,7 +259,9 @@ export default function RisksTab({ projectId }: RisksTabProps) {
                     <select
                       className="rounded border px-2 py-1"
                       value={risk.rag}
-                      onChange={(e) => updateRisk(risk.id, { rag: e.target.value })}
+                      onChange={(e) =>
+                        updateRisk(risk.id, { rag: e.target.value })
+                      }
                     >
                       <option value="Rojo">Rojo</option>
                       <option value="Ámbar">Ámbar</option>
@@ -226,11 +276,15 @@ export default function RisksTab({ projectId }: RisksTabProps) {
                     <input
                       className="w-full rounded border px-2 py-1"
                       value={risk.mitigation ?? ''}
-                      onBlur={(e) => updateRisk(risk.id, { mitigation: e.target.value })}
+                      onBlur={(e) =>
+                        updateRisk(risk.id, { mitigation: e.target.value })
+                      }
                       onChange={(e) =>
                         setRisks((prev) =>
                           prev.map((item) =>
-                            item.id === risk.id ? { ...item, mitigation: e.target.value } : item
+                            item.id === risk.id
+                              ? { ...item, mitigation: e.target.value }
+                              : item
                           )
                         )
                       }
@@ -253,7 +307,10 @@ export default function RisksTab({ projectId }: RisksTabProps) {
             ))}
             {risks.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-slate-500">
+                <td
+                  colSpan={8}
+                  className="px-3 py-6 text-center text-slate-500"
+                >
                   No hay riesgos registrados.
                 </td>
               </tr>

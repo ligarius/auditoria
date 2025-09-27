@@ -1,19 +1,28 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-
-import App from './pages/App';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './auth/ProtectedRoute';
+import Login from './pages/Login';
+import {ProjectPage} from './pages/ProjectPage';
 import './index.css';
 
-const queryClient = new QueryClient();
+function AppRouter() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Navigate to="/projects/demo" replace />} />
+          <Route path="/projects/:id" element={<ProjectPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/projects/demo" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </QueryClientProvider>
+    <AppRouter />
   </React.StrictMode>
 );

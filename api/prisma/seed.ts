@@ -1,3 +1,4 @@
+// api/prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -12,19 +13,21 @@ async function upsertUser(email: string, name: string, role: string, password: s
   });
 }
 
+async function upsertCompanyByName(name: string, taxId?: string) {
+  const existing = await prisma.company.findFirst({ where: { name } });
+  if (existing) {
+    return prisma.company.update({
+      where: { id: existing.id },
+      data: { taxId },
+    });
+  }
+  return prisma.company.create({ data: { name, taxId } });
+}
+
 async function main() {
   // Empresas
-  const nutrial = await prisma.company.upsert({
-    where: { name: 'Nutrial' },
-    update: { taxId: '76.543.210-9' },
-    create: { name: 'Nutrial', taxId: '76.543.210-9' },
-  });
-
-  const democorp = await prisma.company.upsert({
-    where: { name: 'DemoCorp' },
-    update: {},
-    create: { name: 'DemoCorp', taxId: '76.000.000-0' },
-  });
+  const nutrial = await upsertCompanyByName('Nutrial', '76.543.210-9');
+  const democorp = await upsertCompanyByName('DemoCorp', '76.000.000-0');
 
   // Usuarios
   const admin = await upsertUser('admin@demo.com', 'Admin', 'admin', 'Cambiar123!');
@@ -51,7 +54,10 @@ async function main() {
     },
   });
 
-  console.log('Seed ok:', { nutrial: nutrial.name, democorp: democorp.name, admin: admin.email });
+  console.log('Seed OK', {
+    companies: [nutrial.name, democorp.name],
+    users: ['admin@demo.com', 'consultor@demo.com', 'cliente@demo.com']
+  });
 }
 
 main()

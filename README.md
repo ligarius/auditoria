@@ -37,18 +37,23 @@ Suite full-stack para gestionar auditorías multi-proyecto con módulos especial
 ## Configuración local
 
 ```bash
+docker compose up -d --build
+docker compose exec api npm run migrate:deploy
+docker compose exec api npm run seed
+```
+
+Una vez que la base de datos está lista, puedes iniciar los servicios de desarrollo individuales si prefieres trabajar fuera de Docker:
+
+```bash
+# API
 cd api
 cp .env.example .env
 npm install
-npx prisma migrate dev
-npm run seed
 npm run dev
-```
 
-En otra terminal:
-
-```bash
-cd web
+# Web
+cd ../web
+cp .env.example .env
 npm install
 npm run dev
 ```
@@ -84,9 +89,9 @@ docker compose up -d --build
 
 Usuarios por defecto:
 
-- `admin@demo.com` / `Cambiar123!`
-- `consultor@demo.com` / `Cambiar123!`
-- `cliente@demo.com` / `Cambiar123!`
+admin@demo.com / Cambiar123!
+consultor@demo.com / Cambiar123!
+cliente@demo.com / Cambiar123!
 
 ## Variables de entorno
 

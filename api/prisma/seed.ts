@@ -47,14 +47,27 @@ async function main() {
       name: 'Nutrial – Auditoría 2025',
       status: 'En progreso',
       companyId: company.id,
-      startDate: new Date()
+      startDate: new Date(),
+      settings: { enabledFeatures: ['reception', 'picking', 'dispatch'] }
+    }
+  });
+
+  const simplifiedProject = await prisma.project.create({
+    data: {
+      name: 'Nutrial – Diagnóstico Express',
+      status: 'Planificado',
+      companyId: company.id,
+      startDate: new Date(),
+      settings: { enabledFeatures: [] }
     }
   });
 
   await prisma.membership.createMany({
     data: [
       { userId: admin.id, projectId: project.id, role: 'Admin' },
-      { userId: consultant.id, projectId: project.id, role: 'ConsultorLider' }
+      { userId: consultant.id, projectId: project.id, role: 'ConsultorLider' },
+      { userId: admin.id, projectId: simplifiedProject.id, role: 'Admin' },
+      { userId: consultant.id, projectId: simplifiedProject.id, role: 'ConsultorLider' }
     ]
   });
 

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { prisma } from '../../core/config/db.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 import { authenticate, requireProjectMembership, requireRole } from '../../core/middleware/auth.js';
 import { riskService } from './risk.service.js';
 
@@ -27,12 +28,7 @@ riskRouter.patch('/:id', requireRole('admin', 'consultor'), async (req, res) => 
   if (!item) {
     return res.status(404).json({ title: 'No encontrado' });
   }
-  const membership = await prisma.membership.findUnique({
-    where: { userId_projectId: { userId: req.user!.id, projectId: item.projectId } }
-  });
-  if (!membership) {
-    return res.status(403).json({ title: 'Sin acceso al proyecto' });
-  }
+  await enforceProjectAccess(req.user, item.projectId);
   const risk = await riskService.update(id, req.body, req.user!.id);
   res.json(risk);
 });
@@ -43,12 +39,7 @@ riskRouter.delete('/:id', requireRole('admin'), async (req, res) => {
   if (!item) {
     return res.status(404).json({ title: 'No encontrado' });
   }
-  const membership = await prisma.membership.findUnique({
-    where: { userId_projectId: { userId: req.user!.id, projectId: item.projectId } }
-  });
-  if (!membership) {
-    return res.status(403).json({ title: 'Sin acceso al proyecto' });
-  }
+  await enforceProjectAccess(req.user, item.projectId);
   await riskService.remove(id, req.user!.id);
   res.status(204).end();
 });

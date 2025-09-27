@@ -19,6 +19,7 @@ model Project {
   company      Company            @relation(fields: [companyId], references: [id])
   name         String
   status       String
+  settings     Json?
   startDate    DateTime?
   endDate      DateTime?
   memberships  Membership[]

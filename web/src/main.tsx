@@ -3,11 +3,15 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './auth/ProtectedRoute';
 import Login from './pages/Login';
-import {ProjectPage} from './pages/ProjectPage';
+import { ProjectPage } from './pages/ProjectPage';
 import ProjectsRedirect from './pages/ProjectsRedirect';
 import './index.css';
 
-function AppRouter() {
+export function LegacyReceptionRedirect() {
+  return <Navigate to="../procesos/reception" replace />;
+}
+
+export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
@@ -15,7 +19,8 @@ function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<ProjectsRedirect />} />
           <Route path="/projects" element={<ProjectsRedirect />} />
-          <Route path="/projects/:id" element={<ProjectPage />} />
+          <Route path="/projects/:id/reception" element={<LegacyReceptionRedirect />} />
+          <Route path="/projects/:id/*" element={<ProjectPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/projects" replace />} />
       </Routes>
@@ -23,8 +28,12 @@ function AppRouter() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <AppRouter />
-  </React.StrictMode>
-);
+const container = typeof document !== 'undefined' ? document.getElementById('root') : null;
+
+if (container) {
+  ReactDOM.createRoot(container).render(
+    <React.StrictMode>
+      <AppRouter />
+    </React.StrictMode>
+  );
+}

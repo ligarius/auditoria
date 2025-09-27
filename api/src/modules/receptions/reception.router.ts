@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { authenticate, requireProjectRole } from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 import { receptionService } from './reception.service.js';
 
 const receptionRouter = Router();
@@ -8,6 +9,7 @@ const receptionRouter = Router();
 receptionRouter.use(authenticate);
 
 receptionRouter.get('/:projectId', requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM']), async (req, res) => {
+  await enforceProjectAccess(req.user, req.params.projectId);
   const receptions = await receptionService.list(req.params.projectId);
   res.json(receptions);
 });
@@ -27,9 +29,14 @@ receptionRouter.delete('/:projectId/:receptionId', requireProjectRole(['Consulto
   res.status(204).send();
 });
 
-receptionRouter.get('/:projectId/metrics/summary', requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM']), async (req, res) => {
-  const metrics = await receptionService.metrics(req.params.projectId);
-  res.json(metrics);
-});
+receptionRouter.get(
+  '/:projectId/metrics/summary',
+  requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM']),
+  async (req, res) => {
+    await enforceProjectAccess(req.user, req.params.projectId);
+    const metrics = await receptionService.metrics(req.params.projectId);
+    res.json(metrics);
+  }
+);
 
 export { receptionRouter };

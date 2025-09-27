@@ -10,7 +10,7 @@
     "prisma": "prisma",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
-    "seed": "tsx prisma/seed.ts",
+    "seed": "node prisma/seed.js",
     "generate": "prisma generate",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "test": "jest --coverage",
@@ -64,6 +64,6 @@
     "typescript": "^5.3.3"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node prisma/seed.js"
   }
 }

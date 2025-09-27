@@ -1,2 +1,2 @@
 ALTER TABLE "Project"
-ADD COLUMN "settings" JSONB;
+ADD COLUMN IF NOT EXISTS "settings" JSONB;

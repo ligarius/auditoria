@@ -1,10 +1,9 @@
-// api/prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function upsertUser(email: string, name: string, role: string, password: string) {
+async function upsertUser(email, name, role, password) {
   const passwordHash = await bcrypt.hash(password, 10);
   return prisma.user.upsert({
     where: { email },
@@ -13,7 +12,7 @@ async function upsertUser(email: string, name: string, role: string, password: s
   });
 }
 
-async function findOrCreateCompany(name: string, taxId?: string) {
+async function findOrCreateCompany(name, taxId) {
   const existing = await prisma.company.findFirst({ where: { name } });
   if (existing) {
     return existing;
@@ -22,16 +21,13 @@ async function findOrCreateCompany(name: string, taxId?: string) {
 }
 
 async function main() {
-  // Empresas
   const nutrial = await findOrCreateCompany('Nutrial', '76.543.210-9');
   const democorp = await findOrCreateCompany('DemoCorp', '76.000.000-0');
 
-  // Usuarios
   const admin = await upsertUser('admin@demo.com', 'Admin', 'admin', 'Cambiar123!');
   const consultor = await upsertUser('consultor@demo.com', 'Consultor', 'consultor', 'Cambiar123!');
   const cliente = await upsertUser('cliente@demo.com', 'Cliente', 'cliente', 'Cambiar123!');
 
-  // Proyecto demo con features
   await prisma.project.upsert({
     where: {
       Project_companyId_name_key: {
@@ -58,10 +54,16 @@ async function main() {
 
   console.log('Seed OK', {
     companies: [nutrial.name, democorp.name],
-    users: ['admin@demo.com', 'consultor@demo.com', 'cliente@demo.com']
+    users: ['admin@demo.com', 'consultor@demo.com', 'cliente@demo.com'],
   });
 }
 
 main()
-  .then(async () => { await prisma.$disconnect(); })
-  .catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1); });
+  .then(async () => {
+    await prisma.$disconnect();
+  })
+  .catch(async (error) => {
+    console.error(error);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

@@ -7,9 +7,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-COPY prisma ./prisma
 RUN npm ci
-RUN npx prisma generate
+
+COPY prisma ./prisma
+RUN npm run generate
 
 # --- build ---
 FROM node:18-bullseye-slim AS build
@@ -17,6 +18,7 @@ WORKDIR /usr/src/app
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
 RUN npm run build
+RUN npm prune --production
 
 # --- runner ---
 FROM node:18-bullseye-slim AS runner
@@ -25,8 +27,8 @@ ENV NODE_ENV=production
 # Solo lo necesario para correr
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
-COPY --from=build /usr/src/app/prisma ./prisma
-COPY --from=build /usr/src/app/package*.json ./
+COPY prisma ./prisma
+COPY package*.json ./
 EXPOSE 4000
 CMD ["node", "dist/server.cjs"]
 

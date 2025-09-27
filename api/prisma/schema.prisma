@@ -49,6 +49,9 @@ model Project {
   auditLogs    AuditLog[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
+
+  @@unique([companyId, name], name: "Project_companyId_name_key")
+  @@index([companyId])
 }
 
 model User {

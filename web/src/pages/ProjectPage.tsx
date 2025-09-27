@@ -60,6 +60,9 @@ export const ProjectPage = () => {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [companiesError, setCompaniesError] = useState<string | null>(null);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
@@ -103,22 +106,42 @@ export const ProjectPage = () => {
     fetchProjects();
   }, [fetchProjects]);
 
-  const companies = useMemo(() => {
-    const unique = new Map<string, string>();
-    projects.forEach((project) => {
-      if (project.company) {
-        unique.set(project.company.id, project.company.name);
-      }
-    });
-    return Array.from(unique, ([value, label]) => ({ id: value, name: label }));
-  }, [projects]);
+  const fetchCompanies = useCallback(async () => {
+    setCompaniesError(null);
+    setLoadingCompanies(true);
+    try {
+      const response = await api.get<{ id: string; name: string }[]>('/companies');
+      const rawCompanies = Array.isArray(response.data) ? response.data : [];
+      setCompanies(
+        rawCompanies.map((company) => ({
+          id: company.id,
+          name: company.name,
+        })),
+      );
+    } catch (error) {
+      console.error('No se pudieron cargar las compañías', error);
+      setCompaniesError('No se pudieron cargar las compañías disponibles.');
+    } finally {
+      setLoadingCompanies(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, [fetchCompanies]);
 
   useEffect(() => {
     if (showModal) {
       setCreateError(null);
+      fetchCompanies();
+    }
+  }, [showModal, fetchCompanies]);
+
+  useEffect(() => {
+    if (showModal && companies.length > 0) {
       setSelectedCompanyId((prev) => prev ?? companies[0]?.id);
     }
-  }, [showModal, companies]);
+  }, [companies, showModal]);
 
   const currentProject = useMemo(
     () => projects.find((project) => project.id === id),
@@ -209,6 +232,7 @@ export const ProjectPage = () => {
       });
       closeModal();
       await fetchProjects();
+      await fetchCompanies();
       setRefreshKey((value) => value + 1);
       const createdId = response.data?.id as string | undefined;
       if (createdId) {
@@ -381,7 +405,7 @@ export const ProjectPage = () => {
                   }
                   className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                   required
-                  disabled={!companies.length}
+                  disabled={loadingCompanies || !companies.length}
                 >
                   {!companies.length && (
                     <option value="">No hay compañías disponibles</option>
@@ -392,6 +416,14 @@ export const ProjectPage = () => {
                     </option>
                   ))}
                 </select>
+                {loadingCompanies && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Cargando compañías…
+                  </p>
+                )}
+                {companiesError && (
+                  <p className="mt-1 text-xs text-red-600">{companiesError}</p>
+                )}
               </div>
               <div>
                 <label
@@ -440,7 +472,7 @@ export const ProjectPage = () => {
                 <button
                   type="submit"
                   className="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-                  disabled={creating || !companies.length}
+                  disabled={creating || loadingCompanies || !companies.length}
                 >
                   {creating ? 'Creando...' : 'Crear proyecto'}
                 </button>

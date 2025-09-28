@@ -3,11 +3,13 @@ import { Router } from 'express';
 import { prisma } from '../../core/config/db.js';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 import { authenticate, requireProjectMembership, requireRole } from '../../core/middleware/auth.js';
+import { authorizeTenantScope } from '../../middleware/authz.js';
 import { riskService } from './risk.service.js';
 
 const riskRouter = Router();
 
 riskRouter.use(authenticate);
+riskRouter.use(authorizeTenantScope);
 
 riskRouter.get('/', requireProjectMembership(), async (req, res) => {
   const projectId = (req as any).projectId as string;

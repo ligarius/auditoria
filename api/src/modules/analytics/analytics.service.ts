@@ -4,6 +4,7 @@ import { fetch } from 'undici';
 
 import { prisma } from '../../core/config/db.js';
 import { HttpError } from '../../core/errors/http-error.js';
+import { env } from '../../config/env.js';
 
 interface SupersetGuestTokenInput {
   companyId: string;
@@ -99,9 +100,9 @@ const ensureProjectScope = async (companyId: string, projectId: string) => {
 };
 
 const getSupersetAccessToken = async () => {
-  const baseUrl = process.env.SUPERSET_BASE_URL;
-  const username = process.env.SUPERSET_USERNAME;
-  const password = process.env.SUPERSET_PASSWORD;
+  const baseUrl = env.SUPERSET_BASE_URL;
+  const username = env.SUPERSET_USERNAME;
+  const password = env.SUPERSET_PASSWORD;
 
   if (!baseUrl || !username || !password) {
     throw new HttpError(500, 'Superset no configurado');
@@ -138,7 +139,7 @@ const requestSupersetGuestToken = async (
 ): Promise<SupersetGuestTokenResult> => {
   await ensureProjectScope(input.companyId, input.projectId);
 
-  const baseUrl = process.env.SUPERSET_BASE_URL;
+  const baseUrl = env.SUPERSET_BASE_URL;
   if (!baseUrl) {
     throw new HttpError(500, 'Superset no configurado');
   }
@@ -156,7 +157,7 @@ const requestSupersetGuestToken = async (
     body: JSON.stringify({
       resources: [{ type: 'dashboard', id: input.dashboardId }],
       user: {
-        username: process.env.SUPERSET_GUEST_USERNAME ?? 'auditoria-guest',
+        username: env.SUPERSET_GUEST_USERNAME ?? 'auditoria-guest',
         first_name: 'Auditoria',
         last_name: 'Viewer'
       },

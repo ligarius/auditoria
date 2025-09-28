@@ -12,6 +12,7 @@ import {
   type AuthenticatedRequest
 } from '../../core/middleware/auth.js';
 import { verifyAccessToken } from '../../core/utils/jwt.js';
+import { authorizeTenantScope } from '../../middleware/authz.js';
 import { formsService } from './forms.service.js';
 
 const formsRouter = Router();
@@ -51,6 +52,7 @@ const submitSchema = z.object({
 formsRouter.post(
   '/templates',
   authenticate,
+  authorizeTenantScope,
   requireRole('admin', 'consultor'),
   async (req: AuthenticatedRequest, res) => {
     const body = templateSchema.parse(req.body);
@@ -65,6 +67,7 @@ formsRouter.post(
 formsRouter.post(
   '/templates/:templateId/versions',
   authenticate,
+  authorizeTenantScope,
   requireRole('admin', 'consultor'),
   async (req: AuthenticatedRequest, res) => {
     const body = versionSchema.parse(req.body);
@@ -84,6 +87,7 @@ formsRouter.post(
 formsRouter.post(
   '/versions/:versionId/publish',
   authenticate,
+  authorizeTenantScope,
   requireRole('admin', 'consultor'),
   async (req: AuthenticatedRequest, res) => {
     const version = await formsService.publishVersion(
@@ -97,6 +101,7 @@ formsRouter.post(
 formsRouter.post(
   '/versions/:versionId/links',
   authenticate,
+  authorizeTenantScope,
   requireRole('admin', 'consultor'),
   requireProjectMembership('projectId'),
   async (req: AuthenticatedRequest & { projectId: string }, res) => {

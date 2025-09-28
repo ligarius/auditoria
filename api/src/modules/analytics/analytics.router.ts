@@ -2,11 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { authenticate, requireProjectMembership } from '../../core/middleware/auth.js';
+import { authorizeTenantScope } from '../../middleware/authz.js';
 import { analyticsService } from './analytics.service.js';
 
 const analyticsRouter = Router();
 
 analyticsRouter.use(authenticate);
+analyticsRouter.use(authorizeTenantScope);
 
 const guestTokenSchema = z.object({
   companyId: z.string().min(1, 'companyId requerido'),

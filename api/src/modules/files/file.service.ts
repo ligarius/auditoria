@@ -2,8 +2,9 @@ import fs from 'fs';
 import path from 'path';
 
 import { prisma } from '../../core/config/db.js';
+import { env } from '../../config/env.js';
 
-const storagePath = process.env.FILE_STORAGE_PATH ?? './storage';
+const storagePath = env.FILE_STORAGE_PATH;
 
 if (!fs.existsSync(storagePath)) {
   fs.mkdirSync(storagePath, { recursive: true });

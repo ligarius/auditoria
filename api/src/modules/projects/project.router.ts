@@ -2,11 +2,13 @@ import { Router } from 'express';
 
 import { authenticate, requireRole } from '../../core/middleware/auth.js';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+import { authorizeTenantScope } from '../../middleware/authz.js';
 import { projectService } from './project.service.js';
 
 const projectRouter = Router();
 
 projectRouter.use(authenticate);
+projectRouter.use(authorizeTenantScope);
 
 projectRouter.get('/', async (req, res) => {
   const projects = await projectService.listByUser(req.user!.id, req.user!.role);

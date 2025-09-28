@@ -21,6 +21,12 @@ interface PreKickoffTabProps {
   projectId: string;
 }
 
+interface DataRequestCategory {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
 const defaultForm = {
   category: '',
   title: '',
@@ -40,10 +46,13 @@ export default function PreKickoffTab({ projectId }: PreKickoffTabProps) {
   const canEdit = useMemo(() => ['admin', 'consultor'].includes(role), [role]);
   const isAdmin = role === 'admin';
   const [items, setItems] = useState<DataRequestItem[]>([]);
+  const [categories, setCategories] = useState<DataRequestCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [editing, setEditing] = useState<DataRequestItem | null>(null);
+  const [customCategory, setCustomCategory] = useState(false);
+  const [editingCustomCategory, setEditingCustomCategory] = useState(false);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -62,14 +71,44 @@ export default function PreKickoffTab({ projectId }: PreKickoffTabProps) {
     }
   }, [projectId]);
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const response = await api.get<DataRequestCategory[]>(
+        '/data-request-categories'
+      );
+      setCategories(response.data ?? []);
+    } catch (error: unknown) {
+      setError(
+        getErrorMessage(
+          error,
+          'No se pudieron obtener las categorías disponibles'
+        )
+      );
+    }
+  }, []);
+
   useEffect(() => {
     if (projectId) {
       void loadItems();
     }
   }, [projectId, loadItems]);
 
+  useEffect(() => {
+    void loadCategories();
+  }, [loadCategories]);
+
+  useEffect(() => {
+    if (editing) {
+      const isCustom = !categories.some(
+        (category) => category.name === editing.category
+      );
+      setEditingCustomCategory(isCustom);
+    }
+  }, [editing, categories]);
+
   const resetForm = () => {
     setForm(defaultForm);
+    setCustomCategory(false);
   };
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
@@ -98,6 +137,10 @@ export default function PreKickoffTab({ projectId }: PreKickoffTabProps) {
 
   const startEdit = (item: DataRequestItem) => {
     setEditing({ ...item });
+    const isCustom = !categories.some(
+      (category) => category.name === item.category
+    );
+    setEditingCustomCategory(isCustom);
   };
 
   const cancelEdit = () => {
@@ -174,15 +217,47 @@ export default function PreKickoffTab({ projectId }: PreKickoffTabProps) {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="flex flex-col text-sm">
               Categoría
-              <input
+              <select
                 className="mt-1 rounded border px-3 py-2"
-                value={form.category}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, category: e.target.value }))
-                }
-                required
-              />
+                value={customCategory ? '__custom__' : form.category}
+                required={!customCategory}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (value === '__custom__') {
+                    setCustomCategory(true);
+                    setForm((prev) => ({ ...prev, category: '' }));
+                  } else {
+                    setCustomCategory(false);
+                    setForm((prev) => ({ ...prev, category: value }));
+                  }
+                }}
+              >
+                <option value="">Selecciona…</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
+                <option value="__custom__">Otra categoría…</option>
+              </select>
             </label>
+            {customCategory && (
+              <label className="flex flex-col text-sm">
+                Nueva categoría
+                <input
+                  className="mt-1 rounded border px-3 py-2"
+                  value={form.category}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      category: event.target.value,
+                    }))
+                  }
+                  placeholder="Ingresa la categoría"
+                  required
+                />
+              </label>
+            )}
             <label className="flex flex-col text-sm">
               Estado
               <select
@@ -318,13 +393,43 @@ export default function PreKickoffTab({ projectId }: PreKickoffTabProps) {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="flex flex-col text-sm">
               Categoría
-              <input
+              <select
                 className="mt-1 rounded border px-3 py-2"
-                value={editing.category}
-                onChange={(e) => handleEditChange('category', e.target.value)}
-                required
-              />
+                value={editingCustomCategory ? '__custom__' : editing.category}
+                required={!editingCustomCategory}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (value === '__custom__') {
+                    setEditingCustomCategory(true);
+                    handleEditChange('category', '');
+                  } else {
+                    setEditingCustomCategory(false);
+                    handleEditChange('category', value);
+                  }
+                }}
+              >
+                <option value="">Selecciona…</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
+                <option value="__custom__">Otra categoría…</option>
+              </select>
             </label>
+            {editingCustomCategory && (
+              <label className="flex flex-col text-sm">
+                Nueva categoría
+                <input
+                  className="mt-1 rounded border px-3 py-2"
+                  value={editing.category}
+                  onChange={(event) =>
+                    handleEditChange('category', event.target.value)
+                  }
+                  required
+                />
+              </label>
+            )}
             <label className="flex flex-col text-sm">
               Estado
               <select

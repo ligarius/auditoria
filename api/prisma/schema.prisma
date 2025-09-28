@@ -30,6 +30,7 @@ model Project {
   memberships  Membership[]
   files        File[]
   dataItems    DataRequestItem[]
+  tasks        ProjectTask[]
   surveys      Survey[]
   interviews   Interview[]
   processes    ProcessAsset[]
@@ -111,6 +112,14 @@ model DataRequestItem {
   project     Project   @relation(fields: [projectId], references: [id])
   /// DUEÑO DE LA FK + NOMBRE DE RELACIÓN
   file        File?     @relation(name: "FileToDataRequestItems", fields: [fileId], references: [id])
+}
+
+model DataRequestCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Survey {
@@ -296,6 +305,28 @@ model CostLicensing {
   supportUSD    Float?
   otherUSD      Float?
   project       Project @relation(fields: [projectId], references: [id])
+}
+
+model ProjectTask {
+  id          String        @id @default(cuid())
+  projectId   String
+  parentId    String?
+  name        String
+  description String?
+  owner       String?
+  status      String        @default("Planificado")
+  progress    Int?
+  startDate   DateTime
+  endDate     DateTime
+  sortOrder   Int?
+  project     Project       @relation(fields: [projectId], references: [id])
+  parent      ProjectTask?  @relation("ProjectTaskChildren", fields: [parentId], references: [id])
+  children    ProjectTask[] @relation("ProjectTaskChildren")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([parentId])
 }
 
 model Risk {

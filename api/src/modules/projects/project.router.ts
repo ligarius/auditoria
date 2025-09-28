@@ -21,6 +21,14 @@ projectRouter.get('/:projectId/features', async (req, res) => {
   res.json(result);
 });
 
+projectRouter.get('/:projectId/summary', async (req, res) => {
+  const summary = await projectService.summary(req.params.projectId, {
+    id: req.user!.id,
+    role: req.user!.role
+  });
+  res.json(summary);
+});
+
 projectRouter.get('/:projectId', async (req, res) => {
   const project = await projectService.getById(req.params.projectId, {
     id: req.user!.id,

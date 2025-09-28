@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import CompanyManager from '../features/admin/CompanyManager';
+import DataRequestCategoryManager from '../features/admin/DataRequestCategoryManager';
 import UserManager from '../features/admin/UserManager';
 import { useAuth } from '../hooks/useAuth';
 import api from '../lib/api';
@@ -194,9 +195,10 @@ export default function AdminDashboard() {
         </article>
       </section>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-3">
         <CompanyManager onChange={refreshSummary} />
         <UserManager onChange={refreshSummary} />
+        <DataRequestCategoryManager onChange={refreshSummary} />
       </div>
     </div>
   );

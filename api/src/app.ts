@@ -4,6 +4,7 @@ import { authRouter } from './modules/auth/auth.router.js';
 import { projectRouter } from './modules/projects/project.router.js';
 import { companyRouter } from './modules/companies/company.router.js';
 import { dataRequestRouter } from './modules/dataRequest/data-request.router.js';
+import { dataRequestCategoryRouter } from './modules/dataRequestCategories/data-request-category.router.js';
 import { surveyRouter } from './modules/surveys/survey.router.js';
 import { interviewRouter } from './modules/interviews/interview.router.js';
 import { processRouter } from './modules/processes/process.router.js';
@@ -16,6 +17,7 @@ import { userRouter } from './modules/users/user.router.js';
 import { exportRouter } from './modules/export/export.router.js';
 import { auditRouter } from './modules/audit/audit.router.js';
 import { fileRouter } from './modules/files/file.router.js';
+import { projectPlanRouter } from './modules/projectPlan/project-plan.router.js';
 
 const appRouter = Router();
 
@@ -23,6 +25,7 @@ appRouter.use('/auth', authRouter);
 appRouter.use('/projects', projectRouter);
 appRouter.use('/companies', companyRouter);
 appRouter.use('/data-request', dataRequestRouter);
+appRouter.use('/data-request-categories', dataRequestCategoryRouter);
 appRouter.use('/surveys', surveyRouter);
 appRouter.use('/interviews', interviewRouter);
 appRouter.use('/process-assets', processRouter);
@@ -35,5 +38,6 @@ appRouter.use('/users', userRouter);
 appRouter.use('/export', exportRouter);
 appRouter.use('/audit', auditRouter);
 appRouter.use('/files', fileRouter);
+appRouter.use('/project-plan', projectPlanRouter);
 
 export { appRouter };

@@ -49,9 +49,37 @@ export const surveyService = {
       if (question.type === 'Likert') {
         const values = answers.map((a) => a.valueNumber ?? 0);
         const avg = values.length ? values.reduce((acc, val) => acc + val, 0) / values.length : 0;
-        return { questionId: question.id, average: avg, responses: values.length };
+        const distribution = values.reduce<Record<string, number>>((acc, value) => {
+          const key = String(value ?? 0);
+          acc[key] = (acc[key] ?? 0) + 1;
+          return acc;
+        }, {});
+        return {
+          questionId: question.id,
+          average: avg,
+          responses: values.length,
+          distribution,
+          scale: {
+            min: question.scaleMin ?? 1,
+            max: question.scaleMax ?? 5,
+          },
+        };
       }
-      return { questionId: question.id, responses: answers.map((a) => a.valueText) };
+      const texts = answers.map((a) => (a.valueText ?? '').trim());
+      const counts = texts.reduce<Record<string, number>>((acc, value) => {
+        const key = value.length ? value : '(Respuesta vacía)';
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      }, {});
+      const topResponses = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([value, count]) => ({ value, count }));
+      return {
+        questionId: question.id,
+        responses: texts.length,
+        topResponses,
+      };
     });
     return { survey, summaries };
   }

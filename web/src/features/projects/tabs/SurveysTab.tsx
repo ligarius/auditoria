@@ -24,7 +24,10 @@ interface Survey {
 interface SurveySummaryItem {
   questionId: string;
   average?: number;
-  responses: number | string[];
+  responses: number;
+  distribution?: Record<string, number>;
+  scale?: { min: number; max: number };
+  topResponses?: { value: string; count: number }[];
 }
 
 interface SurveySummary {
@@ -409,27 +412,79 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
                     (q) => q.id === item.questionId
                   );
                   if (!question) return null;
+                  const totalResponses = item.responses ?? 0;
+                  const values = item.scale
+                    ? Array.from(
+                        { length: item.scale.max - item.scale.min + 1 },
+                        (_, index) => String(item.scale!.min + index)
+                      )
+                    : Object.keys(item.distribution ?? {}).sort(
+                        (a, b) => Number(a) - Number(b)
+                      );
                   return (
                     <div
                       key={item.questionId}
-                      className="rounded border border-slate-100 bg-slate-50 p-3"
+                      className="space-y-2 rounded border border-slate-100 bg-slate-50 p-3"
                     >
-                      <p className="text-sm font-medium text-slate-800">
-                        {question.text}
-                      </p>
-                      {typeof item.responses === 'number' ? (
-                        <p className="text-xs text-slate-600">
-                          {item.responses} respuestas · Promedio:{' '}
-                          {item.average?.toFixed(2) ?? '0.00'}
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">
+                          {question.text}
                         </p>
+                        <p className="text-xs text-slate-500">
+                          {totalResponses} respuestas recibidas
+                        </p>
+                      </div>
+                      {item.distribution ? (
+                        <div className="space-y-2">
+                          <div className="flex h-3 overflow-hidden rounded bg-slate-200">
+                            {values.map((value) => {
+                              const count = item.distribution?.[value] ?? 0;
+                              const percentage = totalResponses
+                                ? (count / totalResponses) * 100
+                                : 0;
+                              return (
+                                <div
+                                  key={`${item.questionId}-${value}`}
+                                  className="h-3"
+                                  style={{
+                                    width: `${percentage}%`,
+                                    backgroundColor: '#0f172a',
+                                    opacity: 0.3 + Math.min(percentage, 60) / 100,
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>
+                              Promedio: {item.average?.toFixed(2) ?? '0.00'}
+                            </span>
+                            {item.scale && (
+                              <span>
+                                Escala {item.scale.min} - {item.scale.max}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       ) : (
-                        <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-slate-600">
-                          {item.responses.map((value, index) => (
-                            <li key={`${item.questionId}-${index}`}>
-                              {value || '(Respuesta vacía)'}
-                            </li>
+                        <div className="space-y-1">
+                          {item.topResponses?.map(({ value, count }, index) => (
+                            <div
+                              key={`${item.questionId}-resp-${index}`}
+                              className="flex items-center justify-between rounded bg-white px-2 py-1 text-xs text-slate-600"
+                            >
+                              <span className="truncate pr-2">{value}</span>
+                              <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                                {count}
+                              </span>
+                            </div>
                           ))}
-                        </ul>
+                          {(!item.topResponses || item.topResponses.length === 0) && (
+                            <p className="text-xs text-slate-500">
+                              Sin respuestas aún.
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   );

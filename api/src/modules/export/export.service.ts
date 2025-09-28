@@ -77,28 +77,147 @@ export const exportService = {
     const kpis = await prisma.kPI.findMany({ where: { projectId }, orderBy: { date: 'asc' } });
 
     const pdfPath = path.join(tmpDir, `resumen-${projectId}.pdf`);
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ margin: 50 });
     doc.pipe(fs.createWriteStream(pdfPath));
-    doc.fontSize(20).text('Informe Ejecutivo', { align: 'center' });
+
+    const headerHeight = 120;
+    doc.rect(0, 0, doc.page.width, headerHeight).fill('#0f172a');
+    doc.fillColor('white');
+    doc.fontSize(28).text('Informe Ejecutivo', { align: 'center', baseline: 'middle' });
+    doc.moveDown(0.5);
+    doc.fontSize(14).text(`${project.company.name} · ${project.name}`, {
+      align: 'center',
+    });
+    doc.moveDown(0.2);
+    doc.fontSize(12).text(`Estado: ${project.status}`, { align: 'center' });
+    const period = `${project.startDate ? dayjs(project.startDate).format('DD/MM/YYYY') : 'Sin inicio'} - ${
+      project.endDate ? dayjs(project.endDate).format('DD/MM/YYYY') : 'Sin cierre'
+    }`;
+    doc.text(period, { align: 'center' });
+
     doc.moveDown();
-    doc.fontSize(14).text(`${project.company.name} - ${project.name}`);
-    doc.text(`Estado: ${project.status}`);
-    doc.text(`Periodo: ${project.startDate ? dayjs(project.startDate).format('DD/MM/YYYY') : ''} - ${project.endDate ? dayjs(project.endDate).format('DD/MM/YYYY') : ''}`);
+    doc.fillColor('#0f172a').fontSize(16).text('Resumen ejecutivo', { underline: true });
+    doc.fillColor('#1f2937').fontSize(12);
+    doc.text(
+      'Este informe resume el estado del proyecto, principales riesgos, hallazgos y métricas clave para la toma de decisiones.',
+      {
+        align: 'justify',
+      }
+    );
 
-    doc.moveDown().fontSize(16).text('Top 10 Riesgos');
-    risks.forEach((risk, index) => {
-      doc.fontSize(12).text(`${index + 1}. ${risk.description} (Severidad ${risk.severity} - ${risk.rag})`);
-    });
+    const drawMetricRow = (metrics: { label: string; value: string }[]) => {
+      doc.moveDown(0.6);
+      metrics.forEach((metric) => {
+        doc
+          .font('Helvetica-Bold')
+          .text(metric.label.toUpperCase(), { continued: true })
+          .font('Helvetica')
+          .text(`  ${metric.value}`);
+      });
+    };
 
-    doc.moveDown().fontSize(16).text('Top 10 Hallazgos');
-    findings.forEach((finding, index) => {
-      doc.fontSize(12).text(`${index + 1}. ${finding.title} - ${finding.status}`);
-    });
+    drawMetricRow([
+      {
+        label: 'Periodo',
+        value: period,
+      },
+      {
+        label: 'Riesgos evaluados',
+        value: String(risks.length),
+      },
+      {
+        label: 'Hallazgos registrados',
+        value: String(findings.length),
+      },
+      {
+        label: 'KPIs monitoreados',
+        value: String(kpis.length),
+      },
+    ]);
 
-    doc.moveDown().fontSize(16).text('KPIs');
-    kpis.forEach((kpi) => {
-      doc.fontSize(12).text(`${dayjs(kpi.date).format('DD/MM/YYYY')} - ${kpi.name}: ${kpi.value} ${kpi.unit ?? ''}`);
-    });
+    const sectionTitle = (title: string) => {
+      doc.moveDown(1);
+      doc.fillColor('#0f172a').fontSize(16).text(title);
+      doc.fillColor('#1f2937').fontSize(12);
+      doc.moveDown(0.3);
+      doc.strokeColor('#cbd5f5');
+      doc.lineWidth(2);
+      doc.moveTo(doc.x, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
+      doc.moveDown(0.5);
+    };
+
+    const renderTable = (
+      columns: { header: string; width: number }[],
+      rows: string[][]
+    ) => {
+      const startX = doc.x;
+      rows.forEach((row) => {
+        columns.forEach((column, index) => {
+          doc
+            .font(index === 0 ? 'Helvetica-Bold' : 'Helvetica')
+            .text(row[index] ?? '', startX + column.width * index, doc.y, {
+              width: column.width - 10,
+              continued: index < columns.length - 1,
+            });
+        });
+        doc.text('\n');
+        doc.moveDown(0.2);
+      });
+    };
+
+    sectionTitle('Top 10 Riesgos');
+    if (risks.length === 0) {
+      doc.text('No se registran riesgos cargados en el sistema.');
+    } else {
+      renderTable(
+        [
+          { header: 'Descripción', width: 260 },
+          { header: 'Severidad', width: 100 },
+          { header: 'RAG', width: 80 },
+        ],
+        risks.map((risk, index) => [
+          `${index + 1}. ${risk.description}`,
+          `${risk.severity}`,
+          risk.rag ?? '-',
+        ])
+      );
+    }
+
+    sectionTitle('Top 10 Hallazgos');
+    if (findings.length === 0) {
+      doc.text('No existen hallazgos documentados en esta etapa.');
+    } else {
+      renderTable(
+        [
+          { header: 'Hallazgo', width: 260 },
+          { header: 'Impacto', width: 150 },
+          { header: 'Estado', width: 80 },
+        ],
+        findings.map((finding, index) => [
+          `${index + 1}. ${finding.title}`,
+          finding.impact,
+          finding.status,
+        ])
+      );
+    }
+
+    sectionTitle('KPIs relevantes');
+    if (kpis.length === 0) {
+      doc.text('Sin indicadores cargados.');
+    } else {
+      renderTable(
+        [
+          { header: 'Fecha', width: 100 },
+          { header: 'Indicador', width: 200 },
+          { header: 'Valor', width: 120 },
+        ],
+        kpis.map((kpi) => [
+          dayjs(kpi.date).format('DD/MM/YYYY'),
+          kpi.name,
+          `${kpi.value} ${kpi.unit ?? ''}`.trim(),
+        ])
+      );
+    }
 
     doc.end();
     await new Promise((resolve) => doc.on('finish', resolve));

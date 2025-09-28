@@ -16,7 +16,9 @@ interface ProjectSummary {
 }
 
 const TAB_TO_PATH: Record<string, string> = {
-  prekickoff: '',
+  summary: '',
+  prekickoff: 'prekickoff',
+  plan: 'plan',
   surveys: 'surveys',
   interviews: 'interviews',
   processes: 'procesos',
@@ -151,7 +153,7 @@ export const ProjectPage = () => {
   const segments = location.pathname.split('/').filter(Boolean);
   const subSegments = segments.slice(2);
   const pathKey = subSegments[0] ?? '';
-  const activeTab = PATH_TO_TAB[pathKey || '__root__'] ?? 'prekickoff';
+  const activeTab = PATH_TO_TAB[pathKey || '__root__'] ?? 'summary';
 
   const canCreateProject = role === 'admin' || role === 'consultor';
 

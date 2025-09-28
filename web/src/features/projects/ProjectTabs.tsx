@@ -18,6 +18,17 @@ interface TabComponentProps {
   projectId: string;
 }
 
+const makeSection = (title: string, description: string): FC<TabComponentProps> => {
+  const Section: FC<TabComponentProps> = () => (
+    <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+      <p className="text-sm text-slate-500">{description}</p>
+    </div>
+  );
+
+  return Section;
+};
+
 export const ProjectTabs: {
   value: string;
   label: string;

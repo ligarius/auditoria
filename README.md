@@ -10,13 +10,12 @@ Suite full-stack para gestionar auditorías multi-proyecto con módulos especial
 4. [Docker](#docker)
 5. [Semilla de datos (Dev)](#semilla-de-datos-dev)
 6. [Variables de entorno](#variables-de-entorno)
-7. [Usuarios demo](#usuarios-demo)
-8. [Módulos clave](#módulos-clave)
-9. [Scripts útiles](#scripts-útiles)
-10. [OpenAPI](#openapi)
-11. [Tests](#tests)
-12. [Seeds](#seeds)
-13. [Capturas](#capturas)
+7. [Módulos clave](#módulos-clave)
+8. [Scripts útiles](#scripts-útiles)
+9. [OpenAPI](#openapi)
+10. [Tests](#tests)
+11. [Seeds](#seeds)
+12. [Capturas](#capturas)
 
 ## Arquitectura
 
@@ -27,7 +26,7 @@ Suite full-stack para gestionar auditorías multi-proyecto con módulos especial
 
 - **API**: Express + Prisma (PostgreSQL), JWT auth, RBAC por Membership, exportaciones Excel/PDF, audit trail.
 - **Web**: React + Vite + Tailwind/shadcn ready para tabs funcionales por módulo.
-- **Infra**: Docker Compose con Postgres + API + Web.
+- **Infra**: Docker Compose con Postgres + API + Web + Superset para BI embebido.
 
 ## Requisitos
 
@@ -37,10 +36,12 @@ Suite full-stack para gestionar auditorías multi-proyecto con módulos especial
 ## Configuración local
 
 ```bash
-docker compose up -d --build
-docker compose exec api npm run migrate:deploy
+docker compose --env-file .env.development up -d --build
+# Opcional (solo en entornos de desarrollo):
 docker compose exec api npm run seed
 ```
+
+La API espera a que la base de datos esté disponible y aplica automáticamente `prisma migrate deploy` en cada arranque del contenedor.
 
 Una vez que la base de datos está lista, puedes iniciar los servicios de desarrollo individuales si prefieres trabajar fuera de Docker:
 
@@ -69,49 +70,42 @@ curl http://localhost:4000/api/health
 ## Docker
 
 ```bash
-docker compose up -d --build
+docker compose --env-file .env.development up -d --build
 ```
+
+Superset quedará disponible en `http://localhost:8088` para la administración de dashboards (ejecuta los comandos de bootstrap del contenedor según la documentación oficial antes de crear el dashboard embebido).
 
 ## Semilla de datos (Dev)
 
-1. Levanta servicios:
+1. Levanta servicios (usa el archivo `.env.development` o el que definas):
    ```bash
-   docker compose up -d --build
+   docker compose --env-file .env.development up -d --build
    ```
-2. Aplica migraciones:
-   ```bash
-   docker compose exec api npm run migrate:deploy
-   ```
-3. Ejecuta seed:
+2. Ejecuta seed:
    ```bash
    docker compose exec api npm run seed
    ```
 
-Usuarios por defecto:
-
-admin@demo.com / Cambiar123!
-consultor@demo.com / Cambiar123!
-cliente@demo.com / Cambiar123!
+Las credenciales que genera el seed están pensadas solo para entornos locales y pueden revisarse en `prisma/seed.ts`. Ajusta o
+reemplaza esos datos antes de compartir entornos compartidos.
 
 ## Variables de entorno
 
-Cada paquete incluye un archivo `.env.example` con los valores mínimos para iniciar el proyecto. Los más relevantes son:
+El repositorio incluye `.env.development` y `.env.production` como punto de partida para ejecutar `docker compose --env-file`. Personaliza los valores antes de desplegar en cualquier entorno real. Además, cada paquete mantiene su propio `.env.example` con los mínimos para entornos fuera de Docker. Los valores más relevantes son:
 
 | Variable | Descripción | Paquete |
 | --- | --- | --- |
 | `DATABASE_URL` | Cadena de conexión a PostgreSQL utilizada por Prisma. | `api` |
 | `JWT_SECRET` | Clave de firma para los tokens JWT. | `api` |
+| `SUPERSET_BASE_URL` | URL del servicio Superset accesible desde la API. | `api` |
+| `SUPERSET_USERNAME` / `SUPERSET_PASSWORD` | Credenciales de servicio para solicitar guest tokens a Superset. | `api` |
+| `SUPERSET_GUEST_USERNAME` | Alias utilizado en Superset para las sesiones embebidas. | `api` |
+| `SUPERSET_PORT` | Puerto expuesto del contenedor de Superset (por defecto 8088). | `docker-compose` |
 | `VITE_API_URL` | URL base de la API consumida por el front-end. | `web` |
+| `VITE_SUPERSET_DASHBOARD_ID` | ID del dashboard en Superset que se mostrará embebido. | `web` |
+| `VITE_SUPERSET_DATASET_IDS` | Lista separada por comas de dataset IDs para aplicar filtros RLS automáticos. | `web` |
 
-Recuerda copiar cada archivo `*.env.example` a `.env` y personalizarlo según tu entorno antes de iniciar los servicios.
-
-## Usuarios demo
-
-| Email | Rol | Contraseña |
-| --- | --- | --- |
-| admin@demo.com | Admin | Cambiar123! |
-| consultor@demo.com | Consultor | Cambiar123! |
-| cliente@demo.com | Cliente | Cambiar123! |
+Cuando trabajes fuera de Docker, copia cada archivo `*.env.example` a `.env` y personalízalo según tu entorno antes de iniciar los servicios.
 
 ## Módulos clave
 
@@ -127,6 +121,23 @@ Recuerda copiar cada archivo `*.env.example` a `.env` y personalizarlo según tu
 - KPIs y dashboard
 - Exportables Excel ZIP + PDF ejecutivo
 - Audit trail
+
+## Analítica y dashboards
+
+- Se creó el esquema `analytics` con vistas materializadas para acelerar KPIs internos:
+  - `analytics.responses_daily`
+  - `analytics.findings_by_severity`
+  - `analytics.progress_daily`
+- Puedes refrescar los datos cuando lo necesites desde PostgreSQL:
+
+  ```sql
+  REFRESH MATERIALIZED VIEW analytics.responses_daily;
+  REFRESH MATERIALIZED VIEW analytics.findings_by_severity;
+  REFRESH MATERIALIZED VIEW analytics.progress_daily;
+  ```
+
+- La API expone `POST /api/analytics/superset/guest-token` para generar tokens embebidos filtrados por `companyId` y `projectId`.
+- En el front (`/projects/:id` → pestaña **KPIs**) se muestran tarjetas Recharts con avance, aging PBC y severidad de hallazgos más un iframe Superset con guest token. Configura `VITE_SUPERSET_DASHBOARD_ID` y `VITE_SUPERSET_DATASET_IDS` para apuntar al dashboard/datasets que necesites.
 
 ## Scripts útiles
 
@@ -183,7 +194,7 @@ npm run test
 El seed `npm run seed` (o `docker compose exec api npm run seed`) crea:
 
 - Empresas demo **Nutrial** y **DemoCorp**.
-- Usuarios `admin@demo.com`, `consultor@demo.com` y `cliente@demo.com` con contraseña `Cambiar123!`.
+- Usuarios demo de ejemplo (consulta `prisma/seed.ts` para los detalles y reemplaza las credenciales en tus propios entornos).
 - Proyecto **Nutrial – Auditoría 2025** con `settings.enabledFeatures = ['reception', 'picking', 'dispatch']` y memberships según roles.
 
 ## Capturas

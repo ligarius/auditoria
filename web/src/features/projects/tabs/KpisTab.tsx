@@ -3,6 +3,10 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
 import { getErrorMessage } from '../../../lib/errors';
+import { EmbeddedDashboard } from '../../../modules/analytics/EmbeddedDashboard';
+import { KpiAvance } from '../../../modules/analytics/KpiAvance';
+import { KpiHallazgosSeveridad } from '../../../modules/analytics/KpiHallazgosSeveridad';
+import { KpiPbcAging } from '../../../modules/analytics/KpiPbcAging';
 
 interface KPI {
   id: string;
@@ -10,6 +14,12 @@ interface KPI {
   value: number;
   unit?: string | null;
   date: string;
+}
+
+interface AnalyticsKpiResponse {
+  progress: { day: string; pct: number }[];
+  findingsBySeverity: { severity: string; qty: number }[];
+  pbcAging: { bucket: string; label: string; count: number }[];
 }
 
 interface KpisTabProps {
@@ -31,6 +41,23 @@ export default function KpisTab({ projectId }: KpisTabProps) {
   const [form, setForm] = useState(defaultForm);
   const [editing, setEditing] = useState<KPI | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [companyLoading, setCompanyLoading] = useState(false);
+  const [insights, setInsights] = useState<AnalyticsKpiResponse | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState<string | null>(null);
+
+  const supersetDashboardId = import.meta.env.VITE_SUPERSET_DASHBOARD_ID;
+  const supersetDatasetIds = useMemo(() => {
+    const raw = import.meta.env.VITE_SUPERSET_DATASET_IDS as string | undefined;
+    if (!raw) return undefined;
+    return raw
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+  }, []);
+  const chartsLoading = companyLoading || insightsLoading;
+  const chartsError = !chartsLoading ? insightsError : null;
 
   const loadKpis = useCallback(async () => {
     try {
@@ -42,11 +69,76 @@ export default function KpisTab({ projectId }: KpisTabProps) {
     }
   }, [projectId]);
 
+  const loadProjectMeta = useCallback(async () => {
+    if (!projectId) return;
+    setCompanyLoading(true);
+    try {
+      const response = await api.get<{ company?: { id: string } | null }>(
+        `/projects/${projectId}`
+      );
+      const company = response.data?.company;
+      setCompanyId(company?.id ?? null);
+      setInsightsError(null);
+    } catch (error) {
+      setCompanyId(null);
+      setInsightsError(
+        getErrorMessage(error, 'No se pudo obtener la compañía del proyecto')
+      );
+    } finally {
+      setCompanyLoading(false);
+    }
+  }, [projectId]);
+
   useEffect(() => {
     if (projectId) {
       void loadKpis();
     }
   }, [projectId, loadKpis]);
+
+  useEffect(() => {
+    void loadProjectMeta();
+  }, [loadProjectMeta]);
+
+  useEffect(() => {
+    if (!projectId || !companyId) {
+      setInsights(null);
+      return;
+    }
+
+    let cancelled = false;
+    setInsightsLoading(true);
+    setInsightsError(null);
+
+    api
+      .get<AnalyticsKpiResponse>('/analytics/kpis', {
+        params: { projectId, companyId }
+      })
+      .then((response) => {
+        if (cancelled) return;
+        const payload = response.data ?? {
+          progress: [],
+          findingsBySeverity: [],
+          pbcAging: []
+        };
+        setInsights(payload);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setInsights(null);
+        setInsightsError(
+          getErrorMessage(error, 'No se pudieron cargar los KPIs operativos')
+        );
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setInsightsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, companyId]);
 
   const resetForm = () => setForm(defaultForm);
 
@@ -107,6 +199,39 @@ export default function KpisTab({ projectId }: KpisTabProps) {
           auditoría y sus impactos.
         </p>
       </div>
+
+      <section className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-3">
+          <KpiAvance
+            data={insights?.progress ?? []}
+            loading={chartsLoading}
+            error={chartsError}
+          />
+          <KpiPbcAging
+            data={insights?.pbcAging ?? []}
+            loading={chartsLoading}
+            error={chartsError}
+          />
+          <KpiHallazgosSeveridad
+            data={insights?.findingsBySeverity ?? []}
+            loading={chartsLoading}
+            error={chartsError}
+          />
+        </div>
+        {companyId && supersetDashboardId ? (
+          <EmbeddedDashboard
+            projectId={projectId}
+            companyId={companyId}
+            dashboardId={supersetDashboardId}
+            datasetIds={supersetDatasetIds}
+            height={620}
+          />
+        ) : companyId && !supersetDashboardId ? (
+          <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">
+            Configura VITE_SUPERSET_DASHBOARD_ID para habilitar el dashboard analítico embebido.
+          </div>
+        ) : null}
+      </section>
 
       {error && (
         <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">

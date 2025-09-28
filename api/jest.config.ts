@@ -10,7 +10,8 @@ const config: Config = {
   ],
   moduleNameMapper: {
     '^@core/(.*)$': '<rootDir>/src/core/$1',
-    '^@modules/(.*)$': '<rootDir>/src/modules/$1'
+    '^@modules/(.*)$': '<rootDir>/src/modules/$1',
+    '^(\\.{1,2}/.*)\\.js$': '$1'
   }
 };
 

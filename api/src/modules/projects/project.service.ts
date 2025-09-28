@@ -131,8 +131,8 @@ export const projectService = {
 
     const [
       dataItems,
-      surveys,
-      surveyResponses,
+      surveyLinks,
+      questionnaireResponsesCount,
       interviewsCount,
       processAssetsCount,
       inventoryCount,
@@ -150,8 +150,11 @@ export const projectService = {
       tasks,
     ] = await Promise.all([
       prisma.dataRequestItem.findMany({ where: { projectId: id } }),
-      prisma.survey.findMany({ where: { projectId: id }, include: { questions: true } }),
-      prisma.surveyResponse.count({ where: { survey: { projectId: id } } }),
+      prisma.surveyLink.findMany({
+        where: { projectId: id },
+        include: { version: { select: { formJson: true, status: true } } }
+      }),
+      prisma.questionnaireResponse.count({ where: { projectId: id } }),
       prisma.interview.count({ where: { projectId: id } }),
       prisma.processAsset.count({ where: { projectId: id } }),
       prisma.systemInventory.count({ where: { projectId: id } }),
@@ -175,6 +178,17 @@ export const projectService = {
     );
     const overdueDataItems = dataItems.filter(
       (item) => item.dueDate && new Date(item.dueDate) < now && item.status !== 'Recibido'
+    );
+
+    const activeSurveyLinks = surveyLinks.filter(
+      (link) => !link.expiresAt || link.expiresAt > now
+    );
+    const publishedSurveyLinks = surveyLinks.filter(
+      (link) => link.version.status === 'PUBLISHED'
+    );
+    const totalQuestions = surveyLinks.reduce(
+      (acc, link) => acc + countFormComponents(link.version.formJson),
+      0
     );
 
     const coverageAverage = coverages.length
@@ -226,10 +240,11 @@ export const projectService = {
           overdue: overdueDataItems.length,
         },
         surveys: {
-          total: surveys.length,
-          active: surveys.filter((survey) => survey.isActive).length,
-          questions: surveys.reduce((acc, survey) => acc + survey.questions.length, 0),
-          responses: surveyResponses,
+          total: surveyLinks.length,
+          active: activeSurveyLinks.length,
+          published: publishedSurveyLinks.length,
+          questions: totalQuestions,
+          responses: questionnaireResponsesCount,
         },
         interviews: {
           total: interviewsCount,
@@ -300,6 +315,32 @@ const extractEnabledFeatures = (settings: Prisma.JsonValue | null) => {
   const raw = settings as { enabledFeatures?: unknown } | null;
   const rawFeatures = Array.isArray(raw?.enabledFeatures) ? raw?.enabledFeatures ?? [] : [];
   return rawFeatures.filter((feature): feature is string => typeof feature === 'string');
+};
+
+const countFormComponents = (formJson: Prisma.JsonValue): number => {
+  const visited = new Set<unknown>();
+  const walk = (components: unknown): number => {
+    if (!components) return 0;
+    if (visited.has(components)) {
+      return 0;
+    }
+    visited.add(components);
+    if (Array.isArray(components)) {
+      return components.reduce((acc, item) => acc + walk(item), 0);
+    }
+    if (typeof components === 'object') {
+      const component = components as { components?: unknown; columns?: { components?: unknown }[] };
+      const nestedFromComponents = walk(component.components ?? []);
+      const nestedFromColumns = Array.isArray(component.columns)
+        ? component.columns.reduce((acc, col) => acc + walk(col.components ?? []), 0)
+        : 0;
+      return 1 + nestedFromComponents + nestedFromColumns;
+    }
+    return 0;
+  };
+
+  const form = formJson as { components?: unknown } | null;
+  return walk(form?.components ?? []);
 };
 
 const computeTco = (cost: {

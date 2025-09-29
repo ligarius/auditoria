@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { FormBuilder } from 'react-formio';
-import 'formiojs/dist/css/formio.full.css';
+
+import EmbeddedFormioBuilder from './EmbeddedFormioBuilder';
 
 import api from '../../lib/api';
 
@@ -34,7 +34,7 @@ export function Builder({
       ? { id: templateIdProp, name: initialName ?? '', type: initialType }
       : null
   );
-  const [formSchema, setFormSchema] = useState<Record<string, unknown>>(
+  const [formSchema] = useState<Record<string, unknown>>(
     initialForm ?? { ...DEFAULT_FORM_SCHEMA }
   );
   const [name, setName] = useState(initialName ?? '');
@@ -179,11 +179,7 @@ export function Builder({
           </div>
         </div>
         <div className="mt-4">
-          <FormBuilder
-            form={formSchema as unknown}
-            onChange={(schema: Record<string, unknown>) => setFormSchema(schema)}
-            options={{ noDefaultSubmitButton: true }}
-          />
+          <EmbeddedFormioBuilder />
         </div>
       </section>
 

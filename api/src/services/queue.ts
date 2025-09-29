@@ -44,11 +44,14 @@ const createQueueInfrastructure = (): QueueInitialization => {
     },
   };
 
-  const inviteQueue = new Queue<SurveyInviteJobData>('survey:invite', {
+  const queuePrefix = env.bullPrefix;
+
+  const inviteQueue = new Queue<SurveyInviteJobData>('survey-invite', {
     connection,
     defaultJobOptions,
+    prefix: queuePrefix,
   });
-  const reminderQueue = new Queue<SurveyReminderJobData>('survey:reminder', {
+  const reminderQueue = new Queue<SurveyReminderJobData>('survey-reminder', {
     connection,
     defaultJobOptions: {
       ...defaultJobOptions,
@@ -57,13 +60,14 @@ const createQueueInfrastructure = (): QueueInitialization => {
         delay: 15000,
       },
     },
+    prefix: queuePrefix,
   });
 
   const workers: Worker[] = [];
   let workersInitialized = false;
 
-  const buildReminderJobId = (surveyLinkId: string) => `survey:reminder:${surveyLinkId}`;
-  const buildInviteJobId = (surveyLinkId: string) => `survey:invite:${surveyLinkId}`;
+  const buildReminderJobId = (surveyLinkId: string) => `survey-reminder:${surveyLinkId}`;
+  const buildInviteJobId = (surveyLinkId: string) => `survey-invite:${surveyLinkId}`;
 
   const initializeQueueWorkers = async () => {
     if (workersInitialized) {
@@ -73,7 +77,7 @@ const createQueueInfrastructure = (): QueueInitialization => {
     await Promise.all([inviteQueue.waitUntilReady(), reminderQueue.waitUntilReady()]);
 
     const inviteWorker = new Worker<SurveyInviteJobData>(
-      'survey:invite',
+      'survey-invite',
       async (job) => {
         const link = await prisma.surveyLink.findUnique({
           where: { id: job.data.surveyLinkId },
@@ -108,11 +112,11 @@ const createQueueInfrastructure = (): QueueInitialization => {
           'Invitación de encuesta preparada para envío',
         );
       },
-      { connection },
+      { connection, prefix: queuePrefix },
     );
 
     const reminderWorker = new Worker<SurveyReminderJobData>(
-      'survey:reminder',
+      'survey-reminder',
       async (job) => {
         const link = await prisma.surveyLink.findUnique({
           where: { id: job.data.surveyLinkId },
@@ -163,7 +167,7 @@ const createQueueInfrastructure = (): QueueInitialization => {
           'Recordatorio de encuesta enviado',
         );
       },
-      { connection },
+      { connection, prefix: queuePrefix },
     );
 
     workers.push(inviteWorker, reminderWorker);

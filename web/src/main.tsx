@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import { ProjectPage } from './pages/ProjectPage';
 import ProjectsRedirect from './pages/ProjectsRedirect';
 import AdminDashboard from './pages/AdminDashboard';
+import FormRunner from './modules/pbc/FormRunner';
 import './index.css';
 
 export function LegacyReceptionRedirect() {
@@ -17,6 +18,7 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/encuesta/:token" element={<FormRunner />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<ProjectsRedirect />} />
           <Route path="/projects" element={<ProjectsRedirect />} />

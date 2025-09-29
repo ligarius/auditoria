@@ -39,7 +39,7 @@ async function main() {
     create: {
       companyId: nutrial.id,
       name: 'Nutrial – Auditoría 2025',
-      status: 'active',
+      status: 'PLANNING',
       ownerId: admin.id,
       settings: { enabledFeatures: ['reception', 'picking', 'dispatch'] },
       memberships: {

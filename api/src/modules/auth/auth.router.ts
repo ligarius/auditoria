@@ -1,10 +1,11 @@
 import { Router } from 'express';
 
+import { loginRateLimiter } from '../../core/middleware/rate-limit.js';
 import { authService } from './auth.service.js';
 
 const authRouter = Router();
 
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', loginRateLimiter, async (req, res) => {
   const { email, password } = req.body;
   const tokens = await authService.login(email, password);
   res.json(tokens);

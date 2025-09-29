@@ -13,6 +13,7 @@ import DecisionsTab from './tabs/DecisionsTab';
 import KpisTab from './tabs/KpisTab';
 import RisksTab from './tabs/RisksTab';
 import FindingsTab from './tabs/FindingsTab';
+import WorkflowTab from './tabs/WorkflowTab';
 
 interface TabComponentProps {
   projectId: string;
@@ -35,6 +36,7 @@ export const ProjectTabs: {
   component: FC<TabComponentProps>;
 }[] = [
   { value: 'summary', label: 'Resumen', component: SummaryTab },
+  { value: 'workflow', label: 'Workflow', component: WorkflowTab },
   { value: 'prekickoff', label: 'Datos Pre-Kickoff', component: PreKickoffTab },
   { value: 'plan', label: 'Plan del Proyecto', component: ProjectPlanTab },
   { value: 'surveys', label: 'Encuestas', component: SurveysTab },

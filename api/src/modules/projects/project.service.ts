@@ -1,9 +1,37 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma, ProjectWorkflowState } from '@prisma/client';
 
 import { prisma } from '../../core/config/db.js';
 import { HttpError } from '../../core/errors/http-error.js';
 import { auditService } from '../audit/audit.service.js';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+
+const WORKFLOW_STATES: readonly ProjectWorkflowState[] = [
+  'PLANNING',
+  'FIELDWORK',
+  'REPORT',
+  'CLOSE',
+];
+
+const WORKFLOW_TRANSITIONS: Record<ProjectWorkflowState, ProjectWorkflowState[]> = {
+  PLANNING: ['FIELDWORK'],
+  FIELDWORK: ['REPORT'],
+  REPORT: ['CLOSE'],
+  CLOSE: [],
+};
+
+const coerceWorkflowState = (
+  value: unknown,
+  defaultState: ProjectWorkflowState = 'PLANNING',
+): ProjectWorkflowState => {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return defaultState;
+  }
+  const normalized = value.toUpperCase() as ProjectWorkflowState;
+  if ((WORKFLOW_STATES as readonly string[]).includes(normalized)) {
+    return normalized;
+  }
+  throw new HttpError(400, 'Estado de proyecto inválido');
+};
 
 export const projectService = {
   async listByUser(userId: string, role: string) {
@@ -38,7 +66,7 @@ export const projectService = {
     data: {
       companyId: string;
       name: string;
-      status: string;
+      status?: ProjectWorkflowState | string;
       startDate?: Date;
       endDate?: Date;
       settings?: Prisma.JsonValue;
@@ -50,10 +78,14 @@ export const projectService = {
       throw new HttpError(404, 'Empresa no encontrada');
     }
 
+    const { status: statusInput, settings, ...rest } = data;
+    const status = coerceWorkflowState(statusInput);
+
     const payload = {
-      ...data,
+      ...rest,
+      status,
       ownerId: user.id,
-      settings: data.settings ?? { enabledFeatures: [] }
+      settings: settings ?? { enabledFeatures: [] }
     } satisfies Prisma.ProjectUncheckedCreateInput;
 
     const project = await prisma.project.create({
@@ -81,6 +113,9 @@ export const projectService = {
     if (user.role !== 'admin' && before.ownerId !== user.id) {
       throw new HttpError(403, 'Solo el propietario puede actualizar el proyecto');
     }
+    if (Object.prototype.hasOwnProperty.call(data, 'status')) {
+      throw new HttpError(400, 'El estado del proyecto debe modificarse mediante el workflow');
+    }
     const project = await prisma.project.update({ where: { id }, data });
     await auditService.record('Project', id, 'UPDATE', user.id, id, before, project);
     return project;
@@ -103,6 +138,84 @@ export const projectService = {
       create: { userId: user.id, projectId, role }
     });
     return user;
+  },
+
+  async getWorkflow(projectId: string, user: { id: string; role: string }) {
+    await enforceProjectAccess(user, projectId);
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { status: true, workflowDefinition: true }
+    });
+    if (!project) {
+      throw new HttpError(404, 'Proyecto no encontrado');
+    }
+    return { state: project.status, definition: project.workflowDefinition };
+  },
+
+  async saveWorkflowDiagram(
+    projectId: string,
+    definition: Prisma.InputJsonValue,
+    user: { id: string; role: string }
+  ) {
+    await enforceProjectAccess(user, projectId);
+    const before = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { workflowDefinition: true, status: true }
+    });
+    if (!before) {
+      throw new HttpError(404, 'Proyecto no encontrado');
+    }
+    const updated = await prisma.project.update({
+      where: { id: projectId },
+      data: { workflowDefinition: definition }
+    });
+    await auditService.record(
+      'Project',
+      projectId,
+      'WORKFLOW_DIAGRAM',
+      user.id,
+      projectId,
+      before.workflowDefinition,
+      updated.workflowDefinition
+    );
+    return { state: updated.status, definition: updated.workflowDefinition };
+  },
+
+  async transitionWorkflow(
+    projectId: string,
+    nextStateInput: ProjectWorkflowState | string,
+    user: { id: string; role: string }
+  ) {
+    await enforceProjectAccess(user, projectId);
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { status: true }
+    });
+    if (!project) {
+      throw new HttpError(404, 'Proyecto no encontrado');
+    }
+    const nextState = coerceWorkflowState(nextStateInput, project.status);
+    if (project.status === nextState) {
+      return { state: project.status };
+    }
+    const allowedTargets = WORKFLOW_TRANSITIONS[project.status];
+    if (!allowedTargets.includes(nextState)) {
+      throw new HttpError(400, 'Transición de estado no permitida');
+    }
+    const updated = await prisma.project.update({
+      where: { id: projectId },
+      data: { status: nextState }
+    });
+    await auditService.record(
+      'Project',
+      projectId,
+      'WORKFLOW_STATE',
+      user.id,
+      projectId,
+      project.status,
+      updated.status
+    );
+    return { state: updated.status };
   },
 
   async getFeatures(id: string, user: { id: string; role: string }) {

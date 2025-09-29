@@ -24,8 +24,8 @@ model Project {
   company                Company                 @relation(fields: [companyId], references: [id])
   name                   String
   status                 ProjectWorkflowState    @default(PLANNING)
-  ownerId                String
-  owner                  User                    @relation("ProjectOwner", fields: [ownerId], references: [id])
+  ownerId                String?
+  owner                  User?                   @relation("ProjectOwner", fields: [ownerId], references: [id])
   settings               Json?
   startDate              DateTime?
   endDate                DateTime?

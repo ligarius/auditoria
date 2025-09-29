@@ -4,6 +4,7 @@ import { HttpError } from '../errors/http-error.js';
 import { verifyAccessToken } from '../utils/jwt.js';
 import { prisma } from '../config/db.js';
 import { enforceProjectAccess } from '../security/enforce-project-access.js';
+import { ensureScopedAccess } from '../security/enforce-scope.js';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -32,6 +33,7 @@ export const authenticate = async (req: AuthenticatedRequest, _res: Response, ne
       return acc;
     }, {});
     req.user = { id: payload.sub, email: payload.email, role: payload.role, projects: projectRoles };
+    await ensureScopedAccess(req);
     next();
   } catch (error) {
     throw new HttpError(401, 'Token inválido', error);

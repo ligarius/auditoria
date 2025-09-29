@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET ?? 'secret';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'refresh';
+import { env } from '../config/env.js';
+
+const JWT_SECRET = env.jwtSecret;
+const JWT_REFRESH_SECRET = env.jwtRefreshSecret;
 
 export interface JwtPayload {
   sub: string;

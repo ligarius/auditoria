@@ -1,10 +1,12 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '../../core/config/db.js';
+import { logger } from '../../core/config/logger.js';
 import { HttpError } from '../../core/errors/http-error.js';
 import type { AuthenticatedRequest } from '../../core/middleware/auth.js';
 import { scoringService } from '../../services/scoring.js';
 import { tokenService } from '../../services/token.js';
+import { queueService } from '../../services/queue.js';
 
 interface UserContext {
   id: string;
@@ -203,7 +205,7 @@ export const formsService = {
 
     const token = tokenService.generate(24);
 
-    return prisma.surveyLink.create({
+    const link = await prisma.surveyLink.create({
       data: {
         versionId,
         projectId: input.projectId,
@@ -214,6 +216,15 @@ export const formsService = {
         createdById: user.id
       }
     });
+
+    try {
+      await queueService.enqueueSurveyInvite({ surveyLinkId: link.id });
+      await queueService.scheduleSurveyReminder({ surveyLinkId: link.id });
+    } catch (error) {
+      logger.warn({ err: error, surveyLinkId: link.id }, 'No se pudieron programar recordatorios de encuesta');
+    }
+
+    return link;
   },
 
   async getFormByToken(token: string) {
@@ -298,6 +309,12 @@ export const formsService = {
 
       return createdResponse;
     });
+
+    try {
+      await queueService.cancelSurveyReminder(link.id);
+    } catch (error) {
+      logger.warn({ err: error, surveyLinkId: link.id }, 'No se pudo cancelar el recordatorio de encuesta');
+    }
 
     return {
       id: response.id,

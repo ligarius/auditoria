@@ -17,6 +17,7 @@ interface ProjectSummary {
 
 const TAB_TO_PATH: Record<string, string> = {
   summary: '',
+  workflow: 'workflow',
   prekickoff: 'prekickoff',
   plan: 'plan',
   surveys: 'surveys',
@@ -71,7 +72,7 @@ export const ProjectPage = () => {
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectStatus, setNewProjectStatus] = useState('En progreso');
+  const [newProjectStatus, setNewProjectStatus] = useState('PLANNING');
   const [selectedCompanyId, setSelectedCompanyId] = useState<
     string | undefined
   >(undefined);
@@ -208,7 +209,7 @@ export const ProjectPage = () => {
   const closeModal = () => {
     setShowModal(false);
     setNewProjectName('');
-    setNewProjectStatus('En progreso');
+      setNewProjectStatus('PLANNING');
     setSelectedTemplate('distribution');
     setSelectedCompanyId(undefined);
     setCreateError(null);
@@ -387,9 +388,10 @@ export const ProjectPage = () => {
                   onChange={(event) => setNewProjectStatus(event.target.value)}
                   className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 >
-                  <option value="Planificado">Planificado</option>
-                  <option value="En progreso">En progreso</option>
-                  <option value="Cerrado">Cerrado</option>
+                  <option value="PLANNING">PLANNING</option>
+                  <option value="FIELDWORK">FIELDWORK</option>
+                  <option value="REPORT">REPORT</option>
+                  <option value="CLOSE">CLOSE</option>
                 </select>
               </div>
               <div>

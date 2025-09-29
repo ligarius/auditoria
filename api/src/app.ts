@@ -17,6 +17,7 @@ import { exportRouter } from './modules/export/export.router.js';
 import { auditRouter } from './modules/audit/audit.router.js';
 import { fileRouter } from './modules/files/file.router.js';
 import { projectPlanRouter } from './modules/projectPlan/project-plan.router.js';
+import { reportRouter } from './modules/reports/report.router.js';
 
 const appRouter = Router();
 
@@ -37,5 +38,6 @@ appRouter.use('/export', exportRouter);
 appRouter.use('/audit', auditRouter);
 appRouter.use('/files', fileRouter);
 appRouter.use('/project-plan', projectPlanRouter);
+appRouter.use('/reports', reportRouter);
 
 export { appRouter };

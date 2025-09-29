@@ -130,11 +130,615 @@ async function main() {
     },
   });
 
+  const dataRequests = [
+    {
+      id: 'seed-datareq-finanzas-estados',
+      category: 'Finanzas',
+      title: 'Estados financieros 2024',
+      description: 'Estados financieros auditados del ejercicio 2024.',
+      format: 'PDF',
+      ownerName: 'CFO',
+      dueDate: new Date('2025-01-10T00:00:00.000Z'),
+      status: 'En progreso',
+      notes: 'Incluir notas de gestión y comparativo vs. presupuesto.',
+    },
+    {
+      id: 'seed-datareq-finanzas-capex',
+      category: 'Finanzas',
+      title: 'Proyección CAPEX 2025',
+      description: 'Escenario de inversión y renovación tecnológica.',
+      format: 'XLSX',
+      ownerName: 'Controller',
+      dueDate: new Date('2025-01-15T00:00:00.000Z'),
+      status: 'Pendiente',
+      notes: 'Agregar desglose de automatizaciones planificadas.',
+    },
+    {
+      id: 'seed-datareq-operaciones-kpi',
+      category: 'Operaciones',
+      title: 'KPI de recepción inbound',
+      description: 'Dashboard con performance semanal de la recepción inbound.',
+      format: 'Dashboard',
+      ownerName: 'Jefe CD',
+      dueDate: null,
+      status: 'Completado',
+      notes: 'Adjuntar captura semanal en PDF.',
+    },
+    {
+      id: 'seed-datareq-operaciones-turnos',
+      category: 'Operaciones',
+      title: 'Matriz de turnos peak',
+      description: 'Asignación de turnos y refuerzos en semanas de alta demanda.',
+      format: 'Excel',
+      ownerName: 'PMO',
+      dueDate: new Date('2025-01-12T00:00:00.000Z'),
+      status: 'Pendiente',
+      notes: 'Priorizar semanas 3 y 4 de enero.',
+    },
+    {
+      id: 'seed-datareq-tecnologia-integraciones',
+      category: 'Tecnología',
+      title: 'Inventario integraciones ERP-WMS',
+      description: 'Listado actualizado de integraciones activas entre ERP y WMS.',
+      format: 'Spreadsheet',
+      ownerName: 'Arquitecto TI',
+      dueDate: new Date('2025-01-14T00:00:00.000Z'),
+      status: 'En progreso',
+      notes: 'Detallar frecuencia, protocolos y owner funcional.',
+    },
+    {
+      id: 'seed-datareq-tecnologia-accesos',
+      category: 'Tecnología',
+      title: 'Matriz de accesos críticos',
+      description: 'Roles con acceso privilegiado en sistemas críticos.',
+      format: 'CSV',
+      ownerName: 'Seguridad TI',
+      dueDate: new Date('2025-01-12T00:00:00.000Z'),
+      status: 'Pendiente',
+      notes: 'Incluir evidencia de revisión trimestral.',
+    },
+  ];
+
+  for (const item of dataRequests) {
+    await prisma.dataRequestItem.upsert({
+      where: { id: item.id },
+      update: {
+        ...item,
+        projectId: nutrialProject.id,
+      },
+      create: {
+        ...item,
+        projectId: nutrialProject.id,
+      },
+    });
+  }
+
+  const processAssets = [
+    {
+      id: 'seed-process-reception-flow',
+      type: 'BPMN',
+      title: 'Flujo recepción inbound',
+      url: 'https://example.com/docs/recepcion-bpmn',
+    },
+    {
+      id: 'seed-process-picking-flow',
+      type: 'BPMN',
+      title: 'Flujo picking alta exactitud',
+      url: 'https://example.com/docs/picking-bpmn',
+    },
+    {
+      id: 'seed-process-dispatch-flow',
+      type: 'BPMN',
+      title: 'Flujo despacho y devoluciones',
+      url: 'https://example.com/docs/despacho-bpmn',
+    },
+  ];
+
+  for (const asset of processAssets) {
+    await prisma.processAsset.upsert({
+      where: { id: asset.id },
+      update: {
+        ...asset,
+        projectId: nutrialProject.id,
+      },
+      create: {
+        ...asset,
+        projectId: nutrialProject.id,
+      },
+    });
+  }
+
+  await prisma.systemInventory.upsert({
+    where: { id: 'seed-system-logitrack' },
+    update: {
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      type: 'SaaS',
+      ownerArea: 'Operaciones',
+      usersActive: 250,
+      criticality: 'Alta',
+      objective: 'Gestionar el flujo de recepción, picking y despacho.',
+      modulesUsed: 'Recepción, Picking, Despacho',
+      hosting: 'Nube pública',
+      vendor: 'LogiTrack Inc.',
+      supportActive: true,
+      notes: 'Sistema core de operación logística.',
+    },
+    create: {
+      id: 'seed-system-logitrack',
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      type: 'SaaS',
+      ownerArea: 'Operaciones',
+      usersActive: 250,
+      criticality: 'Alta',
+      objective: 'Gestionar el flujo de recepción, picking y despacho.',
+      modulesUsed: 'Recepción, Picking, Despacho',
+      hosting: 'Nube pública',
+      vendor: 'LogiTrack Inc.',
+      supportActive: true,
+      notes: 'Sistema core de operación logística.',
+    },
+  });
+
+  await prisma.processCoverage.upsert({
+    where: { id: 'seed-coverage-cross-docking' },
+    update: {
+      projectId: nutrialProject.id,
+      process: 'Cross-docking',
+      subProcess: 'Devoluciones',
+      systemNameRef: 'LogiTrack',
+      coverage: 85,
+      evidence: 'Reporte mensual de cobertura.',
+      hasGap: true,
+      gapDesc: 'Devoluciones sin automatizar requieren intervención manual.',
+      impact: 'Demoras en reposición a tiendas.',
+      frequency: 'Diario',
+      owner: 'Jefe CD',
+    },
+    create: {
+      id: 'seed-coverage-cross-docking',
+      projectId: nutrialProject.id,
+      process: 'Cross-docking',
+      subProcess: 'Devoluciones',
+      systemNameRef: 'LogiTrack',
+      coverage: 85,
+      evidence: 'Reporte mensual de cobertura.',
+      hasGap: true,
+      gapDesc: 'Devoluciones sin automatizar requieren intervención manual.',
+      impact: 'Demoras en reposición a tiendas.',
+      frequency: 'Diario',
+      owner: 'Jefe CD',
+    },
+  });
+
+  await prisma.integration.upsert({
+    where: { id: 'seed-integration-erp-wms' },
+    update: {
+      projectId: nutrialProject.id,
+      source: 'ERP',
+      target: 'LogiTrack WMS',
+      type: 'REST',
+      periodicity: 'Diario',
+      dailyVolume: 18000,
+      format: 'JSON',
+      stability: 95,
+      notes: 'Replica órdenes de venta y actualiza inventario.',
+    },
+    create: {
+      id: 'seed-integration-erp-wms',
+      projectId: nutrialProject.id,
+      source: 'ERP',
+      target: 'LogiTrack WMS',
+      type: 'REST',
+      periodicity: 'Diario',
+      dailyVolume: 18000,
+      format: 'JSON',
+      stability: 95,
+      notes: 'Replica órdenes de venta y actualiza inventario.',
+    },
+  });
+
+  await prisma.dataModelQuality.upsert({
+    where: { id: 'seed-dataquality-maestro-productos' },
+    update: {
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      entity: 'Maestro de productos',
+      hasCriticalFields: true,
+      dataQuality: 88,
+      hasBusinessRules: true,
+      historyYears: 5,
+      traceability: true,
+      reports: 'Dashboards semanales de exactitud',
+      inventoryAccuracyPct: 97.5,
+      notes: 'Revisión mensual con Operaciones.',
+    },
+    create: {
+      id: 'seed-dataquality-maestro-productos',
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      entity: 'Maestro de productos',
+      hasCriticalFields: true,
+      dataQuality: 88,
+      hasBusinessRules: true,
+      historyYears: 5,
+      traceability: true,
+      reports: 'Dashboards semanales de exactitud',
+      inventoryAccuracyPct: 97.5,
+      notes: 'Revisión mensual con Operaciones.',
+    },
+  });
+
+  await prisma.securityPosture.upsert({
+    where: { id: 'seed-security-logitrack' },
+    update: {
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      userLifecycle: 'Altas/Bajas gestionadas vía Service Desk semanal.',
+      rbac: 'Roles segregados por proceso y centro.',
+      mfa: true,
+      auditLogs: true,
+      backupsRPO: '4 horas',
+      backupsRTO: '2 horas',
+      tlsInTransit: true,
+      encryptionAtRest: false,
+      openVulns: 'Cifrado en reposo pendiente en base histórica.',
+      notes: 'Plan de cierre definido para Q1 2025.',
+    },
+    create: {
+      id: 'seed-security-logitrack',
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      userLifecycle: 'Altas/Bajas gestionadas vía Service Desk semanal.',
+      rbac: 'Roles segregados por proceso y centro.',
+      mfa: true,
+      auditLogs: true,
+      backupsRPO: '4 horas',
+      backupsRTO: '2 horas',
+      tlsInTransit: true,
+      encryptionAtRest: false,
+      openVulns: 'Cifrado en reposo pendiente en base histórica.',
+      notes: 'Plan de cierre definido para Q1 2025.',
+    },
+  });
+
+  await prisma.performance.upsert({
+    where: { id: 'seed-performance-logitrack' },
+    update: {
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      peakUsers: 450,
+      latencyMs: 180,
+      availabilityPct: 99.2,
+      incidents90d: 1,
+      topRootCause: 'Sobrecarga en batch de integración nocturna.',
+      notes: 'Plan de capacity management en ejecución.',
+    },
+    create: {
+      id: 'seed-performance-logitrack',
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      peakUsers: 450,
+      latencyMs: 180,
+      availabilityPct: 99.2,
+      incidents90d: 1,
+      topRootCause: 'Sobrecarga en batch de integración nocturna.',
+      notes: 'Plan de capacity management en ejecución.',
+    },
+  });
+
+  await prisma.costLicensing.upsert({
+    where: { id: 'seed-costs-logitrack' },
+    update: {
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      model: 'SaaS',
+      usersLicenses: 260,
+      costAnnual: 65000,
+      implUSD: 120000,
+      supportUSD: 18000,
+    },
+    create: {
+      id: 'seed-costs-logitrack',
+      projectId: nutrialProject.id,
+      systemName: 'LogiTrack',
+      model: 'SaaS',
+      usersLicenses: 260,
+      costAnnual: 65000,
+      implUSD: 120000,
+      supportUSD: 18000,
+    },
+  });
+
+  const risks = [
+    {
+      id: 'seed-risk-continuidad-wms',
+      category: 'Continuidad operacional',
+      description: 'Caída del WMS en ventana peak',
+      probability: 4,
+      impact: 5,
+      severity: 20,
+      rag: 'Rojo',
+      mitigation: 'Implementar plan de failover activo-activo',
+      owner: 'CIO',
+      dueDate: new Date('2025-02-15T00:00:00.000Z'),
+    },
+    {
+      id: 'seed-risk-sla-recepcion',
+      category: 'Cumplimiento',
+      description: 'Incumplimiento SLA recepción proveedores clave',
+      probability: 3,
+      impact: 4,
+      severity: 12,
+      rag: 'Ámbar',
+      mitigation: 'Automatizar alertas tempranas y reservas de dock',
+      owner: 'Jefe Recepción',
+      dueDate: new Date('2025-01-31T00:00:00.000Z'),
+    },
+    {
+      id: 'seed-risk-credenciales-compartidas',
+      category: 'Seguridad',
+      description: 'Credenciales compartidas en centros regionales',
+      probability: 2,
+      impact: 3,
+      severity: 6,
+      rag: 'Verde',
+      mitigation: 'Completar enrolamiento MFA y capacitaciones',
+      owner: 'Seguridad TI',
+      dueDate: new Date('2025-02-20T00:00:00.000Z'),
+    },
+  ];
+
+  for (const risk of risks) {
+    await prisma.risk.upsert({
+      where: { id: risk.id },
+      update: {
+        ...risk,
+        projectId: nutrialProject.id,
+      },
+      create: {
+        ...risk,
+        projectId: nutrialProject.id,
+      },
+    });
+  }
+
+  const findings = [
+    {
+      id: 'seed-finding-checklist-recepcion',
+      title: 'Estandarizar checklist de recepción nocturna',
+      evidence: 'Revisión de procedimientos 09/01/2025',
+      impact: 'Alto',
+      recommendation: 'Alinear checklist único con foco en controles críticos.',
+      quickWin: true,
+      effortDays: 5,
+      responsibleR: 'Jefe CD',
+      accountableA: 'Director Operaciones',
+      targetDate: new Date('2025-02-05T00:00:00.000Z'),
+      status: 'En progreso',
+    },
+    {
+      id: 'seed-finding-conciliacion-inventario',
+      title: 'Automatizar conciliación inventario físico vs. sistema',
+      evidence: 'Gap detectado en conteos cíclicos.',
+      impact: 'Alto',
+      recommendation: 'Implementar conciliación diaria con alertas.',
+      quickWin: false,
+      effortDays: 20,
+      responsibleR: 'Líder Inventarios',
+      accountableA: 'CFO',
+      targetDate: new Date('2025-03-15T00:00:00.000Z'),
+      status: 'Open',
+    },
+    {
+      id: 'seed-finding-sso-wms',
+      title: 'Activar Single Sign-On en WMS legacy',
+      evidence: 'Usuarios mantienen credenciales duplicadas.',
+      impact: 'Medio',
+      recommendation: 'Integrar WMS a IdP corporativo.',
+      quickWin: true,
+      effortDays: 8,
+      responsibleR: 'Arquitecto TI',
+      accountableA: 'CIO',
+      targetDate: new Date('2025-02-28T00:00:00.000Z'),
+      status: 'Open',
+    },
+  ];
+
+  for (const finding of findings) {
+    await prisma.finding.upsert({
+      where: { id: finding.id },
+      update: {
+        ...finding,
+        projectId: nutrialProject.id,
+      },
+      create: {
+        ...finding,
+        projectId: nutrialProject.id,
+      },
+    });
+  }
+
+  const pocs = [
+    {
+      id: 'seed-poc-rpa-inbound',
+      item: 'Automatización RPA de inbound',
+      description: 'Robot para acelerar digitación y validación documental.',
+      owner: 'PMO logística',
+      date: new Date('2025-01-29T00:00:00.000Z'),
+      status: 'Pending',
+    },
+    {
+      id: 'seed-poc-iot-temperatura',
+      item: 'Piloto sensores IoT temperatura',
+      description: 'Monitoreo continuo de cadena de frío.',
+      owner: 'Operaciones',
+      date: new Date('2025-02-10T00:00:00.000Z'),
+      status: 'Planned',
+    },
+  ];
+
+  for (const poc of pocs) {
+    await prisma.pOCItem.upsert({
+      where: { id: poc.id },
+      update: {
+        ...poc,
+        projectId: nutrialProject.id,
+      },
+      create: {
+        ...poc,
+        projectId: nutrialProject.id,
+      },
+    });
+  }
+
+  const decisions = [
+    {
+      id: 'seed-decision-iot-recepcion',
+      date: new Date('2025-01-11T00:00:00.000Z'),
+      topic: 'Adoptar control de temperatura IoT en recepción',
+      decision: 'Aprobado',
+      rationale: 'ROI estimado menor a 12 meses, reduce mermas.',
+      approverA: 'Director de Operaciones',
+    },
+    {
+      id: 'seed-decision-reporte-powerbi',
+      date: new Date('2025-01-08T00:00:00.000Z'),
+      topic: 'Migrar reportería KPI a PowerBI único',
+      decision: 'Aprobado',
+      rationale: 'Consolidación de reportes y gobierno de datos.',
+      approverA: 'CFO',
+    },
+  ];
+
+  for (const decision of decisions) {
+    await prisma.decisionLog.upsert({
+      where: { id: decision.id },
+      update: {
+        ...decision,
+        projectId: nutrialProject.id,
+      },
+      create: {
+        ...decision,
+        projectId: nutrialProject.id,
+      },
+    });
+  }
+
+  const kpis = [
+    {
+      id: 'seed-kpi-plan-remediacion',
+      name: 'Nivel de cumplimiento plan de remediación',
+      value: 78,
+      unit: '%',
+      date: new Date('2025-01-13T00:00:00.000Z'),
+    },
+    {
+      id: 'seed-kpi-descarga-promedio',
+      name: 'Tiempo promedio de descarga',
+      value: 42,
+      unit: 'minutos',
+      date: new Date('2025-01-10T00:00:00.000Z'),
+    },
+    {
+      id: 'seed-kpi-exactitud-inventario',
+      name: 'Exactitud de inventario WMS vs. físico',
+      value: 97.5,
+      unit: '%',
+      date: new Date('2025-01-08T00:00:00.000Z'),
+    },
+    {
+      id: 'seed-kpi-desviacion-costos',
+      name: 'Desviación de costos logísticos',
+      value: 5.2,
+      unit: '% sobre presupuesto',
+      date: new Date('2025-01-12T00:00:00.000Z'),
+    },
+    {
+      id: 'seed-kpi-satisfaccion-b2b',
+      name: 'Satisfacción encuesta clientes B2B',
+      value: 4.4,
+      unit: '/5',
+      date: new Date('2025-01-09T00:00:00.000Z'),
+    },
+    {
+      id: 'seed-kpi-incidentes-ti',
+      name: 'Incidentes críticos TI en 30 días',
+      value: 1,
+      unit: 'casos',
+      date: new Date('2025-01-07T00:00:00.000Z'),
+    },
+  ];
+
+  for (const kpi of kpis) {
+    await prisma.kPI.upsert({
+      where: { id: kpi.id },
+      update: {
+        ...kpi,
+        projectId: nutrialProject.id,
+      },
+      create: {
+        ...kpi,
+        projectId: nutrialProject.id,
+      },
+    });
+  }
+
+  await prisma.reception.upsert({
+    where: { id: 'seed-reception-2025-01-05' },
+    update: {
+      projectId: nutrialProject.id,
+      date: new Date('2025-01-05T08:30:00.000Z'),
+      truckPlate: 'BCXZ12',
+      carrier: 'TransLog',
+      dock: 'D-04',
+      tArriveGate: new Date('2025-01-05T08:05:00.000Z'),
+      tArriveDock: new Date('2025-01-05T08:20:00.000Z'),
+      tUnloadStart: new Date('2025-01-05T08:32:00.000Z'),
+      tUnloadEnd: new Date('2025-01-05T09:05:00.000Z'),
+      tExit: new Date('2025-01-05T09:15:00.000Z'),
+      eppOk: true,
+      docsOk: true,
+      sealNumberDeclared: '778899',
+      sealNumberObserved: '778899',
+      tempAtOpen: 4.1,
+      issues: 'Sin incidencias.',
+      inventoryMatchPct: 99.4,
+      actions: 'Registrar en dashboard semanal.',
+    },
+    create: {
+      id: 'seed-reception-2025-01-05',
+      projectId: nutrialProject.id,
+      date: new Date('2025-01-05T08:30:00.000Z'),
+      truckPlate: 'BCXZ12',
+      carrier: 'TransLog',
+      dock: 'D-04',
+      tArriveGate: new Date('2025-01-05T08:05:00.000Z'),
+      tArriveDock: new Date('2025-01-05T08:20:00.000Z'),
+      tUnloadStart: new Date('2025-01-05T08:32:00.000Z'),
+      tUnloadEnd: new Date('2025-01-05T09:05:00.000Z'),
+      tExit: new Date('2025-01-05T09:15:00.000Z'),
+      eppOk: true,
+      docsOk: true,
+      sealNumberDeclared: '778899',
+      sealNumberObserved: '778899',
+      tempAtOpen: 4.1,
+      issues: 'Sin incidencias.',
+      inventoryMatchPct: 99.4,
+      actions: 'Registrar en dashboard semanal.',
+    },
+  });
+
   console.log('Seed OK', {
     companies: [nutrial.name, democorp.name],
     users: ['admin@demo.com', 'consultor@demo.com', 'cliente@demo.com'],
     dataRequestCategories: categories.map((category) => category.name),
     projectTasks: [planningTaskId, assessmentTaskId],
+    dataRequests: dataRequests.map((item) => item.title),
+    risks: risks.map((risk) => risk.description),
+    findings: findings.map((finding) => finding.title),
+    kpis: kpis.map((kpi) => kpi.name),
   });
 }
 

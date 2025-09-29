@@ -14,6 +14,7 @@ import { logger } from './core/config/logger.js';
 import { findingRouter } from './modules/findings/finding.router.js';
 import { riskRouter } from './modules/risks/risk.router.js';
 import { initializeQueueWorkers } from './services/queue.js';
+import surveysRouter from './routes/surveys.js';
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.get('/metrics', async (_req, res) => {
 app.use('/api/risks', riskRouter);
 app.use('/api/findings', findingRouter);
 app.use('/api', appRouter);
+app.use('/api/surveys', surveysRouter);
 app.use(errorHandler);
 
 const server = app.listen(env.port, () => {

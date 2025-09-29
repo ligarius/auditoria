@@ -12,7 +12,10 @@ const envSchema = z
     CLIENT_URL: z.string().optional(),
     CORS_ALLOWLIST: z.string().default('*'),
     FILE_STORAGE_PATH: z.string().default('./storage'),
-    REDIS_URL: z.string().url().default('redis://localhost:6379'),
+    REDIS_HOST: z.string().default('redis'),
+    REDIS_PORT: z.coerce.number().int().positive().default(6379),
+    REDIS_URL: z.string().url().optional(),
+    BULL_PREFIX: z.string().default('auditoria'),
     SURVEY_REMINDER_DAYS: z.coerce.number().int().positive().default(3),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
@@ -26,9 +29,13 @@ const envSchema = z
           .filter((origin) => origin.length > 0)
       : ['*'];
 
+    const redisUrl =
+      values.REDIS_URL ?? `redis://${values.REDIS_HOST}:${values.REDIS_PORT}`;
+
     return {
       ...values,
       CORS_ALLOWLIST: allowlist.length > 0 ? allowlist : ['*'],
+      REDIS_URL: redisUrl,
     };
   });
 
@@ -48,7 +55,10 @@ export const env = {
   clientUrl: parsed.data.CLIENT_URL,
   corsAllowlist: parsed.data.CORS_ALLOWLIST,
   fileStoragePath: parsed.data.FILE_STORAGE_PATH,
+  redisHost: parsed.data.REDIS_HOST,
+  redisPort: parsed.data.REDIS_PORT,
   redisUrl: parsed.data.REDIS_URL,
+  bullPrefix: parsed.data.BULL_PREFIX,
   surveyReminderDays: parsed.data.SURVEY_REMINDER_DAYS,
   rateLimitWindowMs: parsed.data.RATE_LIMIT_WINDOW_MS,
   rateLimitMax: parsed.data.RATE_LIMIT_MAX,

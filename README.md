@@ -271,6 +271,7 @@ Se recomienda integrar estos comandos en pipelines CI/CD (GitHub Actions, GitLab
 | Error `JWT_SECRET missing` | Variable no configurada | Define `JWT_SECRET` en `.env` o secretos del entorno |
 | Redirección a `/login` tras un 401 | Token expirado o refresh inválido | El cliente intenta renovar automáticamente; si persiste, cierra sesión (`Cerrar sesión`) para limpiar tokens y vuelve a ingresar |
 | `./scripts/compose.sh` informa que falta el `.env` | No se generó `.env`/`.env.local` | Duplica `.env.development` y vuelve a ejecutar el comando |
+| Build se detiene en `npm ci` con `ECONNRESET` | Conexión inestable o proxy/firewall | Reintenta el build desde una red estable o configura los parámetros de proxy (`npm config set proxy/https-proxy`) si tu entorno los requiere; hasta que `npm ci` pueda descargar todo sin cortes, la capa seguirá fallando. |
 | `/api/projects/:id/surveys` responde 404 | Migraciones incompletas | Ejecuta `./scripts/compose.sh exec api npx prisma migrate deploy` y `npm run seed` |
 | Datos inconsistentes tras pruebas | Semillas anteriores dejaron registros | Sigue la guía de [Reinicio limpio de la base de datos](#reinicio-limpio-de-la-base-de-datos) |
 

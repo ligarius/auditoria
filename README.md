@@ -83,9 +83,11 @@ Auditoría centraliza el proceso completo de auditorías operacionales, desde la
 ## Primeros pasos
 
 1. Clona el repositorio.
-2. Copia el archivo de variables de entorno:
+2. Copia el archivo de variables de entorno (puedes usar `.env.local` para desarrollo o `.env` si prefieres mantener la convención por defecto de Docker Compose):
    ```bash
    cp .env.development .env.local
+   # o bien
+   # cp .env.development .env
    ```
 3. Levanta los servicios con Docker utilizando el wrapper que valida el archivo de entorno:
    ```bash
@@ -107,15 +109,17 @@ La API esperará a que la base de datos esté disponible y aplicará `prisma mig
 Si necesitas reiniciar el entorno desde cero (p. ej. para reproducir seeds o migraciones), ejecuta los comandos en este orden:
 
 ```bash
-./scripts/compose.sh down -v
-./scripts/compose.sh --env-file .env up -d db
-./scripts/compose.sh --env-file .env up -d api
+ENV_FILE=${ENV_FILE:-.env.local}  # Usa .env si tu entorno ya lo define así
+
+./scripts/compose.sh --env-file "$ENV_FILE" down -v
+./scripts/compose.sh --env-file "$ENV_FILE" up -d db
+./scripts/compose.sh --env-file "$ENV_FILE" up -d api
 ./scripts/compose.sh exec api npx prisma migrate deploy
 ./scripts/compose.sh exec api npm run seed
-./scripts/compose.sh --env-file .env up -d web
+./scripts/compose.sh --env-file "$ENV_FILE" up -d web
 ```
 
-> Cambia `.env` por `.env.local` si tienes un archivo específico para tu entorno. El script mostrará un mensaje claro si el archivo indicado no existe.
+> Ajusta la variable `ENV_FILE` si tu archivo de entorno se llama distinto. El script mostrará un mensaje claro si el archivo indicado no existe.
 
 ## Configuración sin Docker
 

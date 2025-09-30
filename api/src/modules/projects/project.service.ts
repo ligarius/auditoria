@@ -1,34 +1,48 @@
-import type { Prisma, ProjectWorkflowState } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+import type { EstadoProyecto as EstadoProyectoType } from '@prisma/client';
+import { EstadoProyecto } from '@prisma/client';
 
 import { prisma } from '../../core/config/db.js';
 import { HttpError } from '../../core/errors/http-error.js';
 import { auditService } from '../audit/audit.service.js';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-const WORKFLOW_STATES: readonly ProjectWorkflowState[] = [
-  'PLANNING',
-  'FIELDWORK',
-  'REPORT',
-  'CLOSE',
+const WORKFLOW_STATES: readonly EstadoProyectoType[] = [
+  EstadoProyecto.PLANIFICACION,
+  EstadoProyecto.TRABAJO_CAMPO,
+  EstadoProyecto.INFORME,
+  EstadoProyecto.CIERRE,
 ];
 
-const WORKFLOW_TRANSITIONS: Record<ProjectWorkflowState, ProjectWorkflowState[]> = {
-  PLANNING: ['FIELDWORK'],
-  FIELDWORK: ['REPORT'],
-  REPORT: ['CLOSE'],
-  CLOSE: [],
+const WORKFLOW_TRANSITIONS: Record<EstadoProyectoType, EstadoProyectoType[]> = {
+  PLANIFICACION: [EstadoProyecto.TRABAJO_CAMPO],
+  TRABAJO_CAMPO: [EstadoProyecto.INFORME],
+  INFORME: [EstadoProyecto.CIERRE],
+  CIERRE: [],
+};
+
+const WORKFLOW_SYNONYMS: Record<string, EstadoProyectoType> = {
+  PLANIFICACION: EstadoProyecto.PLANIFICACION,
+  PLANNING: EstadoProyecto.PLANIFICACION,
+  TRABAJO_CAMPO: EstadoProyecto.TRABAJO_CAMPO,
+  FIELDWORK: EstadoProyecto.TRABAJO_CAMPO,
+  INFORME: EstadoProyecto.INFORME,
+  REPORT: EstadoProyecto.INFORME,
+  CIERRE: EstadoProyecto.CIERRE,
+  CLOSE: EstadoProyecto.CIERRE,
 };
 
 const coerceWorkflowState = (
   value: unknown,
-  defaultState: ProjectWorkflowState = 'PLANNING',
-): ProjectWorkflowState => {
+  defaultState: EstadoProyectoType = EstadoProyecto.PLANIFICACION,
+): EstadoProyectoType => {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return defaultState;
   }
-  const normalized = value.toUpperCase() as ProjectWorkflowState;
-  if ((WORKFLOW_STATES as readonly string[]).includes(normalized)) {
-    return normalized;
+  const normalizedKey = value.trim().toUpperCase().replace(/\s+/g, '_');
+  const mapped = WORKFLOW_SYNONYMS[normalizedKey] ?? (normalizedKey as EstadoProyectoType);
+  if ((WORKFLOW_STATES as readonly EstadoProyectoType[]).includes(mapped)) {
+    return mapped;
   }
   throw new HttpError(400, 'Estado de proyecto inválido');
 };
@@ -66,7 +80,7 @@ export const projectService = {
     data: {
       companyId: string;
       name: string;
-      status?: ProjectWorkflowState | string;
+      status?: EstadoProyectoType | string;
       startDate?: Date;
       endDate?: Date;
       settings?: Prisma.JsonValue;
@@ -183,7 +197,7 @@ export const projectService = {
 
   async transitionWorkflow(
     projectId: string,
-    nextStateInput: ProjectWorkflowState | string,
+    nextStateInput: EstadoProyectoType | string,
     user: { id: string; role: string }
   ) {
     await enforceProjectAccess(user, projectId);

@@ -9,7 +9,7 @@ const projectRouter = Router();
 
 projectRouter.use(authenticate);
 
-const WORKFLOW_STATE_VALUES = ['PLANNING', 'FIELDWORK', 'REPORT', 'CLOSE'] as const;
+const WORKFLOW_STATE_VALUES = ['PLANIFICACION', 'TRABAJO_CAMPO', 'INFORME', 'CIERRE'] as const;
 const workflowTransitionSchema = z.object({
   state: z
     .string()

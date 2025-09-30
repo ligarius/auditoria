@@ -15,6 +15,9 @@ import { errorHandler } from './core/errors/error-handler.js';
 import { logger } from './core/config/logger.js';
 import { findingRouter } from './modules/findings/finding.router.js';
 import { riskRouter } from './modules/risks/risk.router.js';
+import { formsRouter } from './modules/forms/forms.router.js';
+import workflowRouter from './modules/workflow/workflow.router.js';
+import reportRouter from './modules/export/report.router.js';
 import { initializeQueueWorkers } from './services/queue.js';
 import surveysRouter from './routes/surveys.js';
 
@@ -96,6 +99,9 @@ app.get('/metrics', async (_req, res) => {
 
 app.use('/api/risks', riskRouter);
 app.use('/api/findings', findingRouter);
+app.use('/api/forms', formsRouter);
+app.use('/api/workflow', workflowRouter);
+app.use('/api/export', reportRouter);
 app.use('/api', appRouter);
 app.use('/api/surveys', surveysRouter);
 app.use((req, res) => {

@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ProjectPicker from '../components/ProjectPicker';
 import { ProjectTabs } from '../features/projects/ProjectTabs';
 import { PROCESS_SUBTABS } from '../features/projects/tabs/ProcessesTab';
+import { ES } from '../i18n/es';
 import { useAuth } from '../hooks/useAuth';
 import api from '../lib/api';
 
@@ -54,6 +55,8 @@ const PROJECT_TEMPLATES = {
 
 type ProjectTemplateKey = keyof typeof PROJECT_TEMPLATES;
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/$/, '');
+
 export const ProjectPage = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -72,7 +75,7 @@ export const ProjectPage = () => {
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectStatus, setNewProjectStatus] = useState('PLANNING');
+  const [newProjectStatus, setNewProjectStatus] = useState('PLANIFICACION');
   const [selectedCompanyId, setSelectedCompanyId] = useState<
     string | undefined
   >(undefined);
@@ -209,7 +212,7 @@ export const ProjectPage = () => {
   const closeModal = () => {
     setShowModal(false);
     setNewProjectName('');
-      setNewProjectStatus('PLANNING');
+    setNewProjectStatus('PLANIFICACION');
     setSelectedTemplate('distribution');
     setSelectedCompanyId(undefined);
     setCreateError(null);
@@ -281,12 +284,22 @@ export const ProjectPage = () => {
             </button>
           )}
           {canCreateProject && (
-            <button
-              onClick={handleExport}
-              className="rounded bg-slate-900 px-3 py-1 text-sm font-medium text-white"
-            >
-              Exportar
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExport}
+                className="rounded bg-slate-900 px-3 py-1 text-sm font-medium text-white"
+              >
+                Exportar
+              </button>
+              {id && (
+                <button
+                  onClick={() => window.open(`${API_BASE_URL}/export/projects/${id}/pdf`, '_blank')}
+                  className="rounded border border-slate-300 px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100"
+                >
+                  {ES.export.pdf}
+                </button>
+              )}
+            </div>
           )}
           {localStorage.getItem('token') && (
             <button
@@ -388,10 +401,10 @@ export const ProjectPage = () => {
                   onChange={(event) => setNewProjectStatus(event.target.value)}
                   className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 >
-                  <option value="PLANNING">PLANNING</option>
-                  <option value="FIELDWORK">FIELDWORK</option>
-                  <option value="REPORT">REPORT</option>
-                  <option value="CLOSE">CLOSE</option>
+                  <option value="PLANIFICACION">{ES.projectStatus.PLANIFICACION}</option>
+                  <option value="TRABAJO_CAMPO">{ES.projectStatus.TRABAJO_CAMPO}</option>
+                  <option value="INFORME">{ES.projectStatus.INFORME}</option>
+                  <option value="CIERRE">{ES.projectStatus.CIERRE}</option>
                 </select>
               </div>
               <div>

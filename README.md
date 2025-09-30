@@ -212,6 +212,26 @@ La semilla `npm run seed` (o `docker compose exec api npm run seed`) crea:
 - **Formato**: aplica Prettier según la configuración de cada proyecto (`npm run format` si está disponible).
 - **Integración** (propuesto): configurar `docker compose run api npm run test:e2e` para validar flujos completos.
 
+### Smoke test con Docker Compose
+
+Para validar una instalación fresca con Docker Compose:
+
+```bash
+docker compose down -v
+cp .env.example .env
+docker compose up -d --build
+
+curl -i http://localhost:4000/api/health
+TOKEN=$(curl -s -X POST http://localhost:4000/api/auth/login \
+  -H 'content-type: application/json' \
+  -d '{"email":"admin@demo.com","password":"demo123"}' | jq -r '.accessToken')
+echo "TOKEN:${TOKEN:0:25}..."
+curl -i http://localhost:4000/api/projects -H "Authorization: Bearer $TOKEN"
+curl -i http://localhost:4000/api/surveys/does-not-exist -H "Authorization: Bearer $TOKEN"
+```
+
+Revisa los logs para confirmar que los encabezados sensibles aparecen como `Bearer <redacted>` y que no hay errores de compilación (`esbuild`) ni de generación de Prisma.
+
 Se recomienda integrar estos comandos en pipelines CI/CD (GitHub Actions, GitLab CI, etc.).
 
 ## Despliegue

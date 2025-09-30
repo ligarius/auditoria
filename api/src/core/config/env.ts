@@ -7,9 +7,9 @@ const envSchema = z
       .default('development'),
     PORT: z.coerce.number().int().positive().default(4000),
     DATABASE_URL: z.string().default('postgresql://localhost:5432/auditoria'),
-    JWT_SECRET: z.string().default('secret'),
-    JWT_REFRESH_SECRET: z.string().default('refresh'),
-    CLIENT_URL: z.string().optional(),
+    JWT_SECRET: z.string().min(1, 'JWT_SECRET es requerido'),
+    JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET es requerido'),
+    CLIENT_URL: z.string().url().optional(),
     CORS_ALLOWLIST: z.string().default('*'),
     FILE_STORAGE_PATH: z.string().default('./storage'),
     REDIS_HOST: z.string().default('redis'),
@@ -23,18 +23,35 @@ const envSchema = z
     LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   })
   .transform((values) => {
-    const allowlist = values.CORS_ALLOWLIST
+    const parsedAllowlist = values.CORS_ALLOWLIST
       ? values.CORS_ALLOWLIST.split(',')
           .map((origin) => origin.trim())
           .filter((origin) => origin.length > 0)
-      : ['*'];
+      : [];
+
+    const clientUrl =
+      values.CLIENT_URL ??
+      (values.NODE_ENV !== 'production' ? 'http://localhost:5173' : undefined);
+
+    const allowlist = new Set<string>();
+
+    if (parsedAllowlist.length === 0 && !clientUrl) {
+      allowlist.add('*');
+    }
+
+    parsedAllowlist.forEach((origin) => allowlist.add(origin));
+
+    if (clientUrl) {
+      allowlist.add(clientUrl);
+    }
 
     const redisUrl =
       values.REDIS_URL ?? `redis://${values.REDIS_HOST}:${values.REDIS_PORT}`;
 
     return {
       ...values,
-      CORS_ALLOWLIST: allowlist.length > 0 ? allowlist : ['*'],
+      CLIENT_URL: clientUrl,
+      CORS_ALLOWLIST: Array.from(allowlist),
       REDIS_URL: redisUrl,
     };
   });

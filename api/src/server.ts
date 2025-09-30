@@ -4,6 +4,8 @@ import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
 import 'express-async-errors';
+import pino from 'pino';
+import type { IncomingHttpHeaders } from 'http';
 
 import { appRouter } from './app.js';
 import { env } from './core/config/env.js';
@@ -18,7 +20,30 @@ import surveysRouter from './routes/surveys.js';
 
 const app = express();
 
-const allowedOrigins = env.corsAllowlist;
+if (env.nodeEnv === 'development') {
+  app.set('etag', false);
+  app.use((_, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
+}
+
+const allowedOrigins = env.clientUrl
+  ? Array.from(new Set([env.clientUrl, ...env.corsAllowlist]))
+  : env.corsAllowlist;
+
+const sanitizeHeaders = (headers: IncomingHttpHeaders | undefined) => {
+  if (!headers) return headers;
+  const sanitized: IncomingHttpHeaders = { ...headers };
+  if (sanitized.authorization) {
+    sanitized.authorization = 'Bearer <redacted>';
+  }
+  if (sanitized.cookie) {
+    sanitized.cookie = '<redacted>';
+  }
+  return sanitized;
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -29,6 +54,8 @@ app.use(
       callback(new Error('Origen no permitido por CORS'));
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 
@@ -37,6 +64,24 @@ app.use(
   pinoHttp({
     logger,
     autoLogging: env.nodeEnv !== 'test',
+    serializers: {
+      req(request) {
+        const serialized = pino.stdSerializers.req(request);
+        if (serialized && serialized.headers) {
+          serialized.headers = sanitizeHeaders(serialized.headers);
+        }
+        return serialized;
+      },
+      res(response) {
+        const serialized = pino.stdSerializers.res(response);
+        if (serialized && serialized.headers && serialized.headers['set-cookie']) {
+          serialized.headers['set-cookie'] = Array.isArray(serialized.headers['set-cookie'])
+            ? serialized.headers['set-cookie'].map(() => '<redacted>')
+            : '<redacted>';
+        }
+        return serialized;
+      },
+    },
   }),
 );
 app.use(globalRateLimiter);
@@ -53,6 +98,17 @@ app.use('/api/risks', riskRouter);
 app.use('/api/findings', findingRouter);
 app.use('/api', appRouter);
 app.use('/api/surveys', surveysRouter);
+app.use((req, res) => {
+  const problem = {
+    type: 'https://httpstatuses.com/404',
+    title: 'Not Found',
+    status: 404,
+    detail: `Resource ${req.originalUrl} was not found`,
+    ...(req.id ? { instance: req.id } : {}),
+  } as const;
+
+  res.status(404).json(problem);
+});
 app.use(errorHandler);
 
 const server = app.listen(env.port, () => {

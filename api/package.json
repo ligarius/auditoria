@@ -12,6 +12,7 @@
     "migrate:dev": "prisma migrate dev",
     "seed": "node prisma/seed.js",
     "generate": "prisma generate",
+    "postinstall": "prisma generate",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "test": "jest --coverage",
     "test:e2e": "jest --config jest.e2e.config.ts"
@@ -29,6 +30,7 @@
     "express-async-errors": "^3.1.1",
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.2.0",
+    "esbuild": "^0.25.10",
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
@@ -52,7 +54,6 @@
     "@types/node": "^20.11.19",
     "@types/pdfkit": "^0.13.6",
     "@types/supertest": "^2.0.12",
-    "esbuild": "^0.25.10",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",

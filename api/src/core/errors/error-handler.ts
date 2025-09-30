@@ -3,21 +3,31 @@ import { NextFunction, Request, Response } from 'express';
 import { logger } from '../config/logger.js';
 import { HttpError } from './http-error.js';
 
-export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+const buildProblemDetails = (
+  status: number,
+  title: string,
+  detail: unknown,
+  instance?: string,
+) => ({
+  type: `https://httpstatuses.com/${status}`,
+  title,
+  status,
+  detail: detail ?? null,
+  ...(instance ? { instance } : {}),
+});
+
+export const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunction) => {
+  const requestWithId = req as Request & { id?: string };
+  const requestId = requestWithId.id;
+
   if (err instanceof HttpError) {
     logger.warn({ err }, 'Handled error');
-    return res.status(err.status).json({
-      type: 'https://httpstatuses.com/' + err.status,
-      title: err.message,
-      status: err.status,
-      detail: err.details ?? null
-    });
+    const detail = err.details ?? err.message;
+    const problem = buildProblemDetails(err.status, err.message, detail, requestId);
+    return res.status(err.status).json(problem);
   }
 
   logger.error({ err }, 'Unhandled error');
-  return res.status(500).json({
-    type: 'https://httpstatuses.com/500',
-    title: 'Error interno',
-    status: 500
-  });
+  const problem = buildProblemDetails(500, 'Internal Server Error', 'An unexpected error occurred', requestId);
+  return res.status(500).json(problem);
 };

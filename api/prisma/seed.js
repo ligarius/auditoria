@@ -1,5 +1,30 @@
+import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
 import { PrismaClient, ProjectWorkflowState } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+
+const runMigrations = () => {
+  if (process.env.SKIP_MIGRATE_ON_SEED === 'true') {
+    console.log('[seed] SKIP_MIGRATE_ON_SEED=true, omitiendo prisma migrate deploy');
+    return;
+  }
+
+  const apiRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+  console.log('[seed] Ejecutando prisma migrate deploy antes de sembrar datos…');
+  try {
+    execSync('npx prisma migrate deploy', {
+      cwd: apiRoot,
+      stdio: 'inherit',
+    });
+  } catch (error) {
+    console.error('\n[seed] No se pudieron aplicar las migraciones automáticamente. Ejecuta `npx prisma migrate deploy` y reintenta.');
+    throw error;
+  }
+};
+
+runMigrations();
 
 const prisma = new PrismaClient();
 

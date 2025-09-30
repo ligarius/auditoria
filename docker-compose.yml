@@ -37,6 +37,10 @@ services:
   api:
     build:
       context: ./api
+      args:
+        NPM_CONFIG_PROXY: ${NPM_CONFIG_PROXY:-}
+        NPM_CONFIG_HTTPS_PROXY: ${NPM_CONFIG_HTTPS_PROXY:-}
+        NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-}
     container_name: auditoria-api
     restart: unless-stopped
     env_file:
@@ -73,6 +77,10 @@ services:
   web:
     build:
       context: ./web
+      args:
+        NPM_CONFIG_PROXY: ${NPM_CONFIG_PROXY:-}
+        NPM_CONFIG_HTTPS_PROXY: ${NPM_CONFIG_HTTPS_PROXY:-}
+        NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-}
     container_name: auditoria-web
     restart: unless-stopped
     environment:

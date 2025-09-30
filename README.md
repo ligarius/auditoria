@@ -10,19 +10,20 @@ Suite full-stack para gestionar auditorías multi-proyecto con módulos especial
 4. [Estructura del repositorio](#estructura-del-repositorio)
 5. [Requisitos](#requisitos)
 6. [Primeros pasos](#primeros-pasos)
-7. [Configuración sin Docker](#configuración-sin-docker)
-8. [Variables de entorno](#variables-de-entorno)
-9. [Módulos clave](#módulos-clave)
-10. [Gestión de proyectos y empresas](#gestión-de-proyectos-y-empresas)
-11. [Scripts útiles](#scripts-útiles)
-12. [Semilla de datos](#semilla-de-datos)
-13. [OpenAPI y clientes](#openapi-y-clientes)
-14. [Tests y calidad](#tests-y-calidad)
-15. [Despliegue](#despliegue)
-16. [Resolución de problemas](#resolución-de-problemas)
-17. [FAQ](#faq)
-18. [Contribuir](#contribuir)
-19. [Licencia](#licencia)
+7. [Arranque rápido estable](#arranque-rápido-estable)
+8. [Configuración sin Docker](#configuración-sin-docker)
+9. [Variables de entorno](#variables-de-entorno)
+10. [Módulos clave](#módulos-clave)
+11. [Gestión de proyectos y empresas](#gestión-de-proyectos-y-empresas)
+12. [Scripts útiles](#scripts-útiles)
+13. [Semilla de datos](#semilla-de-datos)
+14. [OpenAPI y clientes](#openapi-y-clientes)
+15. [Tests y calidad](#tests-y-calidad)
+16. [Despliegue](#despliegue)
+17. [Resolución de problemas](#resolución-de-problemas)
+18. [FAQ](#faq)
+19. [Contribuir](#contribuir)
+20. [Licencia](#licencia)
 
 ## Visión general
 
@@ -103,6 +104,20 @@ Auditoría centraliza el proceso completo de auditorías operacionales, desde la
    ```
 
 La API esperará a que la base de datos esté disponible y aplicará `prisma migrate deploy` automáticamente en cada arranque del contenedor.
+
+## Arranque rápido estable
+
+Ejecuta los siguientes comandos en una terminal limpia para dejar la pila estable y lista para revisar:
+
+```bash
+cp .env.development .env
+npm install --prefix api
+npm install --prefix web
+./scripts/compose.sh up -d --build
+./scripts/accept.sh
+```
+
+El script `./scripts/accept.sh` usa Docker Compose por defecto para ejecutar migraciones y semillas (define `ACCEPT_USE_DOCKER=0` si prefieres correrlas contra servicios locales), espera a que `http://localhost:4000/api/health` responda correctamente y compila el frontend tras validar la salud de la API.
 
 ### Builds detrás de un proxy corporativo
 

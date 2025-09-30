@@ -33,6 +33,9 @@ RUN npm run build
 FROM node:18-bullseye-slim AS runner
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
 # Solo lo necesario para correr
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist

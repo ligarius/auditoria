@@ -18,12 +18,19 @@ model Company {
   Respondent            Respondent[]
 }
 
+enum EstadoProyecto {
+  PLANIFICACION
+  TRABAJO_CAMPO
+  INFORME
+  CIERRE
+}
+
 model Project {
   id                     String                  @id @default(cuid())
   companyId              String
   company                Company                 @relation(fields: [companyId], references: [id])
   name                   String
-  status                 ProjectWorkflowState    @default(PLANNING)
+  status                 EstadoProyecto          @default(PLANIFICACION)
   ownerId                String?
   owner                  User?                   @relation("ProjectOwner", fields: [ownerId], references: [id])
   settings               Json?
@@ -142,13 +149,6 @@ model QuestionnaireTemplate {
   updatedAt   DateTime               @updatedAt
 
   @@index([companyId])
-}
-
-enum ProjectWorkflowState {
-  PLANNING
-  FIELDWORK
-  REPORT
-  CLOSE
 }
 
 model QuestionnaireVersion {

@@ -1,4 +1,4 @@
-import { PrismaClient, ProjectWorkflowState } from '@prisma/client';
+import { PrismaClient, EstadoProyecto } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -39,7 +39,7 @@ async function main() {
     create: {
       companyId: nutrial.id,
       name: 'Nutrial – Auditoría 2025',
-      status: ProjectWorkflowState.PLANNING,
+      status: EstadoProyecto.PLANIFICACION,
       ownerId: admin.id,
       settings: { enabledFeatures: ['reception', 'picking', 'dispatch'] },
       memberships: {

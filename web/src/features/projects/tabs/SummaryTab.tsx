@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { ES } from '../../../i18n/es';
+import WorkflowPanel from '../../../modules/projects/WorkflowPanel';
 import api from '../../../lib/api';
 import { getErrorMessage } from '../../../lib/errors';
 
@@ -86,6 +88,9 @@ const formatCurrency = (value: number) =>
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(value);
+
+const statusLabel = (value: string) =>
+  ES.projectStatus[value as keyof typeof ES.projectStatus] ?? value;
 
 export default function SummaryTab({ projectId }: SummaryTabProps) {
   const navigate = useNavigate();
@@ -305,7 +310,7 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
                   {summary.project.company?.name ?? 'Proyecto'} · {summary.project.name}
                 </h3>
                 <p className="text-sm text-slate-500">
-                  Estado: {summary.project.status}
+                  Estado: {statusLabel(summary.project.status)}
                 </p>
               </div>
               <div className="text-sm text-slate-500">
@@ -314,6 +319,8 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
               </div>
             </div>
           </div>
+
+          <WorkflowPanel projectId={summary.project.id} />
 
           <div className="grid gap-4 lg:grid-cols-3">
             {cards.map((card) => (

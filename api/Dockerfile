@@ -7,9 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm ci
 
-COPY prisma ./prisma
 RUN npm run generate
 
 # --- build ---

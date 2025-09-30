@@ -1,19 +1,20 @@
-import { EstadoProyecto } from '@prisma/client';
-import type { EstadoProyecto as EstadoProyectoType } from '@prisma/client';
+import { ProjectWorkflowState } from '@prisma/client';
+import type { ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
 import { prisma } from '../../core/config/db.js';
 
-const allowed: Record<EstadoProyectoType, EstadoProyectoType[]> = {
-  PLANIFICACION: [EstadoProyecto.TRABAJO_CAMPO],
-  TRABAJO_CAMPO: [EstadoProyecto.INFORME],
-  INFORME: [EstadoProyecto.CIERRE],
-  CIERRE: [],
+const allowed: Record<ProjectWorkflowStateType, ProjectWorkflowStateType[]> = {
+  planificacion: [ProjectWorkflowState.recoleccion_datos],
+  recoleccion_datos: [ProjectWorkflowState.analisis],
+  analisis: [ProjectWorkflowState.recomendaciones],
+  recomendaciones: [ProjectWorkflowState.cierre],
+  cierre: [],
 };
 
 export async function getWorkflow(projectId: string) {
   const p = await prisma.project.findUnique({ where: { id: projectId } });
   if (!p) throw new Error('Proyecto no encontrado');
-  const current = p.status as EstadoProyectoType;
+  const current = p.status as ProjectWorkflowStateType;
   return {
     projectId,
     estadoActual: current,
@@ -23,10 +24,10 @@ export async function getWorkflow(projectId: string) {
   };
 }
 
-export async function transition(projectId: string, next: EstadoProyectoType) {
+export async function transition(projectId: string, next: ProjectWorkflowStateType) {
   const p = await prisma.project.findUnique({ where: { id: projectId } });
   if (!p) throw new Error('Proyecto no encontrado');
-  const current = p.status as EstadoProyectoType;
+  const current = p.status as ProjectWorkflowStateType;
   if (!allowed[current].includes(next)) {
     throw new Error(`Transición inválida: ${current} → ${next}`);
   }

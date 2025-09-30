@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import api from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
+import { LAST_PROJECT_KEY, ROLE_KEY, storeTokens } from '../lib/session';
 
 export default function Login() {
   const [email, setEmail] = useState('admin@demo.com');
@@ -18,18 +19,19 @@ export default function Login() {
     setLoading(true);
     try {
       const r = await api.post('/auth/login', { email, password });
-      const token = r.data?.accessToken || r.data?.token;
+      const accessToken = r.data?.accessToken || r.data?.token;
+      const refreshToken = r.data?.refreshToken;
       const role = r.data?.user?.role;
-      if (!token) throw new Error('Respuesta sin token');
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role || 'viewer');
-      let targetProject = localStorage.getItem('lastProjectId') || '';
+      if (!accessToken || !refreshToken) throw new Error('Respuesta sin tokens');
+      storeTokens({ accessToken, refreshToken });
+      localStorage.setItem(ROLE_KEY, role || 'viewer');
+      let targetProject = localStorage.getItem(LAST_PROJECT_KEY) || '';
       try {
         const projectsRes = await api.get('/projects');
         const firstProject = projectsRes.data?.[0];
         if (firstProject?.id) {
           targetProject = firstProject.id;
-          localStorage.setItem('lastProjectId', targetProject);
+          localStorage.setItem(LAST_PROJECT_KEY, targetProject);
         }
       } catch (projectError) {
         console.error('No se pudieron cargar proyectos', projectError);

@@ -12,7 +12,13 @@ import { ES } from '../../../i18n/es';
 import { useAuth } from '../../../hooks/useAuth';
 import api from '../../../lib/api';
 
-const WORKFLOW_STATES = ['PLANIFICACION', 'TRABAJO_CAMPO', 'INFORME', 'CIERRE'] as const;
+const WORKFLOW_STATES = [
+  'planificacion',
+  'recoleccion_datos',
+  'analisis',
+  'recomendaciones',
+  'cierre',
+] as const;
 const DEFAULT_DIAGRAM = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" targetNamespace="http://bpmn.io/schema/bpmn" id="Definitions_1">
   <bpmn:process id="AuditWorkflow" isExecutable="false">
@@ -56,11 +62,13 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
   const [loading, setLoading] = useState(true);
   const [savingDiagram, setSavingDiagram] = useState(false);
   const [updatingState, setUpdatingState] = useState(false);
-  const [state, setState] = useState<WorkflowState>('PLANIFICACION');
+  const [state, setState] = useState<WorkflowState>('planificacion');
   const [diagramXml, setDiagramXml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const currentDiagram = useMemo(() => diagramXml ?? DEFAULT_DIAGRAM, [diagramXml]);
+  const stateLabel = ES.projectStatus[state] ?? state;
+  const stateDescription = ES.projectStatusDescriptions[state] ?? undefined;
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -189,7 +197,9 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-slate-500">Estado de auditoría</p>
-          <p className="text-lg font-semibold text-slate-900">{ES.projectStatus[state] ?? state}</p>
+          <p className="text-lg font-semibold text-slate-900" title={stateDescription}>
+            {stateLabel}
+          </p>
         </div>
         {isEditor && (
           <div className="flex items-center gap-2">
@@ -204,7 +214,11 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
               disabled={updatingState}
             >
               {WORKFLOW_STATES.map((option) => (
-                <option key={option} value={option}>
+                <option
+                  key={option}
+                  value={option}
+                  title={ES.projectStatusDescriptions[option]}
+                >
                   {ES.projectStatus[option] ?? option}
                 </option>
               ))}

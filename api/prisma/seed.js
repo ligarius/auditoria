@@ -1,7 +1,25 @@
-import { PrismaClient, EstadoProyecto } from '@prisma/client';
+import { PrismaClient, ProjectWorkflowState } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+const ensureWorkflowEnum = () => {
+  const expected = [
+    'planificacion',
+    'recoleccion_datos',
+    'analisis',
+    'recomendaciones',
+    'cierre',
+  ];
+  const values = Object.values(ProjectWorkflowState);
+  for (const item of expected) {
+    if (!values.includes(item)) {
+      throw new Error(
+        'El enum ProjectWorkflowState no contiene todas las opciones requeridas. Ejecuta las migraciones antes de correr la semilla.',
+      );
+    }
+  }
+};
 
 async function upsertUser(email, name, role, password) {
   const passwordHash = await bcrypt.hash(password, 10);
@@ -21,6 +39,7 @@ async function findOrCreateCompany(name, taxId) {
 }
 
 async function main() {
+  ensureWorkflowEnum();
   const nutrial = await findOrCreateCompany('Nutrial', '76.543.210-9');
   const democorp = await findOrCreateCompany('DemoCorp', '76.000.000-0');
 
@@ -39,7 +58,7 @@ async function main() {
     create: {
       companyId: nutrial.id,
       name: 'Nutrial – Auditoría 2025',
-      status: EstadoProyecto.PLANIFICACION,
+      status: ProjectWorkflowState.planificacion,
       ownerId: admin.id,
       settings: { enabledFeatures: ['reception', 'picking', 'dispatch'] },
       memberships: {

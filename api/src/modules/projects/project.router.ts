@@ -4,21 +4,46 @@ import { z } from 'zod';
 import { authenticate, requireRole } from '../../core/middleware/auth.js';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 import { projectService } from './project.service.js';
+import { generateProjectReportPdf } from '../export/report.service.js';
+import { projectSurveyService } from './project-survey.service.js';
 
 const projectRouter = Router();
 
 projectRouter.use(authenticate);
 
-const WORKFLOW_STATE_VALUES = ['PLANIFICACION', 'TRABAJO_CAMPO', 'INFORME', 'CIERRE'] as const;
 const workflowTransitionSchema = z.object({
-  state: z
-    .string()
-    .min(1)
-    .transform((value) => value.toUpperCase())
-    .refine((value) => WORKFLOW_STATE_VALUES.includes(value as (typeof WORKFLOW_STATE_VALUES)[number]), {
-      message: 'Estado inválido',
-    }),
+  state: z.string().min(1, 'Estado requerido'),
 });
+
+const createSurveySchema = z.object({
+  title: z.string().min(1, 'Título requerido').trim(),
+  description: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+const createSurveyQuestionSchema = z
+  .object({
+    type: z.string().min(1, 'Tipo requerido'),
+    text: z.string().min(1, 'Pregunta requerida'),
+    scaleMin: z.number().int().optional(),
+    scaleMax: z.number().int().optional(),
+    required: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type && data.type.toLowerCase().includes('likert')) {
+      if (typeof data.scaleMin !== 'number' || typeof data.scaleMax !== 'number') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Debes definir el rango de la escala Likert',
+        });
+      } else if (data.scaleMin >= data.scaleMax) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'El mínimo de la escala debe ser menor al máximo',
+        });
+      }
+    }
+  });
 
 const workflowDiagramSchema = z.object({
   definition: z.any(),
@@ -35,6 +60,58 @@ projectRouter.get('/:projectId/features', async (req, res) => {
     role: req.user!.role
   });
   res.json(result);
+});
+
+projectRouter.get('/:projectId/report.pdf', async (req, res) => {
+  await enforceProjectAccess(req.user, req.params.projectId);
+  try {
+    const pdf = await generateProjectReportPdf(req.params.projectId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="reporte-${req.params.projectId}.pdf"`);
+    res.send(pdf);
+  } catch (error: any) {
+    const status = error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 400;
+    res.status(status ?? 400).json({ error: error.message ?? 'No se pudo generar el PDF' });
+  }
+});
+
+projectRouter.get('/:projectId/surveys', async (req, res) => {
+  const surveys = await projectSurveyService.list(req.params.projectId, req.user);
+  res.json(surveys);
+});
+
+projectRouter.post(
+  '/:projectId/surveys',
+  requireRole('admin', 'consultor'),
+  async (req, res) => {
+    const body = createSurveySchema.parse(req.body);
+    const survey = await projectSurveyService.create(req.params.projectId, body, req.user);
+    res.status(201).json(survey);
+  },
+);
+
+projectRouter.post(
+  '/:projectId/surveys/:surveyId/questions',
+  requireRole('admin', 'consultor'),
+  async (req, res) => {
+    const body = createSurveyQuestionSchema.parse(req.body);
+    const question = await projectSurveyService.addQuestion(
+      req.params.projectId,
+      req.params.surveyId,
+      body,
+      req.user,
+    );
+    res.status(201).json(question);
+  },
+);
+
+projectRouter.get('/:projectId/surveys/:surveyId/summary', async (req, res) => {
+  const summary = await projectSurveyService.summary(
+    req.params.projectId,
+    req.params.surveyId,
+    req.user,
+  );
+  res.json(summary);
 });
 
 projectRouter.get('/:projectId/summary', async (req, res) => {

@@ -6,8 +6,9 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
 
 import { useEffect, useRef, useState } from 'react';
 import { ES } from '../../i18n/es';
+import { getAccessToken } from '../../lib/session';
 
-type Estado = 'PLANIFICACION'|'TRABAJO_CAMPO'|'INFORME'|'CIERRE';
+type Estado = keyof typeof ES.projectStatus;
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/$/, '');
 
@@ -17,7 +18,7 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
     (async () => {
@@ -44,7 +45,7 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   const avanzar = async (next: Estado) => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -70,7 +71,10 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
     <div className="space-y-4">
       <div className="p-4 rounded-xl border shadow-sm">
         <h3 className="font-semibold mb-2">{ES.workflow.titulo}</h3>
-        <p><strong>{ES.workflow.estadoActual}:</strong> {ES.projectStatus[data.estadoActual]}</p>
+        <p>
+          <strong>{ES.workflow.estadoActual}:</strong>{' '}
+          {ES.projectStatus[data.estadoActual as Estado] ?? data.estadoActual}
+        </p>
         <div className="flex gap-2 mt-3">
           {(data.permitidos ?? []).map((e: Estado) => (
             <button key={e}

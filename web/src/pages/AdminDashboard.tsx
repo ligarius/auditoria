@@ -7,6 +7,7 @@ import UserManager from '../features/admin/UserManager';
 import { useAuth } from '../hooks/useAuth';
 import api from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
+import { LAST_PROJECT_KEY } from '../lib/session';
 
 interface Summary {
   companies: number;
@@ -56,7 +57,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setLastProjectId(localStorage.getItem('lastProjectId'));
+      setLastProjectId(localStorage.getItem(LAST_PROJECT_KEY));
     }
   }, []);
 

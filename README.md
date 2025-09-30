@@ -87,13 +87,13 @@ Auditoría centraliza el proceso completo de auditorías operacionales, desde la
    ```bash
    cp .env.development .env.local
    ```
-3. Levanta los servicios con Docker:
+3. Levanta los servicios con Docker utilizando el wrapper que valida el archivo de entorno:
    ```bash
-   docker compose --env-file .env.local up -d --build
+   ./scripts/compose.sh up -d --build
    ```
 4. (Opcional) Carga la semilla de datos inicial:
    ```bash
-   docker compose exec api npm run seed
+   ./scripts/compose.sh exec api npm run seed
    ```
 5. Accede a la web en `http://localhost:5173` y valida la salud de la API con:
    ```bash
@@ -101,6 +101,21 @@ Auditoría centraliza el proceso completo de auditorías operacionales, desde la
    ```
 
 La API esperará a que la base de datos esté disponible y aplicará `prisma migrate deploy` automáticamente en cada arranque del contenedor.
+
+### Reinicio limpio de la base de datos
+
+Si necesitas reiniciar el entorno desde cero (p. ej. para reproducir seeds o migraciones), ejecuta los comandos en este orden:
+
+```bash
+./scripts/compose.sh down -v
+./scripts/compose.sh --env-file .env up -d db
+./scripts/compose.sh --env-file .env up -d api
+./scripts/compose.sh exec api npx prisma migrate deploy
+./scripts/compose.sh exec api npm run seed
+./scripts/compose.sh --env-file .env up -d web
+```
+
+> Cambia `.env` por `.env.local` si tienes un archivo específico para tu entorno. El script mostrará un mensaje claro si el archivo indicado no existe.
 
 ## Configuración sin Docker
 
@@ -186,6 +201,8 @@ npm run lint       # ESLint sobre el front
 npm run test       # Vitest + Testing Library
 ```
 
+Para orquestar contenedores sin sorpresas usa el wrapper `./scripts/compose.sh`, que valida la existencia del archivo `.env` (o `.env.local`) antes de delegar en `docker compose`.
+
 Los nombres de scripts se mantienen consistentes entre paquetes para simplificar la experiencia.
 
 ## Semilla de datos
@@ -248,8 +265,10 @@ Se recomienda integrar estos comandos en pipelines CI/CD (GitHub Actions, GitLab
 | --- | --- | --- |
 | API no arranca | Base de datos inaccesible | Verifica credenciales y que Postgres esté escuchando |
 | Error `JWT_SECRET missing` | Variable no configurada | Define `JWT_SECRET` en `.env` o secretos del entorno |
-| Front no puede autenticar | URLs inconsistentes | Revisa `VITE_API_URL` y CORS en la API |
-| Migraciones fallan | Esquema fuera de sync | Ejecuta `npx prisma migrate resolve --rolled-back "<migration>"` y reintenta |
+| Redirección a `/login` tras un 401 | Token expirado o refresh inválido | El cliente intenta renovar automáticamente; si persiste, cierra sesión (`Cerrar sesión`) para limpiar tokens y vuelve a ingresar |
+| `./scripts/compose.sh` informa que falta el `.env` | No se generó `.env`/`.env.local` | Duplica `.env.development` y vuelve a ejecutar el comando |
+| `/api/projects/:id/surveys` responde 404 | Migraciones incompletas | Ejecuta `./scripts/compose.sh exec api npx prisma migrate deploy` y `npm run seed` |
+| Datos inconsistentes tras pruebas | Semillas anteriores dejaron registros | Sigue la guía de [Reinicio limpio de la base de datos](#reinicio-limpio-de-la-base-de-datos) |
 
 ## FAQ
 

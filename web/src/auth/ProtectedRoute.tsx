@@ -1,6 +1,3 @@
-// web/src/auth/ProtectedRoute.tsx
-import { Navigate, Outlet } from 'react-router-dom';
-export default function ProtectedRoute() {
-  const token = localStorage.getItem('token');
-  return token ? <Outlet /> : <Navigate to="/login" replace />;
-}
+import AuthGuard from './AuthGuard';
+
+export default AuthGuard;

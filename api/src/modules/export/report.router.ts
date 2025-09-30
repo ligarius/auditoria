@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { generateProjectPdf } from './report.service.js';
+import { generateProjectReportPdf } from './report.service.js';
 
 const router = Router();
 
 router.get('/projects/:id/pdf', async (req, res) => {
   try {
-    const pdf = await generateProjectPdf(req.params.id);
+    const pdf = await generateProjectReportPdf(req.params.id);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="proyecto-${req.params.id}.pdf"`);
     res.send(pdf);

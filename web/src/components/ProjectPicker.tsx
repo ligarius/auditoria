@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import api from '../lib/api';
+import { LAST_PROJECT_KEY } from '../lib/session';
 
 interface ProjectOption {
   id: string;
@@ -26,7 +27,7 @@ export default function ProjectPicker({ refreshKey = 0 }: ProjectPickerProps) {
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const projectId = event.target.value;
     if (!projectId) return;
-    localStorage.setItem('lastProjectId', projectId);
+    localStorage.setItem(LAST_PROJECT_KEY, projectId);
     navigate(`/projects/${projectId}`);
   };
 

@@ -67,7 +67,7 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
 
   const loadSurveys = useCallback(async () => {
     try {
-      const response = await api.get<Survey[]>(`/surveys/${projectId}`);
+      const response = await api.get<Survey[]>(`/projects/${projectId}/surveys`);
       setSurveys(response.data ?? []);
       setError(null);
     } catch (error: unknown) {
@@ -85,7 +85,7 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
     event.preventDefault();
     if (!canEdit) return;
     try {
-      await api.post(`/surveys/${projectId}`, {
+      await api.post(`/projects/${projectId}/surveys`, {
         title: surveyForm.title,
         description: surveyForm.description || undefined,
         isActive: surveyForm.isActive,
@@ -101,19 +101,22 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
     event.preventDefault();
     if (!canEdit || !questionForm.surveyId) return;
     try {
-      await api.post(`/surveys/questions/${questionForm.surveyId}`, {
-        type: questionForm.type,
-        text: questionForm.text,
-        scaleMin:
-          questionForm.type === 'Likert'
-            ? Number(questionForm.scaleMin)
-            : undefined,
-        scaleMax:
-          questionForm.type === 'Likert'
-            ? Number(questionForm.scaleMax)
-            : undefined,
-        required: questionForm.required,
-      });
+      await api.post(
+        `/projects/${projectId}/surveys/${questionForm.surveyId}/questions`,
+        {
+          type: questionForm.type,
+          text: questionForm.text,
+          scaleMin:
+            questionForm.type === 'Likert'
+              ? Number(questionForm.scaleMin)
+              : undefined,
+          scaleMax:
+            questionForm.type === 'Likert'
+              ? Number(questionForm.scaleMax)
+              : undefined,
+          required: questionForm.required,
+        },
+      );
       setQuestionForm((prev) => ({
         ...defaultQuestionForm,
         surveyId: prev.surveyId,
@@ -131,7 +134,7 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
     setLoadingSummary(true);
     try {
       const response = await api.get<SurveySummary>(
-        `/surveys/${projectId}/${surveyId}/summary`
+        `/projects/${projectId}/surveys/${surveyId}/summary`
       );
       setSummary(response.data);
       setSelectedSurveyId(surveyId);

@@ -89,8 +89,15 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const statusLabel = (value: string) =>
-  ES.projectStatus[value as keyof typeof ES.projectStatus] ?? value;
+const statusLabel = (value: string) => {
+  const key = value?.toLowerCase?.() as keyof typeof ES.projectStatus;
+  return ES.projectStatus[key] ?? value;
+};
+
+const statusTooltip = (value: string) => {
+  const key = value?.toLowerCase?.() as keyof typeof ES.projectStatusDescriptions;
+  return ES.projectStatusDescriptions[key];
+};
 
 export default function SummaryTab({ projectId }: SummaryTabProps) {
   const navigate = useNavigate();
@@ -310,7 +317,13 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
                   {summary.project.company?.name ?? 'Proyecto'} · {summary.project.name}
                 </h3>
                 <p className="text-sm text-slate-500">
-                  Estado: {statusLabel(summary.project.status)}
+                  Estado:{' '}
+                  <span
+                    className="font-medium text-slate-800"
+                    title={statusTooltip(summary.project.status) ?? undefined}
+                  >
+                    {statusLabel(summary.project.status)}
+                  </span>
                 </p>
               </div>
               <div className="text-sm text-slate-500">

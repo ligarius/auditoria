@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { EstadoProyecto as EstadoProyectoType } from '@prisma/client';
+import type { ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 import { getWorkflow, transition } from './workflow.service.js';
 
 const router = Router();
@@ -15,7 +15,7 @@ router.get('/:projectId', async (req, res) => {
 
 router.post('/:projectId/transition', async (req, res) => {
   try {
-    const next = req.body?.next as EstadoProyectoType;
+    const next = req.body?.next as ProjectWorkflowStateType;
     const data = await transition(req.params.projectId, next);
     res.json(data);
   } catch (e: any) {

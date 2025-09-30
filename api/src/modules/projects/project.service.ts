@@ -1,48 +1,61 @@
 import type { Prisma } from '@prisma/client';
-import type { EstadoProyecto as EstadoProyectoType } from '@prisma/client';
-import { EstadoProyecto } from '@prisma/client';
+import type { ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
+import { ProjectWorkflowState } from '@prisma/client';
 
 import { prisma } from '../../core/config/db.js';
 import { HttpError } from '../../core/errors/http-error.js';
 import { auditService } from '../audit/audit.service.js';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-const WORKFLOW_STATES: readonly EstadoProyectoType[] = [
-  EstadoProyecto.PLANIFICACION,
-  EstadoProyecto.TRABAJO_CAMPO,
-  EstadoProyecto.INFORME,
-  EstadoProyecto.CIERRE,
+const WORKFLOW_STATES: readonly ProjectWorkflowStateType[] = [
+  ProjectWorkflowState.planificacion,
+  ProjectWorkflowState.recoleccion_datos,
+  ProjectWorkflowState.analisis,
+  ProjectWorkflowState.recomendaciones,
+  ProjectWorkflowState.cierre,
 ];
 
-const WORKFLOW_TRANSITIONS: Record<EstadoProyectoType, EstadoProyectoType[]> = {
-  PLANIFICACION: [EstadoProyecto.TRABAJO_CAMPO],
-  TRABAJO_CAMPO: [EstadoProyecto.INFORME],
-  INFORME: [EstadoProyecto.CIERRE],
-  CIERRE: [],
+const WORKFLOW_TRANSITIONS: Record<ProjectWorkflowStateType, ProjectWorkflowStateType[]> = {
+  planificacion: [ProjectWorkflowState.recoleccion_datos],
+  recoleccion_datos: [ProjectWorkflowState.analisis],
+  analisis: [ProjectWorkflowState.recomendaciones],
+  recomendaciones: [ProjectWorkflowState.cierre],
+  cierre: [],
 };
 
-const WORKFLOW_SYNONYMS: Record<string, EstadoProyectoType> = {
-  PLANIFICACION: EstadoProyecto.PLANIFICACION,
-  PLANNING: EstadoProyecto.PLANIFICACION,
-  TRABAJO_CAMPO: EstadoProyecto.TRABAJO_CAMPO,
-  FIELDWORK: EstadoProyecto.TRABAJO_CAMPO,
-  INFORME: EstadoProyecto.INFORME,
-  REPORT: EstadoProyecto.INFORME,
-  CIERRE: EstadoProyecto.CIERRE,
-  CLOSE: EstadoProyecto.CIERRE,
+const WORKFLOW_SYNONYMS: Record<string, ProjectWorkflowStateType> = {
+  PLANIFICACION: ProjectWorkflowState.planificacion,
+  PLANNING: ProjectWorkflowState.planificacion,
+  TRABAJO_CAMPO: ProjectWorkflowState.recoleccion_datos,
+  FIELDWORK: ProjectWorkflowState.recoleccion_datos,
+  RECOLECCION_DATOS: ProjectWorkflowState.recoleccion_datos,
+  DATA_COLLECTION: ProjectWorkflowState.recoleccion_datos,
+  INFORME: ProjectWorkflowState.analisis,
+  REPORT: ProjectWorkflowState.analisis,
+  ANALISIS: ProjectWorkflowState.analisis,
+  ANALYSIS: ProjectWorkflowState.analisis,
+  RECOMENDACIONES: ProjectWorkflowState.recomendaciones,
+  RECOMMENDATIONS: ProjectWorkflowState.recomendaciones,
+  CIERRE: ProjectWorkflowState.cierre,
+  CLOSE: ProjectWorkflowState.cierre,
+  CLOSING: ProjectWorkflowState.cierre,
 };
 
 const coerceWorkflowState = (
   value: unknown,
-  defaultState: EstadoProyectoType = EstadoProyecto.PLANIFICACION,
-): EstadoProyectoType => {
+  defaultState: ProjectWorkflowStateType = ProjectWorkflowState.planificacion,
+): ProjectWorkflowStateType => {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return defaultState;
   }
   const normalizedKey = value.trim().toUpperCase().replace(/\s+/g, '_');
-  const mapped = WORKFLOW_SYNONYMS[normalizedKey] ?? (normalizedKey as EstadoProyectoType);
-  if ((WORKFLOW_STATES as readonly EstadoProyectoType[]).includes(mapped)) {
+  const mapped = WORKFLOW_SYNONYMS[normalizedKey];
+  if (mapped) {
     return mapped;
+  }
+  const lowerKey = value.trim().toLowerCase() as ProjectWorkflowStateType;
+  if ((WORKFLOW_STATES as readonly ProjectWorkflowStateType[]).includes(lowerKey)) {
+    return lowerKey;
   }
   throw new HttpError(400, 'Estado de proyecto inválido');
 };
@@ -80,7 +93,7 @@ export const projectService = {
     data: {
       companyId: string;
       name: string;
-      status?: EstadoProyectoType | string;
+      status?: ProjectWorkflowStateType | string;
       startDate?: Date;
       endDate?: Date;
       settings?: Prisma.JsonValue;
@@ -197,7 +210,7 @@ export const projectService = {
 
   async transitionWorkflow(
     projectId: string,
-    nextStateInput: EstadoProyectoType | string,
+    nextStateInput: ProjectWorkflowStateType | string,
     user: { id: string; role: string }
   ) {
     await enforceProjectAccess(user, projectId);

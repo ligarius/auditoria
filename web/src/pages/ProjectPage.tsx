@@ -8,6 +8,7 @@ import { PROCESS_SUBTABS } from '../features/projects/tabs/ProcessesTab';
 import { ES } from '../i18n/es';
 import { useAuth } from '../hooks/useAuth';
 import api from '../lib/api';
+import { LAST_PROJECT_KEY } from '../lib/session';
 
 interface ProjectSummary {
   id: string;
@@ -55,13 +56,11 @@ const PROJECT_TEMPLATES = {
 
 type ProjectTemplateKey = keyof typeof PROJECT_TEMPLATES;
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/$/, '');
-
 export const ProjectPage = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, isAuth, logout } = useAuth();
 
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -70,12 +69,14 @@ export const ProjectPage = () => {
   const [companiesError, setCompaniesError] = useState<string | null>(null);
   const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pdfExporting, setPdfExporting] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const [showModal, setShowModal] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectStatus, setNewProjectStatus] = useState('PLANIFICACION');
+  const [newProjectStatus, setNewProjectStatus] = useState('planificacion');
   const [selectedCompanyId, setSelectedCompanyId] = useState<
     string | undefined
   >(undefined);
@@ -83,14 +84,8 @@ export const ProjectPage = () => {
     useState<ProjectTemplateKey>('distribution');
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) {
-      window.location.href = '/login';
-    }
-  }, []);
-
-  useEffect(() => {
     if (id) {
-      localStorage.setItem('lastProjectId', id);
+      localStorage.setItem(LAST_PROJECT_KEY, id);
     }
   }, [id]);
 
@@ -162,10 +157,7 @@ export const ProjectPage = () => {
   const canCreateProject = role === 'admin' || role === 'consultor';
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('lastProjectId');
-    window.location.href = '/login';
+    logout();
   };
 
   const handleExport = async () => {
@@ -184,6 +176,29 @@ export const ProjectPage = () => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('No se pudo exportar el proyecto', error);
+    }
+  };
+
+  const handlePdfExport = async () => {
+    if (!id) return;
+    setPdfError(null);
+    setPdfExporting(true);
+    try {
+      const response = await api.get(`/projects/${id}/report.pdf`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `reporte-proyecto-${id}.pdf`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('No se pudo exportar el PDF', error);
+      setPdfError('No se pudo generar el PDF del proyecto.');
+    } finally {
+      setPdfExporting(false);
     }
   };
 
@@ -212,7 +227,7 @@ export const ProjectPage = () => {
   const closeModal = () => {
     setShowModal(false);
     setNewProjectName('');
-    setNewProjectStatus('PLANIFICACION');
+    setNewProjectStatus('planificacion');
     setSelectedTemplate('distribution');
     setSelectedCompanyId(undefined);
     setCreateError(null);
@@ -243,7 +258,7 @@ export const ProjectPage = () => {
       const createdId = response.data?.id as string | undefined;
       if (createdId) {
         navigate(`/projects/${createdId}`, { replace: true });
-        localStorage.setItem('lastProjectId', createdId);
+        localStorage.setItem(LAST_PROJECT_KEY, createdId);
       }
     } catch (error) {
       console.error('No se pudo crear el proyecto', error);
@@ -289,19 +304,18 @@ export const ProjectPage = () => {
                 onClick={handleExport}
                 className="rounded bg-slate-900 px-3 py-1 text-sm font-medium text-white"
               >
-                Exportar
+                {ES.export.zip}
               </button>
-              {id && (
-                <button
-                  onClick={() => window.open(`${API_BASE_URL}/export/projects/${id}/pdf`, '_blank')}
-                  className="rounded border border-slate-300 px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100"
-                >
-                  {ES.export.pdf}
-                </button>
-              )}
+              <button
+                onClick={handlePdfExport}
+                disabled={pdfExporting}
+                className="rounded border border-slate-300 px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pdfExporting ? 'Generando…' : ES.export.pdf}
+              </button>
             </div>
           )}
-          {localStorage.getItem('token') && (
+          {isAuth && (
             <button
               onClick={handleLogout}
               className="rounded bg-black px-3 py-1 text-sm font-medium text-white"
@@ -311,6 +325,12 @@ export const ProjectPage = () => {
           )}
         </div>
       </header>
+
+      {pdfError && (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {pdfError}
+        </div>
+      )}
 
       {projectsError && (
         <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -401,10 +421,11 @@ export const ProjectPage = () => {
                   onChange={(event) => setNewProjectStatus(event.target.value)}
                   className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 >
-                  <option value="PLANIFICACION">{ES.projectStatus.PLANIFICACION}</option>
-                  <option value="TRABAJO_CAMPO">{ES.projectStatus.TRABAJO_CAMPO}</option>
-                  <option value="INFORME">{ES.projectStatus.INFORME}</option>
-                  <option value="CIERRE">{ES.projectStatus.CIERRE}</option>
+                  <option value="planificacion">{ES.projectStatus.planificacion}</option>
+                  <option value="recoleccion_datos">{ES.projectStatus.recoleccion_datos}</option>
+                  <option value="analisis">{ES.projectStatus.analisis}</option>
+                  <option value="recomendaciones">{ES.projectStatus.recomendaciones}</option>
+                  <option value="cierre">{ES.projectStatus.cierre}</option>
                 </select>
               </div>
               <div>

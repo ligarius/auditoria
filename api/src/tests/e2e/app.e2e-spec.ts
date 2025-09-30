@@ -96,6 +96,14 @@ type PrismaMock = {
   user: {
     findUnique: jest.Mock;
   };
+  survey: {
+    findMany: jest.Mock;
+    create: jest.Mock;
+    findFirst: jest.Mock;
+  };
+  surveyQuestion: {
+    create: jest.Mock;
+  };
 };
 
 var prismaMock: PrismaMock;
@@ -284,6 +292,37 @@ prismaMock = {
     update: jest.fn(),
     delete: jest.fn()
   },
+  survey: {
+    findMany: jest.fn(() => Promise.resolve([])),
+    create: jest.fn(({ data }) =>
+      Promise.resolve({
+        id: 'survey-created',
+        projectId: data.projectId,
+        title: data.title,
+        description: data.description ?? null,
+        isActive: data.isActive ?? true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        questions: [],
+      }),
+    ),
+    findFirst: jest.fn(() => Promise.resolve(null)),
+  },
+  surveyQuestion: {
+    create: jest.fn(({ data }) =>
+      Promise.resolve({
+        id: 'question-created',
+        surveyId: data.surveyId,
+        type: data.type,
+        text: data.text,
+        scaleMin: data.scaleMin ?? null,
+        scaleMax: data.scaleMax ?? null,
+        required: data.required ?? true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    ),
+  },
   auditLog: {
     create: jest.fn()
   },
@@ -372,5 +411,156 @@ describe('Companies API', () => {
     expect(response.body.name).toBe('Nueva Empresa');
     expect(response.body.taxId).toBe('99.999.999-9');
     expect(response.body._count.projects).toBe(0);
+  });
+});
+
+describe('Project surveys API', () => {
+  const adminToken = signAccessToken({ sub: 'admin-user', email: 'admin@test.com', role: 'admin' });
+
+  it('lista encuestas del proyecto', async () => {
+    const mockSurveys = [
+      {
+        id: 'survey-1',
+        projectId: 'project-a',
+        title: 'Satisfacción',
+        description: 'Encuesta de satisfacción',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        questions: [],
+      },
+    ];
+    prismaMock.survey.findMany.mockResolvedValueOnce(mockSurveys);
+
+    const response = await request(app)
+      .get('/api/projects/project-a/surveys')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'survey-1' })]));
+    expect(prismaMock.survey.findMany).toHaveBeenCalledWith({
+      where: { projectId: 'project-a' },
+      orderBy: { createdAt: 'desc' },
+      include: { questions: { orderBy: { createdAt: 'asc' } } },
+    });
+  });
+
+  it('crea una nueva encuesta', async () => {
+    prismaMock.survey.create.mockResolvedValueOnce({
+      id: 'survey-new',
+      projectId: 'project-a',
+      title: 'Clima laboral',
+      description: 'Pulso interno',
+      isActive: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      questions: [],
+    });
+
+    const response = await request(app)
+      .post('/api/projects/project-a/surveys')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ title: 'Clima laboral', description: 'Pulso interno', isActive: false });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({ id: 'survey-new', isActive: false });
+    expect(prismaMock.survey.create).toHaveBeenCalledWith({
+      data: {
+        projectId: 'project-a',
+        title: 'Clima laboral',
+        description: 'Pulso interno',
+        isActive: false,
+      },
+      include: { questions: true },
+    });
+  });
+
+  it('agrega una pregunta a la encuesta', async () => {
+    prismaMock.survey.findFirst.mockResolvedValueOnce({ id: 'survey-1' });
+    prismaMock.surveyQuestion.create.mockResolvedValueOnce({
+      id: 'question-1',
+      surveyId: 'survey-1',
+      type: 'Likert',
+      text: 'Califique el servicio',
+      scaleMin: 1,
+      scaleMax: 5,
+      required: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await request(app)
+      .post('/api/projects/project-a/surveys/survey-1/questions')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ type: 'Likert', text: 'Califique el servicio', scaleMin: 1, scaleMax: 5, required: true });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({ id: 'question-1', type: 'Likert' });
+    expect(prismaMock.surveyQuestion.create).toHaveBeenCalledWith({
+      data: {
+        surveyId: 'survey-1',
+        type: 'Likert',
+        text: 'Califique el servicio',
+        scaleMin: 1,
+        scaleMax: 5,
+        required: true,
+      },
+    });
+  });
+
+  it('devuelve el resumen de respuestas', async () => {
+    prismaMock.survey.findFirst.mockResolvedValueOnce({
+      id: 'survey-1',
+      title: 'Feedback',
+      description: null,
+      isActive: true,
+      questions: [
+        {
+          id: 'q1',
+          surveyId: 'survey-1',
+          type: 'Likert',
+          text: 'Satisfacción',
+          scaleMin: 1,
+          scaleMax: 5,
+          required: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      responses: [
+        {
+          id: 'r1',
+          surveyId: 'survey-1',
+          submittedAt: new Date(),
+          createdAt: new Date(),
+          answers: [
+            { id: 'a1', responseId: 'r1', questionId: 'q1', value: 4, createdAt: new Date() },
+          ],
+        },
+        {
+          id: 'r2',
+          surveyId: 'survey-1',
+          submittedAt: new Date(),
+          createdAt: new Date(),
+          answers: [
+            { id: 'a2', responseId: 'r2', questionId: 'q1', value: 5, createdAt: new Date() },
+          ],
+        },
+      ],
+    });
+
+    const response = await request(app)
+      .get('/api/projects/project-a/surveys/survey-1/summary')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.summaries[0]).toMatchObject({ responses: 2, average: 4.5 });
+    expect(prismaMock.survey.findFirst).toHaveBeenCalledWith({
+      where: { id: 'survey-1', projectId: 'project-a' },
+      include: {
+        questions: { orderBy: { createdAt: 'asc' } },
+        responses: { include: { answers: true } },
+      },
+    });
   });
 });

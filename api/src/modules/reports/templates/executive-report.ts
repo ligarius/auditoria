@@ -1,10 +1,11 @@
-import type { EstadoProyecto } from '@prisma/client';
+import type { ProjectWorkflowState } from '@prisma/client';
 
-const WORKFLOW_LABELS: Record<EstadoProyecto, string> = {
-  PLANIFICACION: 'Planificación',
-  TRABAJO_CAMPO: 'Trabajo de campo',
-  INFORME: 'Informe',
-  CIERRE: 'Cierre',
+const WORKFLOW_LABELS: Record<ProjectWorkflowState, string> = {
+  planificacion: 'Planificación',
+  recoleccion_datos: 'Recolección de datos',
+  analisis: 'Análisis',
+  recomendaciones: 'Recomendaciones',
+  cierre: 'Cierre',
 };
 
 const escapeHtml = (value: unknown): string => {
@@ -51,7 +52,7 @@ export interface ExecutiveReportData {
   projectName: string;
   companyName: string;
   ownerName?: string | null;
-  workflowState: EstadoProyecto;
+  workflowState: ProjectWorkflowState;
   generatedAt: Date;
   kpis: ExecutiveKpiEntry[];
   findings: ExecutiveFindingEntry[];

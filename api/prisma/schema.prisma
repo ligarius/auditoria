@@ -109,6 +109,7 @@ model File {
   /// LADOS OPUESTOS (NUEVOS) — ¡IMPORTANTE nombrar las relaciones!
   dataRequestItems DataRequestItem[] @relation(name: "FileToDataRequestItems")
   processAssets    ProcessAsset[]    @relation(name: "FileToProcessAssets")
+  interviewAudio   Interview[]       @relation(name: "FileToInterviewAudio")
 }
 
 model DataRequestItem {
@@ -264,21 +265,28 @@ model Respondent {
 }
 
 model Interview {
-  id            String               @id @default(cuid())
-  versionId     String
+  id            String                @id @default(cuid())
   projectId     String
+  personName    String
+  role          String?
+  area          String?
+  date          DateTime?
+  transcript    String?
+  notes         String?
+  audioFileId   String?
+  versionId     String?
   interviewerId String
   respondentId  String?
-  status        String
+  status        String?               @default("draft")
   startedAt     DateTime?
   finishedAt    DateTime?
-  notes         String?
   audioKey      String?
-  createdAt     DateTime             @default(now())
-  version       QuestionnaireVersion @relation(fields: [versionId], references: [id])
-  project       Project              @relation(fields: [projectId], references: [id])
-  interviewer   User                 @relation(fields: [interviewerId], references: [id])
-  respondent    Respondent?          @relation(fields: [respondentId], references: [id])
+  createdAt     DateTime              @default(now())
+  version       QuestionnaireVersion? @relation(fields: [versionId], references: [id])
+  project       Project               @relation(fields: [projectId], references: [id])
+  interviewer   User                  @relation(fields: [interviewerId], references: [id])
+  respondent    Respondent?           @relation(fields: [respondentId], references: [id])
+  audioFile     File?                 @relation(name: "FileToInterviewAudio", fields: [audioFileId], references: [id])
 
   @@index([projectId])
   @@index([versionId])

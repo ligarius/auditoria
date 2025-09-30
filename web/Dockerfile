@@ -1,7 +1,16 @@
 FROM node:18-alpine AS deps
 WORKDIR /app
+
+ARG NPM_CONFIG_PROXY=""
+ARG NPM_CONFIG_HTTPS_PROXY=""
+ARG NPM_CONFIG_REGISTRY=""
+
 COPY package*.json ./
-RUN npm ci
+RUN set -eux; \
+  if [ -n "$NPM_CONFIG_PROXY" ]; then npm config set proxy "$NPM_CONFIG_PROXY"; fi; \
+  if [ -n "$NPM_CONFIG_HTTPS_PROXY" ]; then npm config set https-proxy "$NPM_CONFIG_HTTPS_PROXY"; fi; \
+  if [ -n "$NPM_CONFIG_REGISTRY" ]; then npm config set registry "$NPM_CONFIG_REGISTRY"; fi; \
+  npm ci
 
 FROM deps AS build
 WORKDIR /app

@@ -29,8 +29,8 @@ runMigrations();
 const prisma = new PrismaClient();
 
 const ensureWorkflowEnum = () => {
-  const expected = [
-    'planificacion',
+const expected = ["PLANNING","FIELDWORK","REPORT","CLOSE"]
+    'PLANNING',
     'recoleccion_datos',
     'analisis',
     'recomendaciones',
@@ -83,7 +83,7 @@ async function main() {
     create: {
       companyId: nutrial.id,
       name: 'Nutrial – Auditoría 2025',
-      status: ProjectWorkflowState.planificacion,
+      status: ProjectWorkflowState.PLANNING,
       ownerId: admin.id,
       settings: { enabledFeatures: ['reception', 'picking', 'dispatch'] },
       memberships: {
@@ -784,6 +784,18 @@ async function main() {
     findings: findings.map((finding) => finding.title),
     kpis: kpis.map((kpi) => kpi.name),
   });
+}
+
+function normalizeStatus(input) {
+  if (!input) return 'PLANNING';
+  const s = String(input).trim().toUpperCase();
+
+  // tolera español/inglés y minúsculas
+  if (['PLANIFICACION', 'PLANNING'].includes(s)) return 'PLANNING';
+  if (['TRABAJO_CAMPO', 'FIELDWORK'].includes(s)) return 'FIELDWORK';
+  if (['INFORME', 'REPORT'].includes(s)) return 'REPORT';
+  if (['CIERRE', 'CLOSE'].includes(s)) return 'CLOSE';
+  return 'PLANNING';
 }
 
 main()

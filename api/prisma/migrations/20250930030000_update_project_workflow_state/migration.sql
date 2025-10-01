@@ -1,34 +1,24 @@
--- Actualiza el enum de estados de proyecto a valores en español en minúsculas
+-- Asegura que exista el enum destino
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProjectWorkflowState') THEN
-    CREATE TYPE "ProjectWorkflowState" AS ENUM ('planificacion','recoleccion_datos','analisis','recomendaciones','cierre');
-  END IF;
-END $$;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProjectWorkflowState') THEN
+        CREATE TYPE "ProjectWorkflowState" AS ENUM ('PLANNING','FIELDWORK','REPORT','CLOSE');
+    END IF;
+END$$;
 
-ALTER TABLE "Project"
-  ALTER COLUMN "status" TYPE text USING "status"::text;
+-- 1) Quitar DEFAULT antes del cambio de tipo
+ALTER TABLE "Project" ALTER COLUMN "status" DROP DEFAULT;
 
-UPDATE "Project"
-SET "status" = CASE
-  WHEN "status" IN ('PLANIFICACION', 'planificacion') THEN 'planificacion'
-  WHEN "status" IN ('TRABAJO_CAMPO', 'FIELDWORK', 'recoleccion_datos') THEN 'recoleccion_datos'
-  WHEN "status" IN ('INFORME', 'REPORT', 'analisis') THEN 'analisis'
-  WHEN "status" IN ('RECOMENDACIONES', 'RECOMMENDATIONS') THEN 'recomendaciones'
-  WHEN "status" IN ('CIERRE', 'CLOSE', 'closing', 'cierre') THEN 'cierre'
-  ELSE 'planificacion'
-END;
-
+-- 2) Cambiar tipo desde el valor actual (posiblemente enum "EstadoProyecto" o texto) al nuevo enum en inglés
 ALTER TABLE "Project"
   ALTER COLUMN "status" TYPE "ProjectWorkflowState"
-  USING "status"::"ProjectWorkflowState";
+  USING CASE
+    WHEN "status"::text IN ('PLANIFICACION','PLANNING') THEN 'PLANNING'::"ProjectWorkflowState"
+    WHEN "status"::text IN ('TRABAJO_CAMPO','FIELDWORK') THEN 'FIELDWORK'::"ProjectWorkflowState"
+    WHEN "status"::text IN ('INFORME','REPORT') THEN 'REPORT'::"ProjectWorkflowState"
+    WHEN "status"::text IN ('CIERRE','CLOSE') THEN 'CLOSE'::"ProjectWorkflowState"
+    ELSE 'PLANNING'::"ProjectWorkflowState"
+  END;
 
-ALTER TABLE "Project"
-  ALTER COLUMN "status" SET DEFAULT 'planificacion';
-
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'EstadoProyecto') THEN
-    DROP TYPE "EstadoProyecto";
-  END IF;
-END $$;
+-- 3) Volver a establecer DEFAULT ya con el tipo nuevo
+ALTER TABLE "Project" ALTER COLUMN "status" SET DEFAULT 'PLANNING'::"ProjectWorkflowState";

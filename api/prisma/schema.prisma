@@ -26,6 +26,35 @@ enum ProjectWorkflowState {
   cierre
 }
 
+enum ProcessType {
+  AS_IS
+  TO_BE
+}
+
+enum SopStatus {
+  draft
+  published
+}
+
+enum ChecklistStatus {
+  open
+  in_progress
+  completed
+  signed
+}
+
+enum ActionCategory {
+  quick_win
+  capex
+  opex
+}
+
+enum ActionStatus {
+  todo
+  in_progress
+  done
+}
+
 model Project {
   id                     String                  @id @default(cuid())
   companyId              String
@@ -43,6 +72,8 @@ model Project {
   dataItems              DataRequestItem[]
   tasks                  ProjectTask[]
   processes              ProcessAsset[]
+  processCatalog         Process[]
+  actionItems            ActionItem[]
   systems                SystemInventory[]
   coverages              ProcessCoverage[]
   integrations           Integration[]
@@ -86,6 +117,8 @@ model User {
   committeesOwned       Committee[]             @relation("CommitteeOwner")
   minutesAuthored       Minute[]                @relation("MinuteAuthor")
   approvalSteps         ApprovalStep[]          @relation("ApprovalStepApprover")
+  assignedChecklists    Checklist[]             @relation("ChecklistAssignee")
+  signedChecklists      Checklist[]             @relation("ChecklistSignedBy")
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   QuestionnaireTemplate QuestionnaireTemplate[]
@@ -333,6 +366,80 @@ model ProcessAsset {
   file      File?   @relation(name: "FileToProcessAssets", fields: [fileId], references: [id])
 }
 
+model Process {
+  id        String      @id @default(cuid())
+  projectId String
+  name      String
+  type      ProcessType
+  version   Int         @default(1)
+  description String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  project   Project     @relation(fields: [projectId], references: [id])
+  sops      Sop[]
+
+  @@index([projectId])
+  @@unique([projectId, name, type, version])
+}
+
+model Sop {
+  id        String    @id @default(cuid())
+  processId String
+  title     String
+  version   Int       @default(1)
+  status    SopStatus @default(draft)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  process   Process   @relation(fields: [processId], references: [id])
+  steps     SopStep[]
+  checklists Checklist[]
+
+  @@index([processId])
+}
+
+model SopStep {
+  id     String @id @default(cuid())
+  sopId  String
+  order  Int
+  text   String
+  kpi    Json?
+  sop    Sop    @relation(fields: [sopId], references: [id])
+
+  @@index([sopId])
+  @@unique([sopId, order])
+}
+
+model Checklist {
+  id          String          @id @default(cuid())
+  sopId       String
+  assigneeId  String?
+  status      ChecklistStatus @default(open)
+  signedById  String?
+  signedAt    DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  sop         Sop             @relation(fields: [sopId], references: [id])
+  assignee    User?           @relation("ChecklistAssignee", fields: [assigneeId], references: [id])
+  signedBy    User?           @relation("ChecklistSignedBy", fields: [signedById], references: [id])
+  items       ChecklistItem[]
+
+  @@index([sopId])
+  @@index([assigneeId])
+  @@index([signedById])
+}
+
+model ChecklistItem {
+  id          String    @id @default(cuid())
+  checklistId String
+  text        String
+  isDone      Boolean   @default(false)
+  checklist   Checklist @relation(fields: [checklistId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([checklistId])
+}
+
 model SystemInventory {
   id            String    @id @default(cuid())
   projectId     String
@@ -497,13 +604,38 @@ model Finding {
   evidence       String?
   impact         String
   recommendation String
-  quickWin       Boolean   @default(false)
+  severity       String    @default("media")
+  area           String?
+  costEstimate   Float?
+  isQuickWin     Boolean   @default(false)
   effortDays     Int?
   responsibleR   String?
   accountableA   String?
   targetDate     DateTime?
-  status         String    @default("Open")
+  status         String    @default("open")
   project        Project   @relation(fields: [projectId], references: [id])
+  actionItems    ActionItem[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ActionItem {
+  id          String        @id @default(cuid())
+  projectId   String
+  findingId   String?
+  title       String
+  description String?
+  owner       String?
+  dueDate     DateTime?
+  category    ActionCategory @default(quick_win)
+  status      ActionStatus   @default(todo)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  project     Project       @relation(fields: [projectId], references: [id])
+  finding     Finding?      @relation(fields: [findingId], references: [id])
+
+  @@index([projectId])
+  @@index([findingId])
 }
 
 model POCItem {

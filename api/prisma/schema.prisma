@@ -110,6 +110,7 @@ model Project {
   barcodeLabels          BarcodeLabel[]
   skuDupCandidates       SkuDupCandidate[]
   inventoryCounts        InventoryCount[]
+  fiveSAudits            FiveSAudit[]
   auditLogs              AuditLog[]
   questionnaireResponses QuestionnaireResponse[]
   surveyLinks            SurveyLink[]
@@ -139,11 +140,32 @@ model User {
   signedChecklists      Checklist[]             @relation("ChecklistSignedBy")
   installedLabels       BarcodeLabel[]          @relation("BarcodeInstalledBy")
   inventoryTasks        InventoryTask[]         @relation("InventoryTaskAssignedTo")
+  fiveSAudits           FiveSAudit[]            @relation("FiveSAuditCreatedBy")
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   QuestionnaireTemplate QuestionnaireTemplate[]
   SurveyLink            SurveyLink[]
   Interview             Interview[]
+}
+
+model FiveSAudit {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id])
+  area         String
+  score        Float
+  auditDate    DateTime @default(now())
+  photos       Json     @default("[]")
+  actions      Json     @default("[]")
+  notes        String?
+  createdById  String?
+  createdBy    User?    @relation("FiveSAuditCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("FiveS_Audit")
+  @@index([projectId], name: "FiveS_Audit_projectId_idx")
+  @@index([auditDate], name: "FiveS_Audit_auditDate_idx")
 }
 
 model Membership {

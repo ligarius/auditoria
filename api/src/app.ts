@@ -30,6 +30,7 @@ import { projectPlanRouter } from './modules/projectPlan/project-plan.router.js'
 import { reportRouter } from './modules/reports/report.router.js';
 import { interviewRouter } from './modules/interviews/interview.router.js';
 import { inventoryRouter } from './modules/inventory/inventory.router.js';
+import { fiveSRouter } from './modules/fiveS/five-s.router.js';
 
 const appRouter = Router();
 
@@ -63,5 +64,6 @@ appRouter.use('/project-plan', projectPlanRouter);
 appRouter.use('/reports', reportRouter);
 appRouter.use('/interviews', interviewRouter);
 appRouter.use('/inventory', inventoryRouter);
+appRouter.use('/fiveS', fiveSRouter);
 
 export { appRouter };

@@ -16,6 +16,7 @@ import FindingsTab from './tabs/FindingsTab';
 import WorkflowTab from './tabs/WorkflowTab';
 import GovernanceTab from './tabs/GovernanceTab';
 import InventoryTab from '../inventory/InventoryTab';
+import LayoutTab from '../layout/LayoutTab';
 import FiveSTab from './tabs/FiveSTab';
 import HseTab from './tabs/HseTab';
 
@@ -50,6 +51,7 @@ export const ProjectTabs: {
   { value: 'fiveS', label: '5S', component: FiveSTab },
   { value: 'hse', label: 'HSE', component: HseTab },
   { value: 'inventory', label: 'Maestro & Etiquetas', component: InventoryTab },
+  { value: 'layout', label: 'Layout & Capacidad', component: LayoutTab },
   { value: 'security', label: 'Seguridad', component: SecurityTab },
   { value: 'risks', label: 'Riesgos', component: RisksTab },
   { value: 'findings', label: 'Hallazgos', component: FindingsTab },

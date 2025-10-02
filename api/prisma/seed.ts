@@ -497,6 +497,63 @@ async function main(): Promise<void> {
     },
   });
 
+  const governanceCommittee = await prisma.committee.upsert({
+    where: { id: 'seed-committee-gobernanza' },
+    update: {
+      projectId: nutrialProject.id,
+      name: 'Comité de Gobernanza',
+      description: 'Seguimiento de riesgos, decisiones y cambios de alcance.',
+      ownerId: consultor.id,
+    },
+    create: {
+      id: 'seed-committee-gobernanza',
+      projectId: nutrialProject.id,
+      name: 'Comité de Gobernanza',
+      description: 'Seguimiento de riesgos, decisiones y cambios de alcance.',
+      ownerId: consultor.id,
+    },
+  });
+
+  const weeklyMeeting = await prisma.meeting.upsert({
+    where: { id: 'seed-meeting-semanal' },
+    update: {
+      projectId: nutrialProject.id,
+      committeeId: governanceCommittee.id,
+      title: 'Reunión semanal de proyecto',
+      agenda: 'Revisar riesgos, KPIs y cambios de alcance.',
+      scheduledAt: new Date('2025-01-15T14:00:00.000Z'),
+      location: 'Sala híbrida / Teams',
+      status: 'scheduled',
+    },
+    create: {
+      id: 'seed-meeting-semanal',
+      projectId: nutrialProject.id,
+      committeeId: governanceCommittee.id,
+      title: 'Reunión semanal de proyecto',
+      agenda: 'Revisar riesgos, KPIs y cambios de alcance.',
+      scheduledAt: new Date('2025-01-15T14:00:00.000Z'),
+      location: 'Sala híbrida / Teams',
+      status: 'scheduled',
+    },
+  });
+
+  await prisma.minute.upsert({
+    where: { id: 'seed-minute-reunion-semanal' },
+    update: {
+      meetingId: weeklyMeeting.id,
+      authorId: consultor.id,
+      content:
+        'Se acordó reforzar el seguimiento de riesgos críticos y preparar propuesta de cambio de alcance para automatización de picking.',
+    },
+    create: {
+      id: 'seed-minute-reunion-semanal',
+      meetingId: weeklyMeeting.id,
+      authorId: consultor.id,
+      content:
+        'Se acordó reforzar el seguimiento de riesgos críticos y preparar propuesta de cambio de alcance para automatización de picking.',
+    },
+  });
+
   const risks = [
     {
       id: 'seed-risk-continuidad-wms',
@@ -509,6 +566,7 @@ async function main(): Promise<void> {
       mitigation: 'Implementar plan de failover activo-activo',
       owner: 'CIO',
       dueDate: new Date('2025-02-15T00:00:00.000Z'),
+      meetingId: weeklyMeeting.id,
     },
     {
       id: 'seed-risk-sla-recepcion',
@@ -521,6 +579,7 @@ async function main(): Promise<void> {
       mitigation: 'Automatizar alertas tempranas y reservas de dock',
       owner: 'Jefe Recepción',
       dueDate: new Date('2025-01-31T00:00:00.000Z'),
+      meetingId: weeklyMeeting.id,
     },
     {
       id: 'seed-risk-credenciales-compartidas',
@@ -533,6 +592,7 @@ async function main(): Promise<void> {
       mitigation: 'Completar enrolamiento MFA y capacitaciones',
       owner: 'Seguridad TI',
       dueDate: new Date('2025-02-20T00:00:00.000Z'),
+      meetingId: null,
     },
   ];
 
@@ -659,73 +719,171 @@ async function main(): Promise<void> {
   ];
 
   for (const decision of decisions) {
-    await prisma.decisionLog.upsert({
+    await prisma.decision.upsert({
       where: { id: decision.id },
       update: {
         ...decision,
         projectId: nutrialProject.id,
+        committeeId: governanceCommittee.id,
+        meetingId: weeklyMeeting.id,
       },
       create: {
         ...decision,
         projectId: nutrialProject.id,
+        committeeId: governanceCommittee.id,
+        meetingId: weeklyMeeting.id,
       },
     });
   }
 
-  const kpis = [
+  const scopeChange = await prisma.scopeChange.upsert({
+    where: { id: 'seed-scopechange-rutas' },
+    update: {
+      projectId: nutrialProject.id,
+      meetingId: weeklyMeeting.id,
+      title: 'Agregar bodegas regionales al alcance',
+      description: 'Extender la revisión operativa a los centros regionales del norte.',
+      impact: 'Incrementa duración en 2 semanas y requiere 1 consultor adicional.',
+      status: 'proposed',
+      requestedBy: 'PMO logística',
+      requestedAt: new Date('2025-01-14T00:00:00.000Z'),
+      decision: null,
+    },
+    create: {
+      id: 'seed-scopechange-rutas',
+      projectId: nutrialProject.id,
+      meetingId: weeklyMeeting.id,
+      title: 'Agregar bodegas regionales al alcance',
+      description: 'Extender la revisión operativa a los centros regionales del norte.',
+      impact: 'Incrementa duración en 2 semanas y requiere 1 consultor adicional.',
+      status: 'proposed',
+      requestedBy: 'PMO logística',
+      requestedAt: new Date('2025-01-14T00:00:00.000Z'),
+      decision: null,
+    },
+  });
+
+  const approvalWorkflow = await prisma.approvalWorkflow.upsert({
+    where: { id: 'seed-approval-scopechange' },
+    update: {
+      projectId: nutrialProject.id,
+      resourceType: 'ScopeChange',
+      resourceId: scopeChange.id,
+      status: 'pending',
+      dueAt: new Date('2025-01-20T00:00:00.000Z'),
+      steps: {
+        deleteMany: {},
+        create: [
+          {
+            order: 1,
+            approverId: admin.id,
+            approverRole: 'Sponsor',
+            status: 'pending',
+          },
+          {
+            order: 2,
+            approverId: consultor.id,
+            approverRole: 'ConsultorLider',
+            status: 'pending',
+          },
+        ],
+      },
+      slaTimers: {
+        deleteMany: {},
+        create: [
+          {
+            startedAt: new Date('2025-01-14T00:00:00.000Z'),
+            dueAt: new Date('2025-01-20T00:00:00.000Z'),
+            status: 'running',
+          },
+        ],
+      },
+    },
+    create: {
+      id: 'seed-approval-scopechange',
+      projectId: nutrialProject.id,
+      resourceType: 'ScopeChange',
+      resourceId: scopeChange.id,
+      status: 'pending',
+      dueAt: new Date('2025-01-20T00:00:00.000Z'),
+      steps: {
+        create: [
+          {
+            order: 1,
+            approverId: admin.id,
+            approverRole: 'Sponsor',
+            status: 'pending',
+          },
+          {
+            order: 2,
+            approverId: consultor.id,
+            approverRole: 'ConsultorLider',
+            status: 'pending',
+          },
+        ],
+      },
+      slaTimers: {
+        create: [
+          {
+            startedAt: new Date('2025-01-14T00:00:00.000Z'),
+            dueAt: new Date('2025-01-20T00:00:00.000Z'),
+            status: 'running',
+          },
+        ],
+      },
+      scopeChange: {
+        connect: { id: scopeChange.id },
+      },
+    },
+  });
+
+  await prisma.scopeChange.update({
+    where: { id: scopeChange.id },
+    data: { approvalWorkflowId: approvalWorkflow.id },
+  });
+
+  const kpiSnapshots = [
     {
-      id: 'seed-kpi-plan-remediacion',
-      name: 'Nivel de cumplimiento plan de remediación',
-      value: 78,
-      unit: '%',
-      date: new Date('2025-01-13T00:00:00.000Z'),
+      id: 'seed-kpi-snapshot-2025-01-05',
+      date: new Date('2025-01-05T00:00:00.000Z'),
+      otif: 91.4,
+      pickPerHour: 108,
+      inventoryAccuracy: 96.8,
+      occupancyPct: 81.2,
+      costPerOrder: 3.7,
+      kmPerDrop: 7.8,
     },
     {
-      id: 'seed-kpi-descarga-promedio',
-      name: 'Tiempo promedio de descarga',
-      value: 42,
-      unit: 'minutos',
-      date: new Date('2025-01-10T00:00:00.000Z'),
-    },
-    {
-      id: 'seed-kpi-exactitud-inventario',
-      name: 'Exactitud de inventario WMS vs. físico',
-      value: 97.5,
-      unit: '%',
-      date: new Date('2025-01-08T00:00:00.000Z'),
-    },
-    {
-      id: 'seed-kpi-desviacion-costos',
-      name: 'Desviación de costos logísticos',
-      value: 5.2,
-      unit: '% sobre presupuesto',
+      id: 'seed-kpi-snapshot-2025-01-12',
       date: new Date('2025-01-12T00:00:00.000Z'),
+      otif: 92.6,
+      pickPerHour: 111,
+      inventoryAccuracy: 97.5,
+      occupancyPct: 82.9,
+      costPerOrder: 3.6,
+      kmPerDrop: 7.5,
     },
     {
-      id: 'seed-kpi-satisfaccion-b2b',
-      name: 'Satisfacción encuesta clientes B2B',
-      value: 4.4,
-      unit: '/5',
-      date: new Date('2025-01-09T00:00:00.000Z'),
-    },
-    {
-      id: 'seed-kpi-incidentes-ti',
-      name: 'Incidentes críticos TI en 30 días',
-      value: 1,
-      unit: 'casos',
-      date: new Date('2025-01-07T00:00:00.000Z'),
+      id: 'seed-kpi-snapshot-2025-01-19',
+      date: new Date('2025-01-19T00:00:00.000Z'),
+      otif: 93.8,
+      pickPerHour: 114,
+      inventoryAccuracy: 97.9,
+      occupancyPct: 83.4,
+      costPerOrder: 3.5,
+      kmPerDrop: 7.3,
     },
   ];
 
-  for (const kpi of kpis) {
-    await prisma.kPI.upsert({
-      where: { id: kpi.id },
+  for (const snapshot of kpiSnapshots) {
+    await prisma.kpiSnapshot.upsert({
+      where: { id: snapshot.id },
       update: {
-        ...kpi,
+        ...snapshot,
         projectId: nutrialProject.id,
       },
       create: {
-        ...kpi,
+        ...snapshot,
         projectId: nutrialProject.id,
       },
     });
@@ -784,7 +942,10 @@ async function main(): Promise<void> {
     dataRequests: dataRequests.map((item) => item.title),
     risks: risks.map((risk) => risk.description),
     findings: findings.map((finding) => finding.title),
-    kpis: kpis.map((kpi) => kpi.name),
+    committees: [governanceCommittee.name],
+    meetings: [weeklyMeeting.title],
+    approvals: [approvalWorkflow.resourceType],
+    kpiSnapshots: kpiSnapshots.map((snapshot) => snapshot.date.toISOString()),
   });
 }
 

@@ -30,6 +30,7 @@ const TAB_TO_PATH: Record<string, string> = {
   risks: 'risks',
   findings: 'findings',
   poc: 'poc',
+  governance: 'governance',
   decisions: 'decisions',
   kpis: 'kpis',
   export: 'export',

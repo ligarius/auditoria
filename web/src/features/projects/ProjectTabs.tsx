@@ -14,6 +14,7 @@ import KpisTab from './tabs/KpisTab';
 import RisksTab from './tabs/RisksTab';
 import FindingsTab from './tabs/FindingsTab';
 import WorkflowTab from './tabs/WorkflowTab';
+import GovernanceTab from './tabs/GovernanceTab';
 
 interface TabComponentProps {
   projectId: string;
@@ -47,6 +48,7 @@ export const ProjectTabs: {
   { value: 'risks', label: 'Riesgos', component: RisksTab },
   { value: 'findings', label: 'Hallazgos', component: FindingsTab },
   { value: 'poc', label: 'POC', component: POCTab },
+  { value: 'governance', label: 'Gobernanza', component: GovernanceTab },
   { value: 'decisions', label: 'Decisiones', component: DecisionsTab },
   { value: 'kpis', label: 'KPIs', component: KpisTab },
   {

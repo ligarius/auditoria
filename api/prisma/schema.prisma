@@ -60,6 +60,12 @@ enum BarcodeLabelType {
   LOCATION
 }
 
+enum InventoryCountStatus {
+  planned
+  running
+  closed
+}
+
 model Project {
   id                     String                  @id @default(cuid())
   companyId              String
@@ -103,6 +109,7 @@ model Project {
   skus                   Sku[]
   barcodeLabels          BarcodeLabel[]
   skuDupCandidates       SkuDupCandidate[]
+  inventoryCounts        InventoryCount[]
   auditLogs              AuditLog[]
   questionnaireResponses QuestionnaireResponse[]
   surveyLinks            SurveyLink[]
@@ -131,6 +138,7 @@ model User {
   assignedChecklists    Checklist[]             @relation("ChecklistAssignee")
   signedChecklists      Checklist[]             @relation("ChecklistSignedBy")
   installedLabels       BarcodeLabel[]          @relation("BarcodeInstalledBy")
+  inventoryTasks        InventoryTask[]         @relation("InventoryTaskAssignedTo")
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   QuestionnaireTemplate QuestionnaireTemplate[]
@@ -877,6 +885,7 @@ model WarehouseZone {
   name      String
   racks     Rack[]
   locations Location[]
+  tasks     InventoryTask[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
@@ -915,6 +924,9 @@ model Location {
   skuId     String?
   sku       Sku?           @relation(fields: [skuId], references: [id])
   labels    BarcodeLabel[] @relation("LocationLabels")
+  expectedQty Float?
+  scans      InventoryScan[]
+  variances  InventoryVariance[]
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
@@ -938,11 +950,96 @@ model Sku {
   labels         BarcodeLabel[]    @relation("SkuLabels")
   dupCandidatesA SkuDupCandidate[] @relation("SkuDupCandidatesA")
   dupCandidatesB SkuDupCandidate[] @relation("SkuDupCandidatesB")
+  scans          InventoryScan[]
+  variances      InventoryVariance[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
   @@unique([projectId, code])
   @@index([projectId])
+}
+
+model InventoryCount {
+  id           String                @id @default(cuid())
+  projectId    String
+  project      Project               @relation(fields: [projectId], references: [id])
+  status       InventoryCountStatus  @default(planned)
+  tolerancePct Float?
+  plannedAt    DateTime              @default(now())
+  startedAt    DateTime?
+  closedAt     DateTime?
+  tasks        InventoryTask[]
+  variances    InventoryVariance[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@index([projectId])
+}
+
+model InventoryTask {
+  id           String           @id @default(cuid())
+  countId      String
+  count        InventoryCount   @relation(fields: [countId], references: [id])
+  zoneId       String
+  zone         WarehouseZone    @relation(fields: [zoneId], references: [id])
+  assignedToId String?
+  assignedTo   User?            @relation("InventoryTaskAssignedTo", fields: [assignedToId], references: [id])
+  blind        Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  scans        InventoryScan[]
+
+  @@index([countId])
+  @@index([zoneId])
+  @@index([assignedToId])
+}
+
+model InventoryScan {
+  id         String          @id @default(cuid())
+  taskId     String
+  task       InventoryTask   @relation(fields: [taskId], references: [id])
+  locationId String
+  location   Location        @relation(fields: [locationId], references: [id])
+  skuId      String?
+  sku        Sku?            @relation(fields: [skuId], references: [id])
+  qty        Float
+  capturedAt DateTime        @default(now())
+  deviceId   String?
+  recount    InventoryRecount?
+
+  @@index([taskId])
+  @@index([locationId])
+  @@index([skuId])
+}
+
+model InventoryRecount {
+  id      String        @id @default(cuid())
+  scanId  String        @unique
+  scan    InventoryScan @relation(fields: [scanId], references: [id])
+  qty2    Float
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model InventoryVariance {
+  id           String         @id @default(cuid())
+  countId      String
+  count        InventoryCount @relation(fields: [countId], references: [id])
+  locationId   String
+  location     Location       @relation(fields: [locationId], references: [id])
+  skuId        String?
+  sku          Sku?           @relation(fields: [skuId], references: [id])
+  expectedQty  Float
+  foundQty     Float
+  difference   Float
+  percentage   Float
+  reason       String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([countId])
+  @@index([locationId])
+  @@index([skuId])
 }
 
 model BarcodeLabel {

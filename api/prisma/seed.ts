@@ -2,7 +2,16 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-import { PrismaClient, ProjectWorkflowState, Prisma } from '@prisma/client';
+import {
+  PrismaClient,
+  ProjectWorkflowState,
+  Prisma,
+  ProcessType,
+  SopStatus,
+  ChecklistStatus,
+  ActionCategory,
+  ActionStatus
+} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const runMigrations = (): void => {
@@ -293,6 +302,206 @@ async function main(): Promise<void> {
       },
     });
   }
+
+  await prisma.process.upsert({
+    where: { id: 'seed-process-recepcion-as-is' },
+    update: {
+      projectId: nutrialProject.id,
+      name: 'Recepción AS-IS',
+      type: ProcessType.AS_IS,
+      version: 1,
+      description: 'Mapa actual de recepción y control de patio.',
+    },
+    create: {
+      id: 'seed-process-recepcion-as-is',
+      projectId: nutrialProject.id,
+      name: 'Recepción AS-IS',
+      type: ProcessType.AS_IS,
+      version: 1,
+      description: 'Mapa actual de recepción y control de patio.',
+    },
+  });
+
+  const toBeProcess = await prisma.process.upsert({
+    where: { id: 'seed-process-recepcion-to-be' },
+    update: {
+      projectId: nutrialProject.id,
+      name: 'Recepción TO-BE',
+      type: ProcessType.TO_BE,
+      version: 1,
+      description: 'Flujo objetivo con 5S, etiquetado y SLA de 48 horas.',
+    },
+    create: {
+      id: 'seed-process-recepcion-to-be',
+      projectId: nutrialProject.id,
+      name: 'Recepción TO-BE',
+      type: ProcessType.TO_BE,
+      version: 1,
+      description: 'Flujo objetivo con 5S, etiquetado y SLA de 48 horas.',
+    },
+  });
+
+  const sopRecepcion = await prisma.sop.upsert({
+    where: { id: 'seed-sop-recepcion' },
+    update: {
+      processId: toBeProcess.id,
+      title: 'SOP – Recepción estandarizada',
+      version: 1,
+      status: SopStatus.published,
+      steps: {
+        deleteMany: {},
+        create: [
+          {
+            order: 1,
+            text: 'Verificar agenda y asignar andén disponible.',
+            kpi: { metric: 'SLA programación', target: '15 minutos' },
+          },
+          {
+            order: 2,
+            text: 'Inspeccionar unidad con checklist 5S y registrar evidencia fotográfica.',
+            kpi: { metric: 'Checklists completos', target: '100%' },
+          },
+          {
+            order: 3,
+            text: 'Etiquetar pallets con código 128 y actualizar WMS.',
+            kpi: { metric: 'Exactitud etiquetado', target: '99.5%' },
+          },
+          {
+            order: 4,
+            text: 'Liberar andén y enviar confirmación al área de planificación.',
+            kpi: { metric: 'Tiempo de ciclo', target: '45 minutos' },
+          },
+        ],
+      },
+    },
+    create: {
+      id: 'seed-sop-recepcion',
+      processId: toBeProcess.id,
+      title: 'SOP – Recepción estandarizada',
+      version: 1,
+      status: SopStatus.published,
+      steps: {
+        create: [
+          {
+            order: 1,
+            text: 'Verificar agenda y asignar andén disponible.',
+            kpi: { metric: 'SLA programación', target: '15 minutos' },
+          },
+          {
+            order: 2,
+            text: 'Inspeccionar unidad con checklist 5S y registrar evidencia fotográfica.',
+            kpi: { metric: 'Checklists completos', target: '100%' },
+          },
+          {
+            order: 3,
+            text: 'Etiquetar pallets con código 128 y actualizar WMS.',
+            kpi: { metric: 'Exactitud etiquetado', target: '99.5%' },
+          },
+          {
+            order: 4,
+            text: 'Liberar andén y enviar confirmación al área de planificación.',
+            kpi: { metric: 'Tiempo de ciclo', target: '45 minutos' },
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.checklist.upsert({
+    where: { id: 'seed-checklist-recepcion' },
+    update: {
+      sopId: sopRecepcion.id,
+      assigneeId: consultor.id,
+      status: ChecklistStatus.signed,
+      signedById: admin.id,
+      signedAt: new Date('2025-01-08T10:30:00.000Z'),
+      items: {
+        deleteMany: {},
+        create: [
+          { text: 'Validar orden de compra y cita de transporte.', isDone: true },
+          { text: 'Completar checklist HSE y registrar evidencia.', isDone: true },
+          { text: 'Confirmar etiquetas y captura fotográfica en WMS.', isDone: true },
+        ],
+      },
+    },
+    create: {
+      id: 'seed-checklist-recepcion',
+      sopId: sopRecepcion.id,
+      assigneeId: consultor.id,
+      status: ChecklistStatus.signed,
+      signedById: admin.id,
+      signedAt: new Date('2025-01-08T10:30:00.000Z'),
+      items: {
+        create: [
+          { text: 'Validar orden de compra y cita de transporte.', isDone: true },
+          { text: 'Completar checklist HSE y registrar evidencia.', isDone: true },
+          { text: 'Confirmar etiquetas y captura fotográfica en WMS.', isDone: true },
+        ],
+      },
+    },
+  });
+
+  const dockFinding = await prisma.finding.upsert({
+    where: { id: 'seed-finding-dwell-time' },
+    update: {
+      projectId: nutrialProject.id,
+      title: 'Dwell time en andenes supera SLA de 48h',
+      impact: 'Se generan cargos por demora y congestión de patio.',
+      recommendation: 'Implementar agenda integrada con checklist digital y turnos escalonados.',
+      severity: 'alta',
+      area: 'Operaciones - Recepción',
+      costEstimate: 18000,
+      isQuickWin: true,
+      effortDays: 12,
+      responsibleR: 'Jefe de Patio',
+      accountableA: 'Gerente Logística',
+      targetDate: new Date('2025-02-28T00:00:00.000Z'),
+      evidence: 'Registros históricos de dwell time > 60h.',
+      status: 'open',
+    },
+    create: {
+      id: 'seed-finding-dwell-time',
+      projectId: nutrialProject.id,
+      title: 'Dwell time en andenes supera SLA de 48h',
+      impact: 'Se generan cargos por demora y congestión de patio.',
+      recommendation: 'Implementar agenda integrada con checklist digital y turnos escalonados.',
+      severity: 'alta',
+      area: 'Operaciones - Recepción',
+      costEstimate: 18000,
+      isQuickWin: true,
+      effortDays: 12,
+      responsibleR: 'Jefe de Patio',
+      accountableA: 'Gerente Logística',
+      targetDate: new Date('2025-02-28T00:00:00.000Z'),
+      evidence: 'Registros históricos de dwell time > 60h.',
+      status: 'open',
+    },
+  });
+
+  await prisma.actionItem.upsert({
+    where: { id: 'seed-action-dwell-time' },
+    update: {
+      projectId: nutrialProject.id,
+      findingId: dockFinding.id,
+      title: 'Activar agenda digital y turnos escalonados',
+      description: 'Configurar agenda con recordatorios automáticos y panel de monitoreo diario.',
+      owner: 'PMO Operaciones',
+      dueDate: new Date('2025-02-15T00:00:00.000Z'),
+      category: ActionCategory.quick_win,
+      status: ActionStatus.in_progress,
+    },
+    create: {
+      id: 'seed-action-dwell-time',
+      projectId: nutrialProject.id,
+      findingId: dockFinding.id,
+      title: 'Activar agenda digital y turnos escalonados',
+      description: 'Configurar agenda con recordatorios automáticos y panel de monitoreo diario.',
+      owner: 'PMO Operaciones',
+      dueDate: new Date('2025-02-15T00:00:00.000Z'),
+      category: ActionCategory.quick_win,
+      status: ActionStatus.in_progress,
+    },
+  });
 
   await prisma.systemInventory.upsert({
     where: { id: 'seed-system-logitrack' },

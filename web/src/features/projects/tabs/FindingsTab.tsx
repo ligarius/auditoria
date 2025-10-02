@@ -1,56 +1,126 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import {
+  Dispatch,
+  FormEvent,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import api from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
 import { getErrorMessage } from '../../../lib/errors';
 
+interface ActionItem {
+  id: string;
+  findingId: string;
+  title: string;
+  description?: string | null;
+  owner?: string | null;
+  dueDate?: string | null;
+  category: 'quick_win' | 'capex' | 'opex';
+  status: 'todo' | 'in_progress' | 'done';
+}
+
 interface Finding {
   id: string;
   title: string;
-  evidence?: string | null;
   impact: string;
   recommendation: string;
-  quickWin: boolean;
+  severity: string;
+  area?: string | null;
+  costEstimate?: number | null;
+  isQuickWin: boolean;
   effortDays?: number | null;
-  responsibleR?: string | null;
-  accountableA?: string | null;
+  responsibleR: string;
+  accountableA: string;
   targetDate?: string | null;
+  evidence?: string | null;
   status: string;
+  actionItems: ActionItem[];
 }
 
 interface FindingsTabProps {
   projectId: string;
 }
 
-const initialForm = {
+const emptyFindingForm = {
   title: '',
   impact: '',
   recommendation: '',
-  quickWin: false,
+  severity: 'media',
+  area: '',
+  costEstimate: '',
+  isQuickWin: true,
   effortDays: '',
   responsibleR: '',
   accountableA: '',
   targetDate: '',
   evidence: '',
+  status: 'open',
 };
+
+const emptyActionForm = {
+  title: '',
+  description: '',
+  owner: '',
+  dueDate: '',
+  category: 'quick_win' as ActionItem['category'],
+  status: 'todo' as ActionItem['status'],
+};
+
+const statusOptions = [
+  { value: 'open', label: 'Abierto' },
+  { value: 'in_progress', label: 'En progreso' },
+  { value: 'closed', label: 'Cerrado' },
+];
+
+const actionStatusOptions: { value: ActionItem['status']; label: string }[] = [
+  { value: 'todo', label: 'Por hacer' },
+  { value: 'in_progress', label: 'En progreso' },
+  { value: 'done', label: 'Completado' },
+];
+
+const actionCategoryOptions: {
+  value: ActionItem['category'];
+  label: string;
+}[] = [
+  { value: 'quick_win', label: 'Quick Win' },
+  { value: 'capex', label: 'CAPEX' },
+  { value: 'opex', label: 'OPEX' },
+];
 
 export default function FindingsTab({ projectId }: FindingsTabProps) {
   const { role } = useAuth();
   const canEdit = ['admin', 'consultor'].includes(role);
-  const isAdmin = role === 'admin';
   const [findings, setFindings] = useState<Finding[]>([]);
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(emptyFindingForm);
+  const [actionForms, setActionForms] = useState<
+    Record<string, typeof emptyActionForm>
+  >({});
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const loadFindings = useCallback(async () => {
     try {
       const response = await api.get<Finding[]>('/findings', {
         params: { projectId },
       });
-      setFindings(response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setFindings(data);
+      setActionForms(
+        data.reduce<Record<string, typeof emptyActionForm>>((acc, finding) => {
+          acc[finding.id] = {
+            ...emptyActionForm,
+            category: finding.isQuickWin ? 'quick_win' : 'capex',
+          };
+          return acc;
+        }, {})
+      );
       setError(null);
-    } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudieron cargar los hallazgos'));
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudieron cargar los hallazgos'));
     }
   }, [projectId]);
 
@@ -63,14 +133,18 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canEdit) return;
+    setLoading(true);
+    setError(null);
     try {
-      setError(null);
       await api.post('/findings', {
         projectId,
         title: form.title,
         impact: form.impact,
         recommendation: form.recommendation,
-        quickWin: form.quickWin,
+        severity: form.severity,
+        area: form.area || undefined,
+        costEstimate: form.costEstimate ? Number(form.costEstimate) : undefined,
+        isQuickWin: form.isQuickWin,
         effortDays: form.effortDays ? Number(form.effortDays) : undefined,
         responsibleR: form.responsibleR,
         accountableA: form.accountableA,
@@ -78,41 +152,82 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
           ? new Date(form.targetDate).toISOString()
           : undefined,
         evidence: form.evidence || undefined,
+        status: form.status,
       });
-      setForm(initialForm);
+      setForm(emptyFindingForm);
       await loadFindings();
-    } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo crear el hallazgo'));
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo crear el hallazgo'));
+    } finally {
+      setLoading(false);
     }
   };
 
   const updateFinding = async (id: string, data: Partial<Finding>) => {
     try {
-      const response = await api.patch<Finding>(`/findings/${id}`, data);
-      setFindings((prev) =>
-        prev.map((item) => (item.id === id ? response.data : item))
-      );
-      setError(null);
-    } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo actualizar el hallazgo'));
+      await api.patch(`/findings/${id}`, data);
+      await loadFindings();
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo actualizar el hallazgo'));
     }
   };
 
-  const deleteFinding = async (id: string) => {
+  const handleCreateAction = async (finding: Finding) => {
+    if (!canEdit) return;
+    const formData = actionForms[finding.id] ?? emptyActionForm;
+    if (!formData.title.trim()) {
+      setError('La acción debe tener un título');
+      return;
+    }
     try {
-      await api.delete(`/findings/${id}`);
-      setFindings((prev) => prev.filter((item) => item.id !== id));
-      setError(null);
-    } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo eliminar el hallazgo'));
+      await api.post('/actions', {
+        projectId,
+        findingId: finding.id,
+        title: formData.title,
+        description: formData.description || undefined,
+        owner: formData.owner || undefined,
+        dueDate: formData.dueDate
+          ? new Date(formData.dueDate).toISOString()
+          : undefined,
+        category: finding.isQuickWin ? 'quick_win' : formData.category,
+        status: formData.status,
+      });
+      await loadFindings();
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo crear la acción'));
     }
   };
+
+  const updateAction = async (actionId: string, data: Partial<ActionItem>) => {
+    try {
+      await api.patch(`/actions/${actionId}`, data);
+      setFindings((prev) =>
+        prev.map((finding) => ({
+          ...finding,
+          actionItems: finding.actionItems.map((item) =>
+            item.id === actionId ? { ...item, ...data } : item
+          ),
+        }))
+      );
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo actualizar la acción'));
+    }
+  };
+
+  const quickWins = useMemo(
+    () => findings.filter((finding) => finding.isQuickWin),
+    [findings]
+  );
+  const capexOpex = useMemo(
+    () => findings.filter((finding) => !finding.isQuickWin),
+    [findings]
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-slate-900">
-          Hallazgos y acciones
+          Hallazgos y plan de acción
         </h2>
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
@@ -120,82 +235,60 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
       {canEdit && (
         <form
           onSubmit={handleSubmit}
-          className="grid gap-3 rounded-lg border border-slate-200 p-4"
+          className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
         >
           <h3 className="text-lg font-medium text-slate-800">Nuevo hallazgo</h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label className="flex flex-col text-sm md:col-span-2">
-              Título
-              <input
-                className="mt-1 rounded border px-3 py-2"
-                value={form.title}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, title: e.target.value }))
-                }
-                required
-              />
-            </label>
-            <label className="flex flex-col text-sm md:col-span-2">
-              Recomendación
-              <textarea
-                className="mt-1 rounded border px-3 py-2"
-                value={form.recommendation}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    recommendation: e.target.value,
-                  }))
-                }
-                required
-              />
-            </label>
+          <label className="flex flex-col text-sm">
+            Título
+            <input
+              className="mt-1 rounded border border-slate-300 px-3 py-2"
+              value={form.title}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, title: event.target.value }))
+              }
+              required
+            />
+          </label>
+          <div className="grid gap-3 md:grid-cols-2">
             <label className="flex flex-col text-sm">
-              Impacto
-              <input
-                className="mt-1 rounded border px-3 py-2"
-                value={form.impact}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, impact: e.target.value }))
-                }
-                required
-              />
-            </label>
-            <label className="flex flex-col text-sm">
-              Quick win
+              Severidad
               <select
-                className="mt-1 rounded border px-3 py-2"
-                value={form.quickWin ? 'true' : 'false'}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    quickWin: e.target.value === 'true',
-                  }))
+                className="mt-1 rounded border border-slate-300 px-3 py-2"
+                value={form.severity}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, severity: event.target.value }))
                 }
               >
-                <option value="true">Sí</option>
-                <option value="false">No</option>
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="baja">Baja</option>
               </select>
             </label>
             <label className="flex flex-col text-sm">
-              Responsable (R)
+              Área
               <input
-                className="mt-1 rounded border px-3 py-2"
-                value={form.responsibleR}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, responsibleR: e.target.value }))
+                className="mt-1 rounded border border-slate-300 px-3 py-2"
+                value={form.area}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, area: event.target.value }))
                 }
-                required
               />
             </label>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
             <label className="flex flex-col text-sm">
-              Accountable (A)
+              Estimación de costo (USD)
               <input
-                className="mt-1 rounded border px-3 py-2"
-                value={form.accountableA}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, accountableA: e.target.value }))
+                type="number"
+                min={0}
+                className="mt-1 rounded border border-slate-300 px-3 py-2"
+                value={form.costEstimate}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    costEstimate: event.target.value,
+                  }))
                 }
-                required
               />
             </label>
             <label className="flex flex-col text-sm">
@@ -203,140 +296,483 @@ export default function FindingsTab({ projectId }: FindingsTabProps) {
               <input
                 type="number"
                 min={0}
-                className="mt-1 rounded border px-3 py-2"
+                className="mt-1 rounded border border-slate-300 px-3 py-2"
                 value={form.effortDays}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, effortDays: e.target.value }))
-                }
-              />
-            </label>
-            <label className="flex flex-col text-sm">
-              Fecha objetivo
-              <input
-                type="date"
-                className="mt-1 rounded border px-3 py-2"
-                value={form.targetDate}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, targetDate: e.target.value }))
-                }
-              />
-            </label>
-            <label className="flex flex-col text-sm md:col-span-2">
-              Evidencia
-              <input
-                className="mt-1 rounded border px-3 py-2"
-                value={form.evidence}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, evidence: e.target.value }))
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    effortDays: event.target.value,
+                  }))
                 }
               />
             </label>
           </div>
-          <button
-            type="submit"
-            className="self-start rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-          >
-            Guardar hallazgo
-          </button>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="flex flex-col text-sm">
+              Responsable (R)
+              <input
+                className="mt-1 rounded border border-slate-300 px-3 py-2"
+                value={form.responsibleR}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    responsibleR: event.target.value,
+                  }))
+                }
+                required
+              />
+            </label>
+            <label className="flex flex-col text-sm">
+              Accountable (A)
+              <input
+                className="mt-1 rounded border border-slate-300 px-3 py-2"
+                value={form.accountableA}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    accountableA: event.target.value,
+                  }))
+                }
+                required
+              />
+            </label>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="flex flex-col text-sm">
+              Fecha objetivo
+              <input
+                type="date"
+                className="mt-1 rounded border border-slate-300 px-3 py-2"
+                value={form.targetDate}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    targetDate: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label className="flex flex-col text-sm">
+              Tipo
+              <select
+                className="mt-1 rounded border border-slate-300 px-3 py-2"
+                value={form.isQuickWin ? 'quick' : 'inversion'}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    isQuickWin: event.target.value === 'quick',
+                  }))
+                }
+              >
+                <option value="quick">Quick Win</option>
+                <option value="inversion">CAPEX / OPEX</option>
+              </select>
+            </label>
+          </div>
+          <label className="flex flex-col text-sm">
+            Impacto
+            <textarea
+              className="mt-1 rounded border border-slate-300 px-3 py-2"
+              value={form.impact}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, impact: event.target.value }))
+              }
+              required
+            />
+          </label>
+          <label className="flex flex-col text-sm">
+            Recomendación
+            <textarea
+              className="mt-1 rounded border border-slate-300 px-3 py-2"
+              value={form.recommendation}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  recommendation: event.target.value,
+                }))
+              }
+              required
+            />
+          </label>
+          <label className="flex flex-col text-sm">
+            Evidencia
+            <textarea
+              className="mt-1 rounded border border-slate-300 px-3 py-2"
+              value={form.evidence}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, evidence: event.target.value }))
+              }
+              rows={2}
+            />
+          </label>
+          <label className="flex flex-col text-sm">
+            Estado
+            <select
+              className="mt-1 rounded border border-slate-300 px-3 py-2"
+              value={form.status}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, status: event.target.value }))
+              }
+            >
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+              disabled={loading}
+            >
+              Crear hallazgo
+            </button>
+          </div>
         </form>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">
-                Título
-              </th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">
-                Impacto
-              </th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">
-                Quick win
-              </th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">
-                Estado
-              </th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">
-                Responsable
-              </th>
-              <th className="px-3 py-2 text-left font-medium text-slate-600">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {findings.map((finding) => (
-              <tr key={finding.id}>
-                <td className="px-3 py-2">
-                  <p className="font-medium text-slate-800">{finding.title}</p>
-                  <p className="text-xs text-slate-500">
-                    {finding.recommendation}
-                  </p>
-                </td>
-                <td className="px-3 py-2">{finding.impact}</td>
-                <td className="px-3 py-2">
-                  {canEdit ? (
-                    <input
-                      type="checkbox"
-                      checked={finding.quickWin}
-                      onChange={(e) =>
-                        updateFinding(finding.id, {
-                          quickWin: e.target.checked,
-                        })
-                      }
-                    />
-                  ) : finding.quickWin ? (
-                    'Sí'
-                  ) : (
-                    'No'
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {canEdit ? (
-                    <select
-                      className="rounded border px-2 py-1"
-                      value={finding.status}
-                      onChange={(e) =>
-                        updateFinding(finding.id, { status: e.target.value })
-                      }
-                    >
-                      <option value="Open">Open</option>
-                      <option value="En progreso">En progreso</option>
-                      <option value="Cerrado">Cerrado</option>
-                    </select>
-                  ) : (
-                    finding.status
-                  )}
-                </td>
-                <td className="px-3 py-2 text-slate-600">
-                  {finding.responsibleR || '-'}
-                </td>
-                <td className="px-3 py-2">
-                  {isAdmin && (
-                    <button
-                      onClick={() => deleteFinding(finding.id)}
-                      className="rounded bg-red-600 px-2 py-1 text-white"
-                    >
-                      Eliminar
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {findings.length === 0 && (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-3 py-6 text-center text-slate-500"
-                >
-                  No hay hallazgos registrados.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Column
+          title="Quick Wins"
+          description="Hallazgos de implementación rápida"
+          findings={quickWins}
+          actionForms={actionForms}
+          setActionForms={setActionForms}
+          onCreateAction={handleCreateAction}
+          onUpdateFinding={updateFinding}
+          onUpdateAction={updateAction}
+          canEdit={canEdit}
+          requireCategory={false}
+        />
+        <Column
+          title="CAPEX / OPEX"
+          description="Hallazgos que requieren inversión"
+          findings={capexOpex}
+          actionForms={actionForms}
+          setActionForms={setActionForms}
+          onCreateAction={handleCreateAction}
+          onUpdateFinding={updateFinding}
+          onUpdateAction={updateAction}
+          canEdit={canEdit}
+          requireCategory
+        />
       </div>
+    </div>
+  );
+}
+
+interface ColumnProps {
+  title: string;
+  description: string;
+  findings: Finding[];
+  actionForms: Record<string, typeof emptyActionForm>;
+  setActionForms: Dispatch<
+    SetStateAction<Record<string, typeof emptyActionForm>>
+  >;
+  onCreateAction: (finding: Finding) => void;
+  onUpdateFinding: (id: string, data: Partial<Finding>) => void;
+  onUpdateAction: (id: string, data: Partial<ActionItem>) => void;
+  canEdit: boolean;
+  requireCategory: boolean;
+}
+
+function Column({
+  title,
+  description,
+  findings,
+  actionForms,
+  setActionForms,
+  onCreateAction,
+  onUpdateFinding,
+  onUpdateAction,
+  canEdit,
+  requireCategory,
+}: ColumnProps) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+        <p className="text-sm text-slate-500">{description}</p>
+      </div>
+      {findings.length === 0 && (
+        <p className="text-sm text-slate-500">
+          Sin hallazgos en esta categoría.
+        </p>
+      )}
+      {findings.map((finding) => (
+        <article
+          key={finding.id}
+          className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <header className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h4 className="text-base font-semibold text-slate-900">
+                {finding.title}
+              </h4>
+              <p className="text-xs uppercase text-slate-500">
+                Severidad {finding.severity}
+              </p>
+            </div>
+            {canEdit && (
+              <select
+                className="rounded border border-slate-300 px-2 py-1 text-xs"
+                value={finding.status}
+                onChange={(event) =>
+                  onUpdateFinding(finding.id, { status: event.target.value })
+                }
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </header>
+
+          <div className="grid gap-2 text-sm text-slate-600">
+            <p>
+              <span className="font-medium text-slate-700">Impacto:</span>{' '}
+              {finding.impact}
+            </p>
+            <p>
+              <span className="font-medium text-slate-700">Recomendación:</span>{' '}
+              {finding.recommendation}
+            </p>
+            {finding.area && (
+              <p>
+                <span className="font-medium text-slate-700">Área:</span>{' '}
+                {finding.area}
+              </p>
+            )}
+            {(finding.costEstimate ?? 0) > 0 && (
+              <p>
+                <span className="font-medium text-slate-700">
+                  Costo estimado:
+                </span>{' '}
+                ${finding.costEstimate?.toLocaleString()}
+              </p>
+            )}
+            {finding.targetDate && (
+              <p>
+                <span className="font-medium text-slate-700">
+                  Fecha objetivo:
+                </span>{' '}
+                {new Date(finding.targetDate).toLocaleDateString()}
+              </p>
+            )}
+            {finding.evidence && (
+              <p className="text-xs text-slate-500">
+                Evidencia: {finding.evidence}
+              </p>
+            )}
+            <p className="text-xs text-slate-500">
+              R: {finding.responsibleR} • A: {finding.accountableA}
+            </p>
+          </div>
+
+          <section className="space-y-2">
+            <h5 className="text-sm font-medium text-slate-800">
+              Acciones vinculadas
+            </h5>
+            {finding.actionItems.length === 0 && (
+              <p className="text-xs text-slate-500">
+                No hay acciones registradas.
+              </p>
+            )}
+            <ul className="space-y-2">
+              {finding.actionItems.map((action) => (
+                <li
+                  key={action.id}
+                  className="rounded border border-slate-200 p-3 text-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-slate-800">
+                        {action.title}
+                      </p>
+                      {action.owner && (
+                        <p className="text-xs text-slate-500">
+                          Owner: {action.owner}
+                        </p>
+                      )}
+                      <p className="text-xs uppercase text-slate-500">
+                        {
+                          actionCategoryOptions.find(
+                            (option) => option.value === action.category
+                          )?.label
+                        }
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                        value={action.status}
+                        onChange={(event) =>
+                          onUpdateAction(action.id, {
+                            status: event.target.value as ActionItem['status'],
+                          })
+                        }
+                      >
+                        {actionStatusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {action.dueDate && (
+                        <span className="text-xs text-slate-500">
+                          Vence {new Date(action.dueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {action.description && (
+                    <p className="mt-2 text-xs text-slate-600">
+                      {action.description}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {canEdit && (
+            <div className="rounded border border-slate-200 p-3">
+              <h6 className="text-sm font-medium text-slate-800">
+                Agregar acción
+              </h6>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                <label className="flex flex-col text-xs uppercase tracking-wide text-slate-500">
+                  Título
+                  <input
+                    className="mt-1 rounded border border-slate-300 px-3 py-2 text-sm"
+                    value={actionForms[finding.id]?.title ?? ''}
+                    onChange={(event) =>
+                      setActionForms((prev) => ({
+                        ...prev,
+                        [finding.id]: {
+                          ...(prev[finding.id] ?? emptyActionForm),
+                          title: event.target.value,
+                        },
+                      }))
+                    }
+                  />
+                </label>
+                <label className="flex flex-col text-xs uppercase tracking-wide text-slate-500">
+                  Responsable
+                  <input
+                    className="mt-1 rounded border border-slate-300 px-3 py-2 text-sm"
+                    value={actionForms[finding.id]?.owner ?? ''}
+                    onChange={(event) =>
+                      setActionForms((prev) => ({
+                        ...prev,
+                        [finding.id]: {
+                          ...(prev[finding.id] ?? emptyActionForm),
+                          owner: event.target.value,
+                        },
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                <label className="flex flex-col text-xs uppercase tracking-wide text-slate-500">
+                  Fecha objetivo
+                  <input
+                    type="date"
+                    className="mt-1 rounded border border-slate-300 px-3 py-2 text-sm"
+                    value={actionForms[finding.id]?.dueDate ?? ''}
+                    onChange={(event) =>
+                      setActionForms((prev) => ({
+                        ...prev,
+                        [finding.id]: {
+                          ...(prev[finding.id] ?? emptyActionForm),
+                          dueDate: event.target.value,
+                        },
+                      }))
+                    }
+                  />
+                </label>
+                {requireCategory && (
+                  <label className="flex flex-col text-xs uppercase tracking-wide text-slate-500">
+                    Categoría
+                    <select
+                      className="mt-1 rounded border border-slate-300 px-3 py-2 text-sm"
+                      value={actionForms[finding.id]?.category ?? 'capex'}
+                      onChange={(event) =>
+                        setActionForms((prev) => ({
+                          ...prev,
+                          [finding.id]: {
+                            ...(prev[finding.id] ?? emptyActionForm),
+                            category: event.target
+                              .value as ActionItem['category'],
+                          },
+                        }))
+                      }
+                    >
+                      {actionCategoryOptions
+                        .filter((option) => option.value !== 'quick_win')
+                        .map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+              <label className="mt-2 flex flex-col text-xs uppercase tracking-wide text-slate-500">
+                Descripción
+                <textarea
+                  className="mt-1 rounded border border-slate-300 px-3 py-2 text-sm"
+                  value={actionForms[finding.id]?.description ?? ''}
+                  onChange={(event) =>
+                    setActionForms((prev) => ({
+                      ...prev,
+                      [finding.id]: {
+                        ...(prev[finding.id] ?? emptyActionForm),
+                        description: event.target.value,
+                      },
+                    }))
+                  }
+                  rows={2}
+                />
+              </label>
+              <div className="mt-3 flex justify-end gap-2">
+                <select
+                  className="rounded border border-slate-300 px-2 py-1 text-xs"
+                  value={actionForms[finding.id]?.status ?? 'todo'}
+                  onChange={(event) =>
+                    setActionForms((prev) => ({
+                      ...prev,
+                      [finding.id]: {
+                        ...(prev[finding.id] ?? emptyActionForm),
+                        status: event.target.value as ActionItem['status'],
+                      },
+                    }))
+                  }
+                >
+                  {actionStatusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => onCreateAction(finding)}
+                  className="rounded bg-slate-900 px-3 py-1.5 text-xs font-medium text-white"
+                >
+                  Agregar acción
+                </button>
+              </div>
+            </div>
+          )}
+        </article>
+      ))}
     </div>
   );
 }

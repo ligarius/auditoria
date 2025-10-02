@@ -33,6 +33,7 @@ import { inventoryRouter } from './modules/inventory/inventory.router.js';
 import { fiveSRouter } from './modules/fiveS/five-s.router.js';
 import { hseRouter } from './modules/hse/hse.router.js';
 import { layoutRouter } from './modules/layout/layout.router.js';
+import { routesRouter } from './modules/routes/routes.router.js';
 
 const appRouter = Router();
 
@@ -69,5 +70,6 @@ appRouter.use('/inventory', inventoryRouter);
 appRouter.use('/fiveS', fiveSRouter);
 appRouter.use('/hse', hseRouter);
 appRouter.use('/layout', layoutRouter);
+appRouter.use('/routes', routesRouter);
 
 export { appRouter };

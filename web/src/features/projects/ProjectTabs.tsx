@@ -19,6 +19,7 @@ import InventoryTab from '../inventory/InventoryTab';
 import LayoutTab from '../layout/LayoutTab';
 import FiveSTab from './tabs/FiveSTab';
 import HseTab from './tabs/HseTab';
+import RoutesTab from '../routes/RoutesTab';
 
 interface TabComponentProps {
   projectId: string;
@@ -52,6 +53,7 @@ export const ProjectTabs: {
   { value: 'hse', label: 'HSE', component: HseTab },
   { value: 'inventory', label: 'Maestro & Etiquetas', component: InventoryTab },
   { value: 'layout', label: 'Layout & Capacidad', component: LayoutTab },
+  { value: 'routes', label: 'Rutas', component: RoutesTab },
   { value: 'security', label: 'Seguridad', component: SecurityTab },
   { value: 'risks', label: 'Riesgos', component: RisksTab },
   { value: 'findings', label: 'Hallazgos', component: FindingsTab },

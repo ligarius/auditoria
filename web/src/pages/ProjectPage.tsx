@@ -30,6 +30,7 @@ const TAB_TO_PATH: Record<string, string> = {
   hse: 'hse',
   inventory: 'inventory',
   layout: 'layout',
+  routes: 'routes',
   security: 'security',
   risks: 'risks',
   findings: 'findings',

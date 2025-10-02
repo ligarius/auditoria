@@ -18,12 +18,20 @@ interface Meeting {
   title: string;
   scheduledAt: string;
   status?: string | null;
+  agenda?: string | null;
+}
+
+interface MinuteAgreement {
+  description: string;
+  responsible: string;
+  dueDate?: string | null;
 }
 
 interface Minute {
   id: string;
   content: string;
   createdAt: string;
+  agreements: MinuteAgreement[];
   meeting?: {
     id: string;
     title?: string | null;
@@ -34,6 +42,19 @@ interface ScopeChange {
   id: string;
   title: string;
   status: string;
+  scheduleImpact: string;
+  costImpact: string;
+  meeting?: {
+    id: string;
+    title?: string | null;
+    scheduledAt?: string | null;
+  } | null;
+  approvalWorkflow?: {
+    id: string;
+    status: string;
+    dueAt?: string | null;
+    overdue: boolean;
+  } | null;
 }
 
 interface ApprovalWorkflow {
@@ -54,6 +75,13 @@ const formatDate = (value?: string | null) => {
 const formatMinuteSummary = (value?: string | null) => {
   if (!value) return 'Sin contenido registrado.';
   return value.length > 120 ? `${value.slice(0, 117)}…` : value;
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return 'Sin fecha';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 };
 
 export default function GovernanceTab({ projectId }: GovernanceTabProps) {
@@ -79,9 +107,50 @@ export default function GovernanceTab({ projectId }: GovernanceTabProps) {
       setCommittees(
         Array.isArray(committeesRes.data) ? committeesRes.data : []
       );
-      setMeetings(Array.isArray(meetingsRes.data) ? meetingsRes.data : []);
-      setMinutes(Array.isArray(minutesRes.data) ? minutesRes.data : []);
-      setScopeChanges(Array.isArray(scopeRes.data) ? scopeRes.data : []);
+      setMeetings(
+        Array.isArray(meetingsRes.data)
+          ? meetingsRes.data.map((meeting) => ({
+              ...meeting,
+              agenda: meeting.agenda ?? null,
+            }))
+          : []
+      );
+      setMinutes(
+        Array.isArray(minutesRes.data)
+          ? minutesRes.data.map((minute) => ({
+              ...minute,
+              agreements: Array.isArray(
+                (minute as { agreements?: unknown }).agreements
+              )
+                ? (
+                    (minute as { agreements?: unknown })
+                      .agreements as MinuteAgreement[]
+                  )
+                    .map((agreement) => ({
+                      description: agreement?.description ?? '',
+                      responsible: agreement?.responsible ?? '',
+                      dueDate: agreement?.dueDate ?? null,
+                    }))
+                    .filter(
+                      (agreement) =>
+                        agreement.description.length > 0 ||
+                        agreement.responsible.length > 0
+                    )
+                : [],
+            }))
+          : []
+      );
+      setScopeChanges(
+        Array.isArray(scopeRes.data)
+          ? scopeRes.data.map((item) => ({
+              ...item,
+              scheduleImpact: item.scheduleImpact,
+              costImpact: item.costImpact,
+              meeting: item.meeting ?? null,
+              approvalWorkflow: item.approvalWorkflow ?? null,
+            }))
+          : []
+      );
       setApprovals(Array.isArray(approvalsRes.data) ? approvalsRes.data : []);
       setError(null);
     } catch (err) {
@@ -162,6 +231,11 @@ export default function GovernanceTab({ projectId }: GovernanceTabProps) {
                 <p className="text-xs text-slate-500">
                   Próxima: {formatDate(meetings[0]?.scheduledAt)}
                 </p>
+                {meetings[0]?.agenda && (
+                  <p className="text-xs text-slate-500">
+                    Agenda: {meetings[0]?.agenda}
+                  </p>
+                )}
                 <p className="text-xs text-slate-500">
                   Total: {meetings.length}
                 </p>
@@ -191,6 +265,27 @@ export default function GovernanceTab({ projectId }: GovernanceTabProps) {
                 <p className="text-xs text-slate-500">
                   {formatMinuteSummary(minutes[0]?.content)}
                 </p>
+                {minutes[0]?.agreements.length ? (
+                  <ul className="space-y-1 text-xs text-slate-500">
+                    {minutes[0]?.agreements
+                      .slice(0, 3)
+                      .map((agreement, index) => (
+                        <li key={`${agreement.description}-${index}`}>
+                          {agreement.description} · {agreement.responsible}
+                          {agreement.dueDate
+                            ? ` (${formatDate(agreement.dueDate)})`
+                            : ''}
+                        </li>
+                      ))}
+                    {minutes[0]?.agreements.length > 3 && (
+                      <li className="italic text-slate-400">{`+${minutes[0]?.agreements.length - 3} acuerdos adicionales`}</li>
+                    )}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-400">
+                    Sin acuerdos registrados.
+                  </p>
+                )}
                 <p className="text-xs text-slate-500">
                   Total: {minutes.length}
                 </p>
@@ -219,6 +314,30 @@ export default function GovernanceTab({ projectId }: GovernanceTabProps) {
                 <p className="text-xs text-slate-500">
                   Estado: {scopeChanges[0]?.status}
                 </p>
+                <p className="text-xs text-slate-500">
+                  Impacto plazo: {scopeChanges[0]?.scheduleImpact}
+                </p>
+                <p className="text-xs text-slate-500">
+                  Impacto costo: {scopeChanges[0]?.costImpact}
+                </p>
+                {scopeChanges[0]?.meeting?.title && (
+                  <p className="text-xs text-slate-500">
+                    Sesión: {scopeChanges[0]?.meeting?.title} ·{' '}
+                    {formatDate(scopeChanges[0]?.meeting?.scheduledAt)}
+                  </p>
+                )}
+                {scopeChanges[0]?.approvalWorkflow && (
+                  <p className="text-xs text-slate-500">
+                    Aprobación: {scopeChanges[0]?.approvalWorkflow?.status} ·
+                    Vence:{' '}
+                    {formatDateTime(scopeChanges[0]?.approvalWorkflow?.dueAt)}
+                    {scopeChanges[0]?.approvalWorkflow?.overdue && (
+                      <span className="ml-1 rounded bg-red-100 px-1 text-[10px] uppercase tracking-wide text-red-700">
+                        Vencido
+                      </span>
+                    )}
+                  </p>
+                )}
                 <p className="text-xs text-slate-500">
                   Total: {scopeChanges.length}
                 </p>

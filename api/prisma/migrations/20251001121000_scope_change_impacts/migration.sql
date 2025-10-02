@@ -1,0 +1,4 @@
+ALTER TABLE "ScopeChange" ADD COLUMN "scheduleImpact" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "ScopeChange" ADD COLUMN "costImpact" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "ScopeChange" ALTER COLUMN "scheduleImpact" DROP DEFAULT;
+ALTER TABLE "ScopeChange" ALTER COLUMN "costImpact" DROP DEFAULT;

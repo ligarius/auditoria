@@ -15,6 +15,7 @@ import RisksTab from './tabs/RisksTab';
 import FindingsTab from './tabs/FindingsTab';
 import WorkflowTab from './tabs/WorkflowTab';
 import GovernanceTab from './tabs/GovernanceTab';
+import ApprovalsTab from './tabs/ApprovalsTab';
 import InventoryTab from '../inventory/InventoryTab';
 import LayoutTab from '../layout/LayoutTab';
 import FiveSTab from './tabs/FiveSTab';
@@ -25,7 +26,10 @@ interface TabComponentProps {
   projectId: string;
 }
 
-const makeSection = (title: string, description: string): FC<TabComponentProps> => {
+const makeSection = (
+  title: string,
+  description: string
+): FC<TabComponentProps> => {
   const Section: FC<TabComponentProps> = () => (
     <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
@@ -59,6 +63,7 @@ export const ProjectTabs: {
   { value: 'findings', label: 'Hallazgos', component: FindingsTab },
   { value: 'poc', label: 'POC', component: POCTab },
   { value: 'governance', label: 'Gobernanza', component: GovernanceTab },
+  { value: 'approvals', label: 'Aprobaciones', component: ApprovalsTab },
   { value: 'decisions', label: 'Decisiones', component: DecisionsTab },
   { value: 'kpis', label: 'KPIs', component: KpisTab },
   {

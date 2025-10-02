@@ -19,8 +19,14 @@ const envSchema = z
     SURVEY_REMINDER_DAYS: z.coerce.number().int().positive().default(3),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
-    LOGIN_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000),
+    LOGIN_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(900000),
     LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+    NOTIFICATIONS_EMAIL_FROM: z.string().email().optional(),
+    NOTIFICATIONS_EMAIL_RECIPIENTS: z.string().optional()
   })
   .transform((values) => {
     const parsedAllowlist = values.CORS_ALLOWLIST
@@ -48,18 +54,28 @@ const envSchema = z
     const redisUrl =
       values.REDIS_URL ?? `redis://${values.REDIS_HOST}:${values.REDIS_PORT}`;
 
+    const notificationsRecipients = values.NOTIFICATIONS_EMAIL_RECIPIENTS
+      ? values.NOTIFICATIONS_EMAIL_RECIPIENTS.split(',')
+          .map((recipient) => recipient.trim())
+          .filter((recipient) => recipient.length > 0)
+      : [];
+
     return {
       ...values,
       CLIENT_URL: clientUrl,
       CORS_ALLOWLIST: Array.from(allowlist),
       REDIS_URL: redisUrl,
+      NOTIFICATIONS_EMAIL_RECIPIENTS: notificationsRecipients
     };
   });
 
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('Error al validar variables de entorno', parsed.error.flatten().fieldErrors);
+  console.error(
+    'Error al validar variables de entorno',
+    parsed.error.flatten().fieldErrors
+  );
   throw new Error('Variables de entorno inválidas');
 }
 
@@ -81,6 +97,8 @@ export const env = {
   rateLimitMax: parsed.data.RATE_LIMIT_MAX,
   loginRateLimitWindowMs: parsed.data.LOGIN_RATE_LIMIT_WINDOW_MS,
   loginRateLimitMax: parsed.data.LOGIN_RATE_LIMIT_MAX,
+  notificationsEmailFrom: parsed.data.NOTIFICATIONS_EMAIL_FROM,
+  notificationsEmailRecipients: parsed.data.NOTIFICATIONS_EMAIL_RECIPIENTS
 };
 
 export type Env = typeof env;

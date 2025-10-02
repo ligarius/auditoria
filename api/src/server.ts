@@ -19,6 +19,7 @@ import { formsRouter } from './modules/forms/forms.router.js';
 import workflowRouter from './modules/workflow/workflow.router.js';
 import reportRouter from './modules/export/report.router.js';
 import { initializeQueueWorkers } from './services/queue.js';
+import { startApprovalSlaMonitor } from './services/approval-sla.js';
 import surveysRouter from './routes/surveys.js';
 import { zodErrorHandler } from './common/validation/zod-error.middleware.js';
 
@@ -51,7 +52,11 @@ const sanitizeHeaders = (headers: IncomingHttpHeaders | undefined) => {
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes('*') ||
+        allowedOrigins.includes(origin)
+      ) {
         callback(null, true);
         return;
       }
@@ -59,8 +64,8 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  }),
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
 );
 
 app.use(helmet());
@@ -78,15 +83,21 @@ app.use(
       },
       res(response) {
         const serialized = pino.stdSerializers.res(response);
-        if (serialized && serialized.headers && serialized.headers['set-cookie']) {
-          serialized.headers['set-cookie'] = Array.isArray(serialized.headers['set-cookie'])
+        if (
+          serialized &&
+          serialized.headers &&
+          serialized.headers['set-cookie']
+        ) {
+          serialized.headers['set-cookie'] = Array.isArray(
+            serialized.headers['set-cookie']
+          )
             ? serialized.headers['set-cookie'].map(() => '<redacted>')
             : '<redacted>';
         }
         return serialized;
-      },
-    },
-  }),
+      }
+    }
+  })
 );
 app.use(globalRateLimiter);
 app.use(json());
@@ -111,7 +122,7 @@ app.use((req, res) => {
     title: 'Not Found',
     status: 404,
     detail: `Resource ${req.originalUrl} was not found`,
-    ...(req.id ? { instance: req.id } : {}),
+    ...(req.id ? { instance: req.id } : {})
   } as const;
 
   res.status(404).json(problem);
@@ -124,7 +135,14 @@ const server = app.listen(env.port, () => {
 });
 
 initializeQueueWorkers().catch((error) => {
-  logger.error({ err: error }, 'No se pudieron inicializar los workers de la cola');
+  logger.error(
+    { err: error },
+    'No se pudieron inicializar los workers de la cola'
+  );
 });
+
+if (env.nodeEnv !== 'test') {
+  startApprovalSlaMonitor();
+}
 
 export { app, server };

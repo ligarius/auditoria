@@ -7,6 +7,8 @@ export interface ScopeChangeInput {
   title: string;
   description?: string | null;
   impact?: string | null;
+  scheduleImpact: string;
+  costImpact: string;
   status?: string;
   requestedBy?: string | null;
   requestedAt?: Date;
@@ -20,11 +22,25 @@ export const scopeChangeService = {
     return prisma.scopeChange.findMany({
       where: projectId ? { projectId } : undefined,
       orderBy: { requestedAt: 'desc' },
+      include: {
+        meeting: { select: { id: true, title: true, scheduledAt: true } },
+        approvalWorkflow: {
+          select: { id: true, status: true, dueAt: true, overdue: true }
+        }
+      }
     });
   },
 
   async get(id: string) {
-    const scopeChange = await prisma.scopeChange.findUnique({ where: { id } });
+    const scopeChange = await prisma.scopeChange.findUnique({
+      where: { id },
+      include: {
+        meeting: { select: { id: true, title: true, scheduledAt: true } },
+        approvalWorkflow: {
+          select: { id: true, status: true, dueAt: true, overdue: true }
+        }
+      }
+    });
     if (!scopeChange) {
       throw new HttpError(404, 'Cambio de alcance no encontrado');
     }
@@ -32,7 +48,15 @@ export const scopeChangeService = {
   },
 
   async create(data: ScopeChangeInput) {
-    return prisma.scopeChange.create({ data });
+    return prisma.scopeChange.create({
+      data,
+      include: {
+        meeting: { select: { id: true, title: true, scheduledAt: true } },
+        approvalWorkflow: {
+          select: { id: true, status: true, dueAt: true, overdue: true }
+        }
+      }
+    });
   },
 
   async update(id: string, data: Partial<ScopeChangeInput>) {
@@ -40,7 +64,16 @@ export const scopeChangeService = {
     if (!existing) {
       throw new HttpError(404, 'Cambio de alcance no encontrado');
     }
-    return prisma.scopeChange.update({ where: { id }, data });
+    return prisma.scopeChange.update({
+      where: { id },
+      data,
+      include: {
+        meeting: { select: { id: true, title: true, scheduledAt: true } },
+        approvalWorkflow: {
+          select: { id: true, status: true, dueAt: true, overdue: true }
+        }
+      }
+    });
   },
 
   async remove(id: string) {
@@ -49,5 +82,5 @@ export const scopeChangeService = {
       throw new HttpError(404, 'Cambio de alcance no encontrado');
     }
     await prisma.scopeChange.delete({ where: { id } });
-  },
+  }
 };

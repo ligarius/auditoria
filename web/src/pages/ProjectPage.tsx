@@ -36,6 +36,7 @@ const TAB_TO_PATH: Record<string, string> = {
   findings: 'findings',
   poc: 'poc',
   governance: 'governance',
+  approvals: 'approvals',
   decisions: 'decisions',
   kpis: 'kpis',
   export: 'export',
@@ -71,7 +72,9 @@ export const ProjectPage = () => {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [loadingProjects, setLoadingProjects] = useState(false);
-  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
+    []
+  );
   const [companiesError, setCompaniesError] = useState<string | null>(null);
   const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -117,13 +120,14 @@ export const ProjectPage = () => {
     setCompaniesError(null);
     setLoadingCompanies(true);
     try {
-      const response = await api.get<{ id: string; name: string }[]>('/companies');
+      const response =
+        await api.get<{ id: string; name: string }[]>('/companies');
       const rawCompanies = Array.isArray(response.data) ? response.data : [];
       setCompanies(
         rawCompanies.map((company) => ({
           id: company.id,
           name: company.name,
-        })),
+        }))
       );
     } catch (error) {
       console.error('No se pudieron cargar las compañías', error);
@@ -427,10 +431,16 @@ export const ProjectPage = () => {
                   onChange={(event) => setNewProjectStatus(event.target.value)}
                   className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 >
-                  <option value="planificacion">{ES.projectStatus.planificacion}</option>
-                  <option value="recoleccion_datos">{ES.projectStatus.recoleccion_datos}</option>
+                  <option value="planificacion">
+                    {ES.projectStatus.planificacion}
+                  </option>
+                  <option value="recoleccion_datos">
+                    {ES.projectStatus.recoleccion_datos}
+                  </option>
                   <option value="analisis">{ES.projectStatus.analisis}</option>
-                  <option value="recomendaciones">{ES.projectStatus.recomendaciones}</option>
+                  <option value="recomendaciones">
+                    {ES.projectStatus.recomendaciones}
+                  </option>
                   <option value="cierre">{ES.projectStatus.cierre}</option>
                 </select>
               </div>

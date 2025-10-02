@@ -953,6 +953,8 @@ async function main(): Promise<void> {
       title: 'Agregar bodegas regionales al alcance',
       description: 'Extender la revisión operativa a los centros regionales del norte.',
       impact: 'Incrementa duración en 2 semanas y requiere 1 consultor adicional.',
+      scheduleImpact: 'Extiende el cronograma estimado en 14 días.',
+      costImpact: 'Requiere presupuesto adicional de consultoría por 120 horas.',
       status: 'proposed',
       requestedBy: 'PMO logística',
       requestedAt: new Date('2025-01-14T00:00:00.000Z'),
@@ -965,6 +967,8 @@ async function main(): Promise<void> {
       title: 'Agregar bodegas regionales al alcance',
       description: 'Extender la revisión operativa a los centros regionales del norte.',
       impact: 'Incrementa duración en 2 semanas y requiere 1 consultor adicional.',
+      scheduleImpact: 'Extiende el cronograma estimado en 14 días.',
+      costImpact: 'Requiere presupuesto adicional de consultoría por 120 horas.',
       status: 'proposed',
       requestedBy: 'PMO logística',
       requestedAt: new Date('2025-01-14T00:00:00.000Z'),
@@ -980,6 +984,7 @@ async function main(): Promise<void> {
       resourceId: scopeChange.id,
       status: 'pending',
       dueAt: new Date('2025-01-20T00:00:00.000Z'),
+      overdue: false,
       steps: {
         deleteMany: {},
         create: [
@@ -1015,6 +1020,7 @@ async function main(): Promise<void> {
       resourceId: scopeChange.id,
       status: 'pending',
       dueAt: new Date('2025-01-20T00:00:00.000Z'),
+      overdue: false,
       steps: {
         create: [
           {

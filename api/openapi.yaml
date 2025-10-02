@@ -109,6 +109,21 @@ paths:
       summary: Actualiza registro
     delete:
       summary: Elimina registro
+  /hse/checks/{projectId}:
+    get:
+      summary: Lista chequeos HSE
+    post:
+      summary: Registra un chequeo HSE
+  /hse/ppe/{projectId}:
+    get:
+      summary: Lista asignaciones de EPP
+    post:
+      summary: Registra asignación de EPP
+  /hse/incidents/{projectId}:
+    get:
+      summary: Lista incidentes HSE
+    post:
+      summary: Reporta un incidente HSE
   /receptions/{projectId}:
     get:
       summary: Lista recepciones

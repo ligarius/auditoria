@@ -17,6 +17,7 @@ import WorkflowTab from './tabs/WorkflowTab';
 import GovernanceTab from './tabs/GovernanceTab';
 import InventoryTab from '../inventory/InventoryTab';
 import FiveSTab from './tabs/FiveSTab';
+import HseTab from './tabs/HseTab';
 
 interface TabComponentProps {
   projectId: string;
@@ -47,6 +48,7 @@ export const ProjectTabs: {
   { value: 'processes', label: 'Procesos', component: ProcessesTab },
   { value: 'systems', label: 'Sistemas', component: SystemsTab },
   { value: 'fiveS', label: '5S', component: FiveSTab },
+  { value: 'hse', label: 'HSE', component: HseTab },
   { value: 'inventory', label: 'Maestro & Etiquetas', component: InventoryTab },
   { value: 'security', label: 'Seguridad', component: SecurityTab },
   { value: 'risks', label: 'Riesgos', component: RisksTab },

@@ -26,6 +26,7 @@ const TAB_TO_PATH: Record<string, string> = {
   interviews: 'interviews',
   processes: 'procesos',
   systems: 'systems',
+  fiveS: '5s',
   inventory: 'inventory',
   security: 'security',
   risks: 'risks',

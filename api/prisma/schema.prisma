@@ -989,6 +989,7 @@ model WarehouseZone {
   racks     Rack[]
   locations Location[]
   tasks     InventoryTask[]
+  capacityCalcs CapacityCalc[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
@@ -1036,6 +1037,20 @@ model Location {
   @@index([projectId])
   @@index([zoneId])
   @@index([rackId])
+}
+
+model CapacityCalc {
+  id        String        @id @default(cuid())
+  zoneId    String
+  zone      WarehouseZone @relation(fields: [zoneId], references: [id])
+  rackType  String
+  aisles    Int
+  pp        Int
+  memo      Json?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([zoneId])
 }
 
 model Sku {

@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_CMD="${COMPOSE_CMD:-$ROOT_DIR/scripts/compose.sh}"
 USE_DOCKER="${ACCEPT_USE_DOCKER:-1}"
 WAIT_SCRIPT="$ROOT_DIR/scripts/wait-on.sh"
-HEALTH_URL="${ACCEPT_HEALTH_URL:-http://localhost:4000/api/health}"
+HEALTH_URL="${ACCEPT_HEALTH_URL:-http://localhost:4000/health}"
 WAIT_TIMEOUT="${ACCEPT_HEALTH_TIMEOUT:-180}"
 WAIT_INTERVAL="${ACCEPT_HEALTH_INTERVAL:-3}"
 

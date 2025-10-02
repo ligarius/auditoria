@@ -81,6 +81,12 @@ Auditoría centraliza el proceso completo de auditorías operacionales, desde la
 - Docker y Docker Compose (opcional pero recomendado)
 - PostgreSQL local (solo si decides no usar Docker)
 
+## Setup rápido
+
+1. Copia el archivo `.env.development` a `.env` para reutilizar las variables por defecto.
+2. Levanta la base de datos con `docker compose up -d db`.
+3. Arranca API y frontend con `docker compose up -d api web` y comprueba `http://localhost:4000/health`.
+
 ## Primeros pasos
 
 1. Clona el repositorio.
@@ -100,7 +106,7 @@ Auditoría centraliza el proceso completo de auditorías operacionales, desde la
    ```
 5. Accede a la web en `http://localhost:5173` y valida la salud de la API con:
    ```bash
-   curl http://localhost:4000/api/health
+   curl http://localhost:4000/health
    ```
 
 La API esperará a que la base de datos esté disponible y aplicará `prisma migrate deploy` automáticamente en cada arranque del contenedor.
@@ -117,7 +123,7 @@ npm install --prefix web
 ./scripts/accept.sh
 ```
 
-El script `./scripts/accept.sh` usa Docker Compose por defecto para ejecutar migraciones y semillas (define `ACCEPT_USE_DOCKER=0` si prefieres correrlas contra servicios locales), espera a que `http://localhost:4000/api/health` responda correctamente y compila el frontend tras validar la salud de la API.
+El script `./scripts/accept.sh` usa Docker Compose por defecto para ejecutar migraciones y semillas (define `ACCEPT_USE_DOCKER=0` si prefieres correrlas contra servicios locales), espera a que `http://localhost:4000/health` responda correctamente y compila el frontend tras validar la salud de la API.
 
 ### Builds detrás de un proxy corporativo
 
@@ -270,7 +276,7 @@ docker compose down -v
 cp .env.example .env
 docker compose up -d --build
 
-curl -i http://localhost:4000/api/health
+curl -i http://localhost:4000/health
 TOKEN=$(curl -s -X POST http://localhost:4000/api/auth/login \
   -H 'content-type: application/json' \
   -d '{"email":"admin@demo.com","password":"demo123"}' | jq -r '.accessToken')

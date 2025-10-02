@@ -20,6 +20,7 @@ import workflowRouter from './modules/workflow/workflow.router.js';
 import reportRouter from './modules/export/report.router.js';
 import { initializeQueueWorkers } from './services/queue.js';
 import surveysRouter from './routes/surveys.js';
+import { zodErrorHandler } from './common/validation/zod-error.middleware.js';
 
 const app = express();
 
@@ -91,7 +92,7 @@ app.use(globalRateLimiter);
 app.use(json());
 app.use(urlencoded({ extended: true }));
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.get(['/health', '/api/health'], (_req, res) => res.json({ ok: true }));
 app.get('/metrics', async (_req, res) => {
   res.setHeader('Content-Type', metricsRegistry.contentType);
   res.send(await metricsRegistry.metrics());
@@ -115,6 +116,7 @@ app.use((req, res) => {
 
   res.status(404).json(problem);
 });
+app.use(zodErrorHandler);
 app.use(errorHandler);
 
 const server = app.listen(env.port, () => {

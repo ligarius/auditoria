@@ -66,6 +66,19 @@ enum InventoryCountStatus {
   closed
 }
 
+enum HSECheckType {
+  induccion
+  checklist
+  inspeccion
+}
+
+enum IncidentSeverity {
+  baja
+  media
+  alta
+  critica
+}
+
 model Project {
   id                     String                  @id @default(cuid())
   companyId              String
@@ -116,6 +129,9 @@ model Project {
   surveyLinks            SurveyLink[]
   surveys                Survey[]
   interviews             Interview[]
+  hseChecks              HSECheck[]
+  ppeAssignments         PPEAssign[]
+  incidents              Incident[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 
@@ -141,11 +157,76 @@ model User {
   installedLabels       BarcodeLabel[]          @relation("BarcodeInstalledBy")
   inventoryTasks        InventoryTask[]         @relation("InventoryTaskAssignedTo")
   fiveSAudits           FiveSAudit[]            @relation("FiveSAuditCreatedBy")
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
   QuestionnaireTemplate QuestionnaireTemplate[]
   SurveyLink            SurveyLink[]
   Interview             Interview[]
+  hseChecksCreated      HSECheck[]             @relation("HSECheckCreatedBy")
+  ppeAssignmentsCreated PPEAssign[]            @relation("PPEAssignCreatedBy")
+  incidentsReported     Incident[]             @relation("IncidentReportedBy")
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+}
+
+model HSECheck {
+  id           String       @id @default(cuid())
+  projectId    String
+  project      Project      @relation(fields: [projectId], references: [id])
+  type         HSECheckType
+  title        String
+  conductedBy  String?
+  location     String?
+  notes        String?
+  items        Json         @default("[]")
+  evidence     Json         @default("[]")
+  performedAt  DateTime     @default(now())
+  createdById  String?
+  createdBy    User?        @relation("HSECheckCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([projectId])
+  @@map("HSE_Check")
+}
+
+model PPEAssign {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id])
+  personName   String
+  role         String?
+  assignedAt   DateTime @default(now())
+  deliveredBy  String?
+  notes        String?
+  items        Json     @default("[]")
+  evidence     Json     @default("[]")
+  createdById  String?
+  createdBy    User?    @relation("PPEAssignCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("PPE_Assign")
+}
+
+model Incident {
+  id                String           @id @default(cuid())
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id])
+  title             String
+  severity          IncidentSeverity @default(baja)
+  description       String?
+  reportedBy        String?
+  occurredAt        DateTime         @default(now())
+  location          String?
+  immediateActions  String?
+  correctiveActions String?
+  photos            Json             @default("[]")
+  createdById       String?
+  createdBy         User?            @relation("IncidentReportedBy", fields: [createdById], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([projectId])
 }
 
 model FiveSAudit {

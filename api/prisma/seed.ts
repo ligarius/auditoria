@@ -2,10 +2,10 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
-import { PrismaClient, ProjectWorkflowState } from '@prisma/client';
+import { PrismaClient, ProjectWorkflowState, Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
-const runMigrations = () => {
+const runMigrations = (): void => {
   if (process.env.SKIP_MIGRATE_ON_SEED === 'true') {
     console.log('[seed] SKIP_MIGRATE_ON_SEED=true, omitiendo prisma migrate deploy');
     return;
@@ -28,7 +28,7 @@ runMigrations();
 
 const prisma = new PrismaClient();
 
-const ensureWorkflowEnum = () => {
+const ensureWorkflowEnum = (): void => {
   const expected = [
     'planificacion',
     'recoleccion_datos',
@@ -46,7 +46,9 @@ const ensureWorkflowEnum = () => {
   }
 };
 
-async function upsertUser(email, name, role, password) {
+type UserRole = Prisma.UserCreateInput['role'];
+
+async function upsertUser(email: string, name: string, role: UserRole, password: string) {
   const passwordHash = await bcrypt.hash(password, 10);
   return prisma.user.upsert({
     where: { email },
@@ -55,7 +57,7 @@ async function upsertUser(email, name, role, password) {
   });
 }
 
-async function findOrCreateCompany(name, taxId) {
+async function findOrCreateCompany(name: string, taxId: string) {
   const existing = await prisma.company.findFirst({ where: { name } });
   if (existing) {
     return existing;
@@ -63,7 +65,7 @@ async function findOrCreateCompany(name, taxId) {
   return prisma.company.create({ data: { name, taxId } });
 }
 
-async function main() {
+async function main(): Promise<void> {
   ensureWorkflowEnum();
   const nutrial = await findOrCreateCompany('Nutrial', '76.543.210-9');
   const democorp = await findOrCreateCompany('DemoCorp', '76.000.000-0');

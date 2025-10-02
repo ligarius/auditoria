@@ -8,9 +8,11 @@
     "build": "esbuild src/server.ts --platform=node --bundle --format=cjs --outfile=dist/server.cjs --sourcemap --packages=external",
     "start": "node dist/server.cjs",
     "prisma": "prisma",
+    "dev:db:migrate": "prisma migrate dev",
+    "db:seed": "ts-node --esm prisma/seed.ts",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
-    "seed": "node prisma/seed.js",
+    "seed": "npm run db:seed",
     "generate": "prisma generate",
     "postinstall": "prisma generate",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
@@ -75,6 +77,6 @@
     "typescript": "^5.3.3"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "ts-node --esm prisma/seed.ts"
   }
 }

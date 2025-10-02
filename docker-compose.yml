@@ -46,7 +46,7 @@ services:
     env_file:
       - .env
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
@@ -60,15 +60,18 @@ services:
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-300}
       LOGIN_RATE_LIMIT_WINDOW_MS: ${LOGIN_RATE_LIMIT_WINDOW_MS:-900000}
       LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
+      PRISMA_LOG: query,error,warn
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "${API_PORT:-4000}:4000"
     volumes:
       - api-storage:/usr/src/app/storage
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:${API_PORT:-4000}/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${API_PORT:-4000}/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

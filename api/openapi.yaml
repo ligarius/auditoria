@@ -137,6 +137,39 @@ paths:
   /receptions/{projectId}/metrics/summary:
     get:
       summary: Métricas agregadas
+  /approvals:
+    get:
+      summary: Lista flujos de aprobación
+    post:
+      summary: Crea flujo de aprobación
+  /approvals/pending:
+    get:
+      summary: Lista aprobaciones pendientes del usuario actual
+  /approvals/{id}:
+    get:
+      summary: Obtiene un flujo de aprobación
+    put:
+      summary: Actualiza un flujo de aprobación
+    delete:
+      summary: Elimina un flujo de aprobación
+  /approvals/{id}/approve:
+    post:
+      summary: Aprueba el paso asignado al usuario
+  /approvals/{id}/reject:
+    post:
+      summary: Rechaza el paso asignado al usuario
+  /scope-changes:
+    get:
+      summary: Lista cambios de alcance
+    post:
+      summary: Crea un cambio de alcance con impacto en costo y plazo
+  /scope-changes/{id}:
+    get:
+      summary: Obtiene un cambio de alcance
+    put:
+      summary: Actualiza un cambio de alcance
+    delete:
+      summary: Elimina un cambio de alcance
   /risks:
     get:
       summary: Lista riesgos por proyecto

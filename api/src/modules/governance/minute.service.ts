@@ -5,11 +5,21 @@ export interface MinuteInput {
   meetingId: string;
   authorId?: string | null;
   content: string;
+  agreements?: {
+    description: string;
+    responsible: string;
+    dueDate?: Date | null;
+  }[];
 }
 
 export interface MinuteUpdateInput {
   content?: string;
   authorId?: string | null;
+  agreements?: {
+    description: string;
+    responsible: string;
+    dueDate?: Date | null;
+  }[];
 }
 
 export const minuteService = {
@@ -18,13 +28,17 @@ export const minuteService = {
     return prisma.minute.findMany({
       where: {
         meetingId: meetingId ?? undefined,
-        meeting: projectId ? { projectId } : undefined,
+        meeting: projectId ? { projectId } : undefined
       },
       include: {
-        meeting: { select: { id: true, projectId: true, title: true, scheduledAt: true } },
-        author: { select: { id: true, firstName: true, lastName: true, email: true } },
+        meeting: {
+          select: { id: true, projectId: true, title: true, scheduledAt: true }
+        },
+        author: {
+          select: { id: true, firstName: true, lastName: true, email: true }
+        }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc' }
     });
   },
 
@@ -32,9 +46,13 @@ export const minuteService = {
     const minute = await prisma.minute.findUnique({
       where: { id },
       include: {
-        meeting: { select: { id: true, projectId: true, title: true, scheduledAt: true } },
-        author: { select: { id: true, firstName: true, lastName: true, email: true } },
-      },
+        meeting: {
+          select: { id: true, projectId: true, title: true, scheduledAt: true }
+        },
+        author: {
+          select: { id: true, firstName: true, lastName: true, email: true }
+        }
+      }
     });
     if (!minute) {
       throw new HttpError(404, 'Minuta no encontrada');
@@ -48,11 +66,16 @@ export const minuteService = {
         meetingId: data.meetingId,
         content: data.content,
         authorId: data.authorId ?? null,
+        agreements: data.agreements ?? []
       },
       include: {
-        meeting: { select: { id: true, projectId: true, title: true, scheduledAt: true } },
-        author: { select: { id: true, firstName: true, lastName: true, email: true } },
-      },
+        meeting: {
+          select: { id: true, projectId: true, title: true, scheduledAt: true }
+        },
+        author: {
+          select: { id: true, firstName: true, lastName: true, email: true }
+        }
+      }
     });
   },
 
@@ -66,11 +89,17 @@ export const minuteService = {
       data: {
         content: data.content ?? undefined,
         authorId: data.authorId === undefined ? undefined : data.authorId,
+        agreements:
+          data.agreements === undefined ? undefined : (data.agreements ?? [])
       },
       include: {
-        meeting: { select: { id: true, projectId: true, title: true, scheduledAt: true } },
-        author: { select: { id: true, firstName: true, lastName: true, email: true } },
-      },
+        meeting: {
+          select: { id: true, projectId: true, title: true, scheduledAt: true }
+        },
+        author: {
+          select: { id: true, firstName: true, lastName: true, email: true }
+        }
+      }
     });
   },
 
@@ -80,5 +109,5 @@ export const minuteService = {
       throw new HttpError(404, 'Minuta no encontrada');
     }
     await prisma.minute.delete({ where: { id } });
-  },
+  }
 };

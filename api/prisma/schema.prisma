@@ -838,6 +838,7 @@ model Minute {
   meetingId String
   authorId  String?
   content   String
+  agreements Json    @default("[]")
   createdAt DateTime @default(now())
   meeting   Meeting  @relation(fields: [meetingId], references: [id])
   author    User?    @relation("MinuteAuthor", fields: [authorId], references: [id])
@@ -852,6 +853,8 @@ model ScopeChange {
   title              String
   description        String?
   impact             String?
+  scheduleImpact     String            @default("")
+  costImpact         String            @default("")
   status             String            @default("proposed")
   requestedBy        String?
   requestedAt        DateTime          @default(now())
@@ -879,6 +882,7 @@ model ApprovalWorkflow {
   resourceId   String
   status       ApprovalStatus @default(pending)
   dueAt        DateTime?
+  overdue      Boolean        @default(false)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   project      Project        @relation(fields: [projectId], references: [id])

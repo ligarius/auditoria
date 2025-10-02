@@ -8,6 +8,35 @@ const kpiRouter = Router();
 
 kpiRouter.use(authenticate);
 
+const parseQueryDate = (value: unknown, label: string): Date | undefined => {
+  if (Array.isArray(value)) {
+    return value.length > 0 ? parseQueryDate(value[value.length - 1], label) : undefined;
+  }
+
+  if (typeof value !== 'string') return undefined;
+
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`${label} inválida`);
+  }
+
+  return parsed;
+};
+
+const getDateRangeFromQuery = (query: Record<string, unknown>) => {
+  const startDate = parseQueryDate(query.startDate, 'Fecha inicial');
+  const endDate = parseQueryDate(query.endDate, 'Fecha final');
+
+  if (startDate && endDate && startDate > endDate) {
+    throw new Error('El rango de fechas es inválido');
+  }
+
+  return { startDate, endDate };
+};
+
 const optionalMetric = z
   .preprocess(
     (value) => (value === '' || value === null || value === undefined ? undefined : value),
@@ -38,14 +67,27 @@ const normalizePayload = (payload: z.infer<typeof updateSchema>) => ({
   kmPerDrop: payload.kmPerDrop ?? undefined,
 });
 
-kpiRouter.get('/', requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM', 'Invitado']), async (req, res) => {
-  const projectId = typeof req.query.projectId === 'string' ? req.query.projectId : undefined;
-  if (!projectId) {
-    return res.status(400).json({ title: 'projectId es requerido' });
-  }
-  const kpis = await kpiService.list(projectId);
-  res.json(kpis);
-});
+kpiRouter.get(
+  '/',
+  requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM', 'Invitado']),
+  async (req, res) => {
+    const projectId = typeof req.query.projectId === 'string' ? req.query.projectId : undefined;
+    if (!projectId) {
+      return res.status(400).json({ title: 'projectId es requerido' });
+    }
+
+    let dateFilters: { startDate?: Date; endDate?: Date };
+    try {
+      dateFilters = getDateRangeFromQuery(req.query as Record<string, unknown>);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Rango de fechas inválido';
+      return res.status(400).json({ title: message });
+    }
+
+    const kpis = await kpiService.list(projectId, dateFilters);
+    res.json(kpis);
+  },
+);
 
 kpiRouter.post('/', requireProjectRole(['ConsultorLider', 'Auditor']), async (req, res) => {
   const payload = createSchema.parse(req.body);
@@ -77,10 +119,22 @@ kpiRouter.delete('/:id', requireProjectRole(['ConsultorLider']), async (req, res
 });
 
 // Compatibilidad con rutas anteriores basadas en projectId en el path
-kpiRouter.get('/:projectId', requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM']), async (req, res) => {
-  const kpis = await kpiService.list(req.params.projectId);
-  res.json(kpis);
-});
+kpiRouter.get(
+  '/:projectId',
+  requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM']),
+  async (req, res) => {
+    let dateFilters: { startDate?: Date; endDate?: Date };
+    try {
+      dateFilters = getDateRangeFromQuery(req.query as Record<string, unknown>);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Rango de fechas inválido';
+      return res.status(400).json({ title: message });
+    }
+
+    const kpis = await kpiService.list(req.params.projectId, dateFilters);
+    res.json(kpis);
+  },
+);
 
 kpiRouter.post('/:projectId', requireProjectRole(['ConsultorLider', 'Auditor']), async (req, res) => {
   const payload = updateSchema.parse({ ...req.body, projectId: req.params.projectId });

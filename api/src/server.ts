@@ -22,6 +22,7 @@ import { initializeQueueWorkers } from './services/queue.js';
 import { startApprovalSlaMonitor } from './services/approval-sla.js';
 import surveysRouter from './routes/surveys.js';
 import { zodErrorHandler } from './common/validation/zod-error.middleware.js';
+import { startKpiSnapshotCron } from './modules/kpis/kpi-snapshot.job.js';
 
 const app = express();
 
@@ -143,6 +144,7 @@ initializeQueueWorkers().catch((error) => {
 
 if (env.nodeEnv !== 'test') {
   startApprovalSlaMonitor();
+  startKpiSnapshotCron();
 }
 
 export { app, server };

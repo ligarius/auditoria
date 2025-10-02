@@ -2,11 +2,28 @@ import { prisma } from '../../core/config/db.js';
 import { HttpError } from '../../core/errors/http-error.js';
 import { auditService } from '../audit/audit.service.js';
 
+type KpiListFilters = {
+  startDate?: Date;
+  endDate?: Date;
+};
+
 export const kpiService = {
-  async list(projectId: string) {
+  async list(projectId: string, filters: KpiListFilters = {}) {
+    const { startDate, endDate } = filters;
+
     return prisma.kpiSnapshot.findMany({
-      where: { projectId },
-      orderBy: { date: 'desc' },
+      where: {
+        projectId,
+        ...(startDate || endDate
+          ? {
+              date: {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {}),
+              },
+            }
+          : {}),
+      },
+      orderBy: { date: 'asc' },
     });
   },
 

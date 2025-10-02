@@ -55,6 +55,11 @@ enum ActionStatus {
   done
 }
 
+enum BarcodeLabelType {
+  SKU
+  LOCATION
+}
+
 model Project {
   id                     String                  @id @default(cuid())
   companyId              String
@@ -92,6 +97,12 @@ model Project {
   approvalWorkflows      ApprovalWorkflow[]
   kpiSnapshots           KpiSnapshot[]
   kpis                   KPI[]
+  warehouseZones         WarehouseZone[]
+  racks                  Rack[]
+  locations              Location[]
+  skus                   Sku[]
+  barcodeLabels          BarcodeLabel[]
+  skuDupCandidates       SkuDupCandidate[]
   auditLogs              AuditLog[]
   questionnaireResponses QuestionnaireResponse[]
   surveyLinks            SurveyLink[]
@@ -119,6 +130,7 @@ model User {
   approvalSteps         ApprovalStep[]          @relation("ApprovalStepApprover")
   assignedChecklists    Checklist[]             @relation("ChecklistAssignee")
   signedChecklists      Checklist[]             @relation("ChecklistSignedBy")
+  installedLabels       BarcodeLabel[]          @relation("BarcodeInstalledBy")
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   QuestionnaireTemplate QuestionnaireTemplate[]
@@ -367,61 +379,61 @@ model ProcessAsset {
 }
 
 model Process {
-  id        String      @id @default(cuid())
-  projectId String
-  name      String
-  type      ProcessType
-  version   Int         @default(1)
+  id          String      @id @default(cuid())
+  projectId   String
+  name        String
+  type        ProcessType
+  version     Int         @default(1)
   description String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  project   Project     @relation(fields: [projectId], references: [id])
-  sops      Sop[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  project     Project     @relation(fields: [projectId], references: [id])
+  sops        Sop[]
 
-  @@index([projectId])
   @@unique([projectId, name, type, version])
+  @@index([projectId])
 }
 
 model Sop {
-  id        String    @id @default(cuid())
-  processId String
-  title     String
-  version   Int       @default(1)
-  status    SopStatus @default(draft)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  process   Process   @relation(fields: [processId], references: [id])
-  steps     SopStep[]
+  id         String      @id @default(cuid())
+  processId  String
+  title      String
+  version    Int         @default(1)
+  status     SopStatus   @default(draft)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  process    Process     @relation(fields: [processId], references: [id])
+  steps      SopStep[]
   checklists Checklist[]
 
   @@index([processId])
 }
 
 model SopStep {
-  id     String @id @default(cuid())
-  sopId  String
-  order  Int
-  text   String
-  kpi    Json?
-  sop    Sop    @relation(fields: [sopId], references: [id])
+  id    String @id @default(cuid())
+  sopId String
+  order Int
+  text  String
+  kpi   Json?
+  sop   Sop    @relation(fields: [sopId], references: [id])
 
-  @@index([sopId])
   @@unique([sopId, order])
+  @@index([sopId])
 }
 
 model Checklist {
-  id          String          @id @default(cuid())
-  sopId       String
-  assigneeId  String?
-  status      ChecklistStatus @default(open)
-  signedById  String?
-  signedAt    DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  sop         Sop             @relation(fields: [sopId], references: [id])
-  assignee    User?           @relation("ChecklistAssignee", fields: [assigneeId], references: [id])
-  signedBy    User?           @relation("ChecklistSignedBy", fields: [signedById], references: [id])
-  items       ChecklistItem[]
+  id         String          @id @default(cuid())
+  sopId      String
+  assigneeId String?
+  status     ChecklistStatus @default(open)
+  signedById String?
+  signedAt   DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  sop        Sop             @relation(fields: [sopId], references: [id])
+  assignee   User?           @relation("ChecklistAssignee", fields: [assigneeId], references: [id])
+  signedBy   User?           @relation("ChecklistSignedBy", fields: [signedById], references: [id])
+  items      ChecklistItem[]
 
   @@index([sopId])
   @@index([assigneeId])
@@ -598,29 +610,29 @@ model Risk {
 }
 
 model Finding {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   projectId      String
   title          String
   evidence       String?
   impact         String
   recommendation String
-  severity       String    @default("media")
+  severity       String       @default("media")
   area           String?
   costEstimate   Float?
-  isQuickWin     Boolean   @default(false)
+  isQuickWin     Boolean      @default(false)
   effortDays     Int?
   responsibleR   String?
   accountableA   String?
   targetDate     DateTime?
-  status         String    @default("open")
-  project        Project   @relation(fields: [projectId], references: [id])
+  status         String       @default("open")
+  project        Project      @relation(fields: [projectId], references: [id])
   actionItems    ActionItem[]
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 model ActionItem {
-  id          String        @id @default(cuid())
+  id          String         @id @default(cuid())
   projectId   String
   findingId   String?
   title       String
@@ -629,10 +641,10 @@ model ActionItem {
   dueDate     DateTime?
   category    ActionCategory @default(quick_win)
   status      ActionStatus   @default(todo)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  project     Project       @relation(fields: [projectId], references: [id])
-  finding     Finding?      @relation(fields: [findingId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  project     Project        @relation(fields: [projectId], references: [id])
+  finding     Finding?       @relation(fields: [findingId], references: [id])
 
   @@index([projectId])
   @@index([findingId])
@@ -855,4 +867,119 @@ model AuditLog {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
   project   Project? @relation(fields: [projectId], references: [id])
+}
+
+model WarehouseZone {
+  id        String     @id @default(cuid())
+  projectId String
+  project   Project    @relation(fields: [projectId], references: [id])
+  code      String
+  name      String
+  racks     Rack[]
+  locations Location[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([projectId, code])
+  @@index([projectId])
+}
+
+model Rack {
+  id        String        @id @default(cuid())
+  projectId String
+  project   Project       @relation(fields: [projectId], references: [id])
+  zoneId    String
+  zone      WarehouseZone @relation(fields: [zoneId], references: [id])
+  code      String
+  name      String
+  locations Location[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([zoneId, code])
+  @@index([projectId])
+}
+
+model Location {
+  id        String         @id @default(cuid())
+  projectId String
+  project   Project        @relation(fields: [projectId], references: [id])
+  zoneId    String
+  zone      WarehouseZone  @relation(fields: [zoneId], references: [id])
+  rackId    String
+  rack      Rack           @relation(fields: [rackId], references: [id])
+  row       Int
+  level     Int
+  pos       Int
+  codeZRNP  String         @unique
+  skuId     String?
+  sku       Sku?           @relation(fields: [skuId], references: [id])
+  labels    BarcodeLabel[] @relation("LocationLabels")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([zoneId])
+  @@index([rackId])
+}
+
+model Sku {
+  id             String            @id @default(cuid())
+  projectId      String
+  project        Project           @relation(fields: [projectId], references: [id])
+  code           String
+  name           String
+  uom            String
+  length         Float?
+  width          Float?
+  height         Float?
+  weight         Float?
+  locations      Location[]
+  labels         BarcodeLabel[]    @relation("SkuLabels")
+  dupCandidatesA SkuDupCandidate[] @relation("SkuDupCandidatesA")
+  dupCandidatesB SkuDupCandidate[] @relation("SkuDupCandidatesB")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([projectId, code])
+  @@index([projectId])
+}
+
+model BarcodeLabel {
+  id            String           @id @default(cuid())
+  projectId     String
+  project       Project          @relation(fields: [projectId], references: [id])
+  type          BarcodeLabelType
+  code          String
+  format        String           @default("CODE128")
+  printedAt     DateTime?
+  installedAt   DateTime?
+  installedById String?
+  installedBy   User?            @relation("BarcodeInstalledBy", fields: [installedById], references: [id])
+  skuId         String?
+  sku           Sku?             @relation("SkuLabels", fields: [skuId], references: [id])
+  locationId    String?
+  location      Location?        @relation("LocationLabels", fields: [locationId], references: [id])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([projectId, type, code])
+  @@index([projectId, type])
+  @@index([installedById])
+}
+
+model SkuDupCandidate {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  skuAId     String
+  skuBId     String
+  similarity Float
+  skuA       Sku      @relation("SkuDupCandidatesA", fields: [skuAId], references: [id])
+  skuB       Sku      @relation("SkuDupCandidatesB", fields: [skuBId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([skuAId, skuBId])
+  @@index([projectId])
 }

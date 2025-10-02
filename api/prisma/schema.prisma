@@ -132,6 +132,8 @@ model Project {
   hseChecks              HSECheck[]
   ppeAssignments         PPEAssign[]
   incidents              Incident[]
+  carriers               Carrier[]
+  routePlans             RoutePlan[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
 
@@ -1197,4 +1199,99 @@ model SkuDupCandidate {
 
   @@unique([skuAId, skuBId])
   @@index([projectId])
+}
+
+enum RoutePlanStatus {
+  draft
+  optimizing
+  completed
+}
+
+model Carrier {
+  id        String       @id @default(cuid())
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id])
+  name      String
+  contact   String?
+  phone     String?
+  email     String?
+  vehicles  Vehicle[]
+  tariffs   Tariff[]
+  plans     RoutePlan[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([projectId, name])
+  @@index([projectId])
+}
+
+model RoutePlan {
+  id         String          @id @default(cuid())
+  projectId  String
+  project    Project         @relation(fields: [projectId], references: [id])
+  carrierId  String?
+  carrier    Carrier?        @relation(fields: [carrierId], references: [id])
+  scenario   String
+  status     RoutePlanStatus @default(draft)
+  approved   Boolean         @default(false)
+  notes      String?
+  stops      RouteStop[]
+  vehicles   Vehicle[]
+  tariffs    Tariff[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([carrierId])
+}
+
+model Vehicle {
+  id        String    @id @default(cuid())
+  planId    String
+  plan      RoutePlan @relation(fields: [planId], references: [id])
+  carrierId String?
+  carrier   Carrier?  @relation(fields: [carrierId], references: [id])
+  name      String
+  capacity  Float
+  costKm    Float
+  fixed     Float
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([planId])
+  @@index([carrierId])
+}
+
+model Tariff {
+  id          String    @id @default(cuid())
+  planId      String
+  plan        RoutePlan @relation(fields: [planId], references: [id])
+  carrierId   String?
+  carrier     Carrier?  @relation(fields: [carrierId], references: [id])
+  fromClient  String
+  toClient    String
+  distanceKm  Float?
+  cost        Float
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([planId])
+  @@index([carrierId])
+}
+
+model RouteStop {
+  id          String    @id @default(cuid())
+  planId      String
+  plan        RoutePlan @relation(fields: [planId], references: [id])
+  client      String
+  windowStart DateTime?
+  windowEnd   DateTime?
+  demandVol   Float?
+  demandKg    Float?
+  sequence    Int?
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([planId])
 }

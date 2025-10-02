@@ -1,4 +1,4 @@
-import { BarcodeLabelType } from '@prisma/client';
+import { BarcodeLabelType, InventoryCountStatus } from '@prisma/client';
 import bwipjs from 'bwip-js';
 import { parse } from 'csv-parse/sync';
 import PDFDocument from 'pdfkit';
@@ -52,6 +52,31 @@ const parseNumber = (value: unknown) => {
 };
 
 const pad = (value: number, size = 2) => value.toString().padStart(size, '0');
+
+const toFiniteNumber = (value: unknown, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const computePercentageDelta = (expected: number, found: number) => {
+  if (!Number.isFinite(expected) || expected === 0) {
+    return Math.abs(found) > 0 ? 100 : 0;
+  }
+  return (Math.abs(found - expected) / Math.abs(expected)) * 100;
+};
+
+const formatUserSummary = (
+  user?: { id: string; name: string | null; email: string | null },
+) => {
+  if (!user) {
+    return null;
+  }
+  return {
+    id: user.id,
+    name: user.name ?? user.email ?? 'Sin nombre',
+    email: user.email,
+  };
+};
 
 const buildLocationCode = (
   zoneCode: string,
@@ -427,6 +452,7 @@ export const inventoryService = {
         row: location.row,
         level: location.level,
         pos: location.pos,
+        expectedQty: location.expectedQty ?? null,
         zone: {
           id: location.zone.id,
           code: location.zone.code,
@@ -570,5 +596,790 @@ export const inventoryService = {
     );
 
     return updates;
+  },
+
+  async listCounts(projectId: string) {
+    const counts = await prisma.inventoryCount.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        tasks: {
+          include: {
+            zone: { select: { id: true, code: true, name: true } },
+            assignedTo: { select: { id: true, name: true, email: true } },
+            scans: { include: { recount: true } },
+          },
+        },
+        variances: { select: { id: true } },
+      },
+    });
+
+    return counts.map((count) => {
+      let totalScans = 0;
+      let totalRecounts = 0;
+      count.tasks.forEach((task) => {
+        totalScans += task.scans.length;
+        totalRecounts += task.scans.filter((scan) => Boolean(scan.recount)).length;
+      });
+
+      return {
+        id: count.id,
+        projectId: count.projectId,
+        status: count.status,
+        tolerancePct: count.tolerancePct ?? null,
+        plannedAt: count.plannedAt,
+        startedAt: count.startedAt,
+        closedAt: count.closedAt,
+        tasks: count.tasks.map((task) => ({
+          id: task.id,
+          zone: {
+            id: task.zone.id,
+            code: task.zone.code,
+            name: task.zone.name,
+          },
+          assignedTo: formatUserSummary(task.assignedTo ?? undefined),
+          blind: task.blind,
+          scanCount: task.scans.length,
+          recountCount: task.scans.filter((scan) => Boolean(scan.recount)).length,
+        })),
+        totals: {
+          tasks: count.tasks.length,
+          scans: totalScans,
+          recounts: totalRecounts,
+          variances: count.variances.length,
+        },
+      };
+    });
+  },
+
+  async getCountProject(countId: string) {
+    const count = await prisma.inventoryCount.findUnique({
+      where: { id: countId },
+      select: { projectId: true },
+    });
+    if (!count) {
+      throw new Error('Conteo no encontrado');
+    }
+    return count.projectId;
+  },
+
+  async getCountDetail(countId: string) {
+    const count = await prisma.inventoryCount.findUnique({
+      where: { id: countId },
+      include: {
+        project: { select: { id: true } },
+        tasks: {
+          include: {
+            zone: { select: { id: true, code: true, name: true } },
+            assignedTo: { select: { id: true, name: true, email: true } },
+            scans: {
+              include: {
+                recount: true,
+                location: {
+                  select: {
+                    id: true,
+                    codeZRNP: true,
+                    expectedQty: true,
+                  },
+                },
+                sku: { select: { id: true, code: true, name: true } },
+              },
+              orderBy: { capturedAt: 'desc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!count) {
+      throw new Error('Conteo no encontrado');
+    }
+
+    const variances = await inventoryService.listVariances(countId);
+
+    const zoneSummary = new Map<
+      string,
+      {
+        zoneId: string;
+        zoneCode: string;
+        zoneName: string;
+        varianceCount: number;
+        expectedTotal: number;
+        foundTotal: number;
+        differenceTotal: number;
+        absoluteDifference: number;
+      }
+    >();
+    const skuSummary = new Map<
+      string,
+      {
+        skuId: string | null;
+        skuCode: string;
+        skuName: string;
+        varianceCount: number;
+        expectedTotal: number;
+        foundTotal: number;
+        differenceTotal: number;
+        absoluteDifference: number;
+      }
+    >();
+
+    variances.forEach((variance) => {
+      const zoneKey = variance.location.zone.id;
+      const zoneEntry = zoneSummary.get(zoneKey) ?? {
+        zoneId: variance.location.zone.id,
+        zoneCode: variance.location.zone.code,
+        zoneName: variance.location.zone.name,
+        varianceCount: 0,
+        expectedTotal: 0,
+        foundTotal: 0,
+        differenceTotal: 0,
+        absoluteDifference: 0,
+      };
+      zoneEntry.varianceCount += 1;
+      zoneEntry.expectedTotal += variance.expectedQty;
+      zoneEntry.foundTotal += variance.foundQty;
+      zoneEntry.differenceTotal += variance.difference;
+      zoneEntry.absoluteDifference += Math.abs(variance.difference);
+      zoneSummary.set(zoneKey, zoneEntry);
+
+      const skuKey = variance.sku?.id ?? 'unassigned';
+      const skuEntry = skuSummary.get(skuKey) ?? {
+        skuId: variance.sku?.id ?? null,
+        skuCode: variance.sku?.code ?? 'SIN SKU',
+        skuName: variance.sku?.name ?? 'Sin SKU',
+        varianceCount: 0,
+        expectedTotal: 0,
+        foundTotal: 0,
+        differenceTotal: 0,
+        absoluteDifference: 0,
+      };
+      skuEntry.varianceCount += 1;
+      skuEntry.expectedTotal += variance.expectedQty;
+      skuEntry.foundTotal += variance.foundQty;
+      skuEntry.differenceTotal += variance.difference;
+      skuEntry.absoluteDifference += Math.abs(variance.difference);
+      skuSummary.set(skuKey, skuEntry);
+    });
+
+    return {
+      id: count.id,
+      projectId: count.projectId,
+      status: count.status,
+      tolerancePct: count.tolerancePct ?? null,
+      plannedAt: count.plannedAt,
+      startedAt: count.startedAt,
+      closedAt: count.closedAt,
+      tasks: count.tasks.map((task) => ({
+        id: task.id,
+        zone: {
+          id: task.zone.id,
+          code: task.zone.code,
+          name: task.zone.name,
+        },
+        assignedTo: formatUserSummary(task.assignedTo ?? undefined),
+        blind: task.blind,
+        scans: task.scans.map((scan) => ({
+          id: scan.id,
+          qty: scan.qty,
+          finalQty: scan.recount?.qty2 ?? scan.qty,
+          recountQty: scan.recount?.qty2 ?? null,
+          capturedAt: scan.capturedAt,
+          deviceId: scan.deviceId ?? null,
+          location: {
+            id: scan.location.id,
+            codeZRNP: scan.location.codeZRNP,
+            expectedQty: scan.location.expectedQty ?? null,
+          },
+          sku: scan.sku
+            ? { id: scan.sku.id, code: scan.sku.code, name: scan.sku.name }
+            : null,
+        })),
+      })),
+      variances,
+      zoneSummary: Array.from(zoneSummary.values()).sort((a, b) =>
+        a.zoneCode.localeCompare(b.zoneCode),
+      ),
+      skuSummary: Array.from(skuSummary.values()).sort((a, b) =>
+        a.skuCode.localeCompare(b.skuCode),
+      ),
+    };
+  },
+
+  async createCount(projectId: string, tolerancePct?: number | null) {
+    const payload: { projectId: string; tolerancePct?: number | null } = { projectId };
+    if (typeof tolerancePct === 'number' && Number.isFinite(tolerancePct)) {
+      payload.tolerancePct = tolerancePct;
+    } else if (tolerancePct === null) {
+      payload.tolerancePct = null;
+    }
+
+    const count = await prisma.inventoryCount.create({ data: payload });
+    return {
+      id: count.id,
+      projectId: count.projectId,
+      status: count.status,
+      tolerancePct: count.tolerancePct ?? null,
+      plannedAt: count.plannedAt,
+      startedAt: count.startedAt,
+      closedAt: count.closedAt,
+    };
+  },
+
+  async updateCount(
+    countId: string,
+    data: { tolerancePct?: number | null; status?: InventoryCountStatus },
+  ) {
+    const count = await prisma.inventoryCount.findUnique({ where: { id: countId } });
+    if (!count) {
+      throw new Error('Conteo no encontrado');
+    }
+
+    const updateData: {
+      tolerancePct?: number | null;
+      status?: InventoryCountStatus;
+      startedAt?: Date;
+    } = {};
+
+    if (Object.prototype.hasOwnProperty.call(data, 'tolerancePct')) {
+      if (typeof data.tolerancePct === 'number' && Number.isFinite(data.tolerancePct)) {
+        updateData.tolerancePct = data.tolerancePct;
+      } else {
+        updateData.tolerancePct = null;
+      }
+    }
+
+    if (data.status) {
+      if (data.status === InventoryCountStatus.closed) {
+        throw new Error('Utiliza la ruta de cierre para finalizar el conteo');
+      }
+
+      if (count.status === InventoryCountStatus.closed) {
+        throw new Error('El conteo ya fue cerrado');
+      }
+
+      if (data.status === InventoryCountStatus.running) {
+        if (count.status === InventoryCountStatus.planned) {
+          updateData.status = InventoryCountStatus.running;
+          updateData.startedAt = count.startedAt ?? new Date();
+        }
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return count;
+    }
+
+    const updated = await prisma.inventoryCount.update({
+      where: { id: countId },
+      data: updateData,
+    });
+
+    return updated;
+  },
+
+  async createTask(
+    countId: string,
+    payload: { zoneId: string; assignedToId?: string | null; blind?: boolean },
+  ) {
+    const count = await prisma.inventoryCount.findUnique({ where: { id: countId } });
+    if (!count) {
+      throw new Error('Conteo no encontrado');
+    }
+    if (count.status === InventoryCountStatus.closed) {
+      throw new Error('El conteo ya fue cerrado');
+    }
+
+    const zone = await prisma.warehouseZone.findUnique({
+      where: { id: payload.zoneId },
+      select: { id: true, projectId: true, code: true, name: true },
+    });
+    if (!zone || zone.projectId !== count.projectId) {
+      throw new Error('La zona no pertenece al proyecto');
+    }
+
+    if (payload.assignedToId) {
+      const membership = await prisma.membership.findUnique({
+        where: {
+          userId_projectId: {
+            userId: payload.assignedToId,
+            projectId: count.projectId,
+          },
+        },
+      });
+      if (!membership) {
+        throw new Error('El usuario no pertenece al proyecto');
+      }
+    }
+
+    const task = await prisma.inventoryTask.create({
+      data: {
+        countId,
+        zoneId: zone.id,
+        assignedToId: payload.assignedToId ?? null,
+        blind: payload.blind ?? true,
+      },
+      include: {
+        zone: { select: { id: true, code: true, name: true } },
+        assignedTo: { select: { id: true, name: true, email: true } },
+        scans: { include: { recount: true } },
+      },
+    });
+
+    return {
+      id: task.id,
+      zone: {
+        id: task.zone.id,
+        code: task.zone.code,
+        name: task.zone.name,
+      },
+      assignedTo: formatUserSummary(task.assignedTo ?? undefined),
+      blind: task.blind,
+      scanCount: task.scans.length,
+      recountCount: task.scans.filter((scan) => Boolean(scan.recount)).length,
+    };
+  },
+
+  async listTasks(countId: string) {
+    const tasks = await prisma.inventoryTask.findMany({
+      where: { countId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        zone: { select: { id: true, code: true, name: true } },
+        assignedTo: { select: { id: true, name: true, email: true } },
+        scans: { include: { recount: true } },
+      },
+    });
+
+    return tasks.map((task) => ({
+      id: task.id,
+      zone: {
+        id: task.zone.id,
+        code: task.zone.code,
+        name: task.zone.name,
+      },
+      assignedTo: formatUserSummary(task.assignedTo ?? undefined),
+      blind: task.blind,
+      scanCount: task.scans.length,
+      recountCount: task.scans.filter((scan) => Boolean(scan.recount)).length,
+    }));
+  },
+
+  async recordScan(
+    countId: string,
+    taskId: string,
+    payload: { locationId: string; skuId?: string | null; qty: number; deviceId?: string | null },
+  ) {
+    const qty = toFiniteNumber(payload.qty, Number.NaN);
+    if (!Number.isFinite(qty) || qty < 0) {
+      throw new Error('Cantidad inválida para el conteo');
+    }
+
+    const scan = await prisma.$transaction(async (tx) => {
+      const task = await tx.inventoryTask.findUnique({
+        where: { id: taskId },
+        include: {
+          count: {
+            select: { id: true, status: true, projectId: true, startedAt: true },
+          },
+          zone: { select: { id: true, projectId: true } },
+        },
+      });
+      if (!task || task.countId !== countId) {
+        throw new Error('Tarea de inventario no encontrada');
+      }
+      if (task.count.status === InventoryCountStatus.closed) {
+        throw new Error('El conteo ya fue cerrado');
+      }
+
+      const location = await tx.location.findUnique({
+        where: { id: payload.locationId },
+        include: {
+          zone: { select: { id: true, projectId: true } },
+        },
+      });
+      if (!location || location.projectId !== task.count.projectId) {
+        throw new Error('La ubicación no pertenece al proyecto');
+      }
+      if (location.zoneId !== task.zoneId) {
+        throw new Error('La ubicación no pertenece a la zona asignada');
+      }
+
+      let skuId: string | null = payload.skuId ? String(payload.skuId) : null;
+      if (skuId) {
+        const sku = await tx.sku.findUnique({
+          where: { id: skuId },
+          select: { projectId: true },
+        });
+        if (!sku || sku.projectId !== task.count.projectId) {
+          throw new Error('El SKU no pertenece al proyecto');
+        }
+      } else if (location.skuId) {
+        skuId = location.skuId;
+      }
+
+      const scanRecord = await tx.inventoryScan.create({
+        data: {
+          taskId,
+          locationId: location.id,
+          skuId,
+          qty,
+          deviceId: payload.deviceId?.trim() ? payload.deviceId.trim() : null,
+        },
+        include: {
+          recount: true,
+          location: {
+            select: {
+              id: true,
+              codeZRNP: true,
+              expectedQty: true,
+            },
+          },
+          sku: { select: { id: true, code: true, name: true } },
+        },
+      });
+
+      if (task.count.status === InventoryCountStatus.planned) {
+        await tx.inventoryCount.update({
+          where: { id: countId },
+          data: {
+            status: InventoryCountStatus.running,
+            startedAt: task.count.startedAt ?? new Date(),
+          },
+        });
+      } else if (
+        task.count.status === InventoryCountStatus.running &&
+        !task.count.startedAt
+      ) {
+        await tx.inventoryCount.update({
+          where: { id: countId },
+          data: {
+            startedAt: new Date(),
+          },
+        });
+      }
+
+      return scanRecord;
+    });
+
+    return {
+      id: scan.id,
+      qty: scan.qty,
+      finalQty: scan.recount?.qty2 ?? scan.qty,
+      recountQty: scan.recount?.qty2 ?? null,
+      capturedAt: scan.capturedAt,
+      deviceId: scan.deviceId ?? null,
+      location: {
+        id: scan.location.id,
+        codeZRNP: scan.location.codeZRNP,
+        expectedQty: scan.location.expectedQty ?? null,
+      },
+      sku: scan.sku ? { id: scan.sku.id, code: scan.sku.code, name: scan.sku.name } : null,
+    };
+  },
+
+  async recordRecount(
+    countId: string,
+    taskId: string,
+    scanId: string,
+    payload: { qty2: number },
+  ) {
+    const qty2 = toFiniteNumber(payload.qty2, Number.NaN);
+    if (!Number.isFinite(qty2) || qty2 < 0) {
+      throw new Error('Cantidad inválida para el reconteo');
+    }
+
+    const updatedScan = await prisma.$transaction(async (tx) => {
+      const scan = await tx.inventoryScan.findUnique({
+        where: { id: scanId },
+        include: {
+          task: {
+            include: {
+              count: {
+                select: { id: true, status: true },
+              },
+            },
+          },
+        },
+      });
+      if (!scan || scan.taskId !== taskId || scan.task.countId !== countId) {
+        throw new Error('Registro de conteo no encontrado');
+      }
+      if (scan.task.count.status === InventoryCountStatus.closed) {
+        throw new Error('El conteo ya fue cerrado');
+      }
+
+      await tx.inventoryRecount.upsert({
+        where: { scanId },
+        update: { qty2 },
+        create: { scanId, qty2 },
+      });
+
+      const refreshed = await tx.inventoryScan.findUnique({
+        where: { id: scanId },
+        include: {
+          recount: true,
+          location: {
+            select: {
+              id: true,
+              codeZRNP: true,
+              expectedQty: true,
+            },
+          },
+          sku: { select: { id: true, code: true, name: true } },
+        },
+      });
+
+      return refreshed!;
+    });
+
+    return {
+      id: updatedScan.id,
+      qty: updatedScan.qty,
+      finalQty: updatedScan.recount?.qty2 ?? updatedScan.qty,
+      recountQty: updatedScan.recount?.qty2 ?? null,
+      capturedAt: updatedScan.capturedAt,
+      deviceId: updatedScan.deviceId ?? null,
+      location: {
+        id: updatedScan.location.id,
+        codeZRNP: updatedScan.location.codeZRNP,
+        expectedQty: updatedScan.location.expectedQty ?? null,
+      },
+      sku: updatedScan.sku
+        ? { id: updatedScan.sku.id, code: updatedScan.sku.code, name: updatedScan.sku.name }
+        : null,
+    };
+  },
+
+  async closeCount(countId: string) {
+    await prisma.$transaction(async (tx) => {
+      const count = await tx.inventoryCount.findUnique({
+        where: { id: countId },
+        include: {
+          tasks: {
+            include: {
+              scans: { include: { recount: true } },
+            },
+          },
+        },
+      });
+      if (!count) {
+        throw new Error('Conteo no encontrado');
+      }
+      if (count.status === InventoryCountStatus.planned) {
+        throw new Error('Debes iniciar el conteo antes de cerrarlo');
+      }
+
+      const locations = await tx.location.findMany({
+        where: { projectId: count.projectId },
+        include: {
+          zone: { select: { id: true, code: true, name: true } },
+          rack: { select: { id: true, code: true, name: true } },
+          sku: { select: { id: true, code: true, name: true } },
+        },
+      });
+
+      const locationMap = new Map(
+        locations.map((location) => [location.id, location]),
+      );
+
+      const foundByLocationSku = new Map<string, number>();
+      count.tasks.forEach((task) => {
+        task.scans.forEach((scan) => {
+          const effective = scan.recount?.qty2 ?? scan.qty;
+          const skuKey = scan.skuId ?? '';
+          const key = `${scan.locationId}::${skuKey}`;
+          const current = foundByLocationSku.get(key) ?? 0;
+          foundByLocationSku.set(key, current + effective);
+        });
+      });
+
+      const tolerance = toFiniteNumber(count.tolerancePct, 0);
+      const epsilon = 1e-6;
+      const variancePayload: {
+        countId: string;
+        locationId: string;
+        skuId: string | null;
+        expectedQty: number;
+        foundQty: number;
+        difference: number;
+        percentage: number;
+        reason: null;
+      }[] = [];
+
+      locations.forEach((location) => {
+        const expected = toFiniteNumber(location.expectedQty, 0);
+        const skuId = location.skuId ?? null;
+        const key = `${location.id}::${skuId ?? ''}`;
+        const found = toFiniteNumber(foundByLocationSku.get(key), 0);
+        foundByLocationSku.delete(key);
+        const difference = found - expected;
+        const percentage = computePercentageDelta(expected, found);
+        if (Math.abs(difference) > epsilon && percentage - tolerance > epsilon) {
+          variancePayload.push({
+            countId,
+            locationId: location.id,
+            skuId,
+            expectedQty: expected,
+            foundQty: found,
+            difference,
+            percentage,
+            reason: null,
+          });
+        }
+      });
+
+      for (const [key, found] of foundByLocationSku.entries()) {
+        const [locationId, skuKey] = key.split('::');
+        const location = locationMap.get(locationId);
+        if (!location) {
+          continue;
+        }
+        const difference = found;
+        const percentage = computePercentageDelta(0, found);
+        if (Math.abs(difference) > epsilon && percentage - tolerance > epsilon) {
+          variancePayload.push({
+            countId,
+            locationId,
+            skuId: skuKey ? skuKey : null,
+            expectedQty: 0,
+            foundQty: found,
+            difference,
+            percentage,
+            reason: null,
+          });
+        }
+      }
+
+      await tx.inventoryVariance.deleteMany({ where: { countId } });
+      if (variancePayload.length > 0) {
+        await tx.inventoryVariance.createMany({ data: variancePayload });
+      }
+
+      const now = new Date();
+      await tx.inventoryCount.update({
+        where: { id: countId },
+        data: {
+          status: InventoryCountStatus.closed,
+          closedAt: now,
+          startedAt: count.startedAt ?? now,
+        },
+      });
+    });
+
+    return inventoryService.getCountDetail(countId);
+  },
+
+  async listVariances(countId: string) {
+    const variances = await prisma.inventoryVariance.findMany({
+      where: { countId },
+      orderBy: [{ percentage: 'desc' }, { difference: 'desc' }],
+      include: {
+        location: {
+          include: {
+            zone: { select: { id: true, code: true, name: true } },
+            rack: { select: { id: true, code: true, name: true } },
+          },
+        },
+        sku: { select: { id: true, code: true, name: true } },
+      },
+    });
+
+    return variances.map((variance) => ({
+      id: variance.id,
+      countId: variance.countId,
+      expectedQty: variance.expectedQty,
+      foundQty: variance.foundQty,
+      difference: variance.difference,
+      percentage: variance.percentage,
+      reason: variance.reason ?? null,
+      location: {
+        id: variance.location.id,
+        codeZRNP: variance.location.codeZRNP,
+        expectedQty: variance.location.expectedQty ?? null,
+        zone: {
+          id: variance.location.zone.id,
+          code: variance.location.zone.code,
+          name: variance.location.zone.name,
+        },
+        rack: {
+          id: variance.location.rack.id,
+          code: variance.location.rack.code,
+          name: variance.location.rack.name,
+        },
+      },
+      sku: variance.sku
+        ? { id: variance.sku.id, code: variance.sku.code, name: variance.sku.name }
+        : null,
+    }));
+  },
+
+  async updateVarianceReason(countId: string, varianceId: string, reason?: string | null) {
+    const variance = await prisma.inventoryVariance.findUnique({
+      where: { id: varianceId },
+      select: { countId: true },
+    });
+    if (!variance || variance.countId !== countId) {
+      throw new Error('Variación no encontrada');
+    }
+
+    await prisma.inventoryVariance.update({
+      where: { id: varianceId },
+      data: { reason: reason?.trim() ? reason.trim() : null },
+    });
+
+    const [updated] = await inventoryService.listVariances(countId).then((list) =>
+      list.filter((item) => item.id === varianceId),
+    );
+
+    return updated;
+  },
+
+  async exportVariances(countId: string) {
+    const variances = await inventoryService.listVariances(countId);
+    const header = [
+      'Zona',
+      'Código de zona',
+      'Ubicación',
+      'SKU',
+      'Esperado',
+      'Encontrado',
+      'Diferencia',
+      '% Diferencia',
+      'Causa',
+    ];
+
+    const rows = variances.map((variance) => {
+      const skuLabel = variance.sku
+        ? `${variance.sku.code} - ${variance.sku.name}`
+        : 'SIN SKU';
+      return [
+        variance.location.zone.name,
+        variance.location.zone.code,
+        variance.location.codeZRNP,
+        skuLabel,
+        variance.expectedQty.toFixed(2),
+        variance.foundQty.toFixed(2),
+        variance.difference.toFixed(2),
+        variance.percentage.toFixed(2),
+        variance.reason ?? '',
+      ];
+    });
+
+    const csvLines = [header, ...rows]
+      .map((columns) =>
+        columns
+          .map((value) => {
+            const text = String(value ?? '');
+            if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+              return `"${text.replace(/"/g, '""')}"`;
+            }
+            return text;
+          })
+          .join(','),
+      )
+      .join('\n');
+
+    return Buffer.from(csvLines, 'utf-8');
   },
 };

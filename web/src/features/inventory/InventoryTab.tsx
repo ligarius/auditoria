@@ -1,43 +1,8 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 
 import api from '../../lib/api';
-
-interface LabelInfo {
-  id: string;
-  printedAt: string | null;
-  installedAt: string | null;
-}
-
-interface SkuItem {
-  id: string;
-  code: string;
-  name: string;
-  uom: string;
-  length?: number | null;
-  width?: number | null;
-  height?: number | null;
-  weight?: number | null;
-  label: LabelInfo | null;
-}
-
-interface LocationItem {
-  id: string;
-  codeZRNP: string;
-  row: number;
-  level: number;
-  pos: number;
-  zone: { id: string; code: string; name: string };
-  rack: { id: string; code: string; name: string };
-  label: LabelInfo | null;
-}
-
-interface ZoneSummary {
-  zoneId: string;
-  zoneCode: string;
-  zoneName: string;
-  totalLocations: number;
-  installedLocations: number;
-}
+import BlindCountSection from './BlindCountSection';
+import type { LabelInfo, LocationItem, SkuItem, ZoneSummary } from './types';
 
 interface LocationsResponse {
   locations: LocationItem[];
@@ -92,6 +57,7 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [activeSection, setActiveSection] = useState<'master' | 'counts'>('master');
 
   const fetchInventory = async () => {
     setLoading(true);
@@ -312,415 +278,466 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
     [zones],
   );
 
+
   return (
     <div className="space-y-6">
-      {(actionMessage || actionError || loadError) && (
-        <div className="space-y-2">
-          {actionMessage && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
-              {actionMessage}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">Inventario</h1>
+          <p className="text-sm text-slate-500">
+            Administra el maestro de SKU, las ubicaciones y ejecuta el barrido ciego del inventario.
+          </p>
+        </div>
+        <div className="inline-flex rounded-md border border-slate-200 bg-slate-100 p-1">
+          <button
+            type="button"
+            onClick={() => setActiveSection('master')}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+              activeSection === 'master'
+                ? 'bg-white text-slate-900 shadow'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Maestro & Etiquetas
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSection('counts')}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+              activeSection === 'counts'
+                ? 'bg-white text-slate-900 shadow'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Conteo ciego
+          </button>
+        </div>
+      </div>
+
+      {activeSection === 'master' ? (
+        <>
+          {(actionMessage || actionError || loadError) && (
+            <div className="space-y-2">
+              {actionMessage && (
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+                  {actionMessage}
+                </div>
+              )}
+              {(actionError || loadError) && (
+                <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
+                  {actionError ?? loadError}
+                </div>
+              )}
             </div>
           )}
-          {(actionError || loadError) && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
-              {actionError ?? loadError}
+
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Importar maestro de SKU</h2>
+                <p className="text-sm text-slate-500">
+                  Carga un CSV con columnas code, name, uom, length, width, height y weight para mantener el maestro actualizado.
+                </p>
+              </div>
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleSkuImport}
+                  disabled={uploading}
+                />
+                {uploading ? 'Importando…' : 'Seleccionar CSV'}
+              </label>
             </div>
-          )}
-        </div>
-      )}
+            <div className="mt-4 text-xs text-slate-400">
+              Última actualización: {new Date().toLocaleString('es-ES')}
+            </div>
+          </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Importar maestro de SKU</h2>
-            <p className="text-sm text-slate-500">
-              Carga un CSV con columnas code, name, uom, length, width, height y weight para mantener el maestro actualizado.
-            </p>
-          </div>
-          <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-            <input
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={handleSkuImport}
-              disabled={uploading}
-            />
-            {uploading ? 'Importando…' : 'Seleccionar CSV'}
-          </label>
-        </div>
-        <div className="mt-4 text-xs text-slate-400">
-          Última actualización: {new Date().toLocaleString('es-ES')}
-        </div>
-      </section>
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Generar ubicaciones masivas</h2>
+              <p className="text-sm text-slate-500">
+                Define un rango de filas, niveles y posiciones para crear todas las ubicaciones en bloque dentro de una zona y rack.
+              </p>
+            </div>
+            <form className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" onSubmit={handleBulkSubmit}>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="zoneCode">
+                  Código de zona
+                </label>
+                <input
+                  id="zoneCode"
+                  name="zoneCode"
+                  value={bulkForm.zoneCode}
+                  onChange={handleBulkChange}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="zoneName">
+                  Nombre de zona
+                </label>
+                <input
+                  id="zoneName"
+                  name="zoneName"
+                  value={bulkForm.zoneName}
+                  onChange={handleBulkChange}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rackCode">
+                  Código de rack
+                </label>
+                <input
+                  id="rackCode"
+                  name="rackCode"
+                  value={bulkForm.rackCode}
+                  onChange={handleBulkChange}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rackName">
+                  Nombre de rack
+                </label>
+                <input
+                  id="rackName"
+                  name="rackName"
+                  value={bulkForm.rackName}
+                  onChange={handleBulkChange}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rowStart">
+                  Fila inicial
+                </label>
+                <input
+                  id="rowStart"
+                  name="rowStart"
+                  value={bulkForm.rowStart}
+                  onChange={handleBulkChange}
+                  type="number"
+                  min={0}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rowEnd">
+                  Fila final
+                </label>
+                <input
+                  id="rowEnd"
+                  name="rowEnd"
+                  value={bulkForm.rowEnd}
+                  onChange={handleBulkChange}
+                  type="number"
+                  min={0}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="levelStart">
+                  Nivel inicial
+                </label>
+                <input
+                  id="levelStart"
+                  name="levelStart"
+                  value={bulkForm.levelStart}
+                  onChange={handleBulkChange}
+                  type="number"
+                  min={0}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="levelEnd">
+                  Nivel final
+                </label>
+                <input
+                  id="levelEnd"
+                  name="levelEnd"
+                  value={bulkForm.levelEnd}
+                  onChange={handleBulkChange}
+                  type="number"
+                  min={0}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="positionStart">
+                  Posición inicial
+                </label>
+                <input
+                  id="positionStart"
+                  name="positionStart"
+                  value={bulkForm.positionStart}
+                  onChange={handleBulkChange}
+                  type="number"
+                  min={0}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="positionEnd">
+                  Posición final
+                </label>
+                <input
+                  id="positionEnd"
+                  name="positionEnd"
+                  value={bulkForm.positionEnd}
+                  onChange={handleBulkChange}
+                  type="number"
+                  min={0}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="md:col-span-2 lg:col-span-3">
+                <button
+                  type="submit"
+                  className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+                  disabled={bulkSaving}
+                >
+                  {bulkSaving ? 'Generando…' : 'Crear ubicaciones'}
+                </button>
+                {bulkError && <p className="mt-2 text-sm text-rose-600">{bulkError}</p>}
+              </div>
+            </form>
+          </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Generador de ubicaciones Z-R-N-P</h2>
-        <p className="mb-4 text-sm text-slate-500">
-          Define rangos para zona, rack, nivel y posición. Las ubicaciones existentes se actualizan y las nuevas se crean automáticamente.
-        </p>
-        <form onSubmit={handleBulkSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="zoneCode">
-              Código de zona
-            </label>
-            <input
-              id="zoneCode"
-              name="zoneCode"
-              value={bulkForm.zoneCode}
-              onChange={handleBulkChange}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Ej: A"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="zoneName">
-              Nombre de zona
-            </label>
-            <input
-              id="zoneName"
-              name="zoneName"
-              value={bulkForm.zoneName}
-              onChange={handleBulkChange}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Zona picking"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rackCode">
-              Código de rack
-            </label>
-            <input
-              id="rackCode"
-              name="rackCode"
-              value={bulkForm.rackCode}
-              onChange={handleBulkChange}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Ej: R01"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rackName">
-              Nombre de rack
-            </label>
-            <input
-              id="rackName"
-              name="rackName"
-              value={bulkForm.rackName}
-              onChange={handleBulkChange}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Rack 1"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rowStart">
-              Fila inicial
-            </label>
-            <input
-              id="rowStart"
-              name="rowStart"
-              value={bulkForm.rowStart}
-              onChange={handleBulkChange}
-              type="number"
-              min={0}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rowEnd">
-              Fila final
-            </label>
-            <input
-              id="rowEnd"
-              name="rowEnd"
-              value={bulkForm.rowEnd}
-              onChange={handleBulkChange}
-              type="number"
-              min={0}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="levelStart">
-              Nivel inicial
-            </label>
-            <input
-              id="levelStart"
-              name="levelStart"
-              value={bulkForm.levelStart}
-              onChange={handleBulkChange}
-              type="number"
-              min={0}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="levelEnd">
-              Nivel final
-            </label>
-            <input
-              id="levelEnd"
-              name="levelEnd"
-              value={bulkForm.levelEnd}
-              onChange={handleBulkChange}
-              type="number"
-              min={0}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="positionStart">
-              Posición inicial
-            </label>
-            <input
-              id="positionStart"
-              name="positionStart"
-              value={bulkForm.positionStart}
-              onChange={handleBulkChange}
-              type="number"
-              min={0}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="positionEnd">
-              Posición final
-            </label>
-            <input
-              id="positionEnd"
-              name="positionEnd"
-              value={bulkForm.positionEnd}
-              onChange={handleBulkChange}
-              type="number"
-              min={0}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="md:col-span-2 lg:col-span-3">
-            <button
-              type="submit"
-              className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-              disabled={bulkSaving}
-            >
-              {bulkSaving ? 'Generando…' : 'Crear ubicaciones'}
-            </button>
-            {bulkError && <p className="mt-2 text-sm text-rose-600">{bulkError}</p>}
-          </div>
-        </form>
-      </section>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Wizard de etiquetado</h2>
-            <p className="text-sm text-slate-500">
-              Selecciona SKU o ubicaciones para emitir el PDF de etiquetas Code-128 y actualiza el estado de instalación.
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-              <input
-                type="radio"
-                value="SKU"
-                checked={selectedType === 'SKU'}
-                onChange={() => setSelectedType('SKU')}
-              />
-              SKU
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-              <input
-                type="radio"
-                value="LOCATION"
-                checked={selectedType === 'LOCATION'}
-                onChange={() => setSelectedType('LOCATION')}
-              />
-              Ubicaciones
-            </label>
-          </div>
-        </div>
-
-        <div className="mb-4 grid gap-4 md:grid-cols-3">
-          <div className="rounded-md border border-slate-200 p-4">
-            <p className="text-xs uppercase text-slate-500">Zonas</p>
-            <p className="text-2xl font-semibold text-slate-900">{totalZones}</p>
-          </div>
-          <div className="rounded-md border border-slate-200 p-4">
-            <p className="text-xs uppercase text-slate-500">Ubicaciones totales</p>
-            <p className="text-2xl font-semibold text-slate-900">{totalLocations}</p>
-          </div>
-          <div className="rounded-md border border-slate-200 p-4">
-            <p className="text-xs uppercase text-slate-500">Instaladas</p>
-            <p className="text-2xl font-semibold text-slate-900">{installedLocations}</p>
-          </div>
-        </div>
-
-        <div className="mb-4 overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-3 py-2 text-left">
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Wizard de etiquetado</h2>
+                <p className="text-sm text-slate-500">
+                  Selecciona SKU o ubicaciones para emitir el PDF de etiquetas Code-128 y actualiza el estado de instalación.
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                   <input
-                    type="checkbox"
-                    checked={selectedType === 'SKU' ? allSkusSelected : allLocationsSelected}
-                    onChange={(event) => handleSelectAll(event.target.checked)}
-                    aria-label="Seleccionar todos"
+                    type="radio"
+                    value="SKU"
+                    checked={selectedType === 'SKU'}
+                    onChange={() => setSelectedType('SKU')}
                   />
-                </th>
-                {selectedType === 'SKU' ? (
-                  <>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Código
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Nombre
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      UoM
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Dimensiones (L × W × H)
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Peso
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Impreso
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Instalado
-                    </th>
-                  </>
-                ) : (
-                  <>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Código ZRNP
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Zona
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Rack
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Fila
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Nivel
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Posición
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Impreso
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Instalado
-                    </th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={selectedType === 'SKU' ? 8 : 9}
-                    className="px-3 py-8 text-center text-sm text-slate-500"
-                  >
-                    Cargando información…
-                  </td>
-                </tr>
-              ) : selectedType === 'SKU' ? (
-                skus.length > 0 ? (
-                  skus.map((sku) => (
-                    <tr key={sku.id}>
-                      <td className="px-3 py-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedSkuIds.includes(sku.id)}
-                          onChange={() => toggleSkuSelection(sku.id)}
-                          aria-label={`Seleccionar SKU ${sku.code}`}
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-sm font-medium text-slate-900">{sku.code}</td>
-                      <td className="px-3 py-2 text-sm text-slate-700">{sku.name}</td>
-                      <td className="px-3 py-2 text-sm text-slate-700">{sku.uom}</td>
-                      <td className="px-3 py-2 text-sm text-slate-700">
-                        {`${formatNumber(sku.length)} × ${formatNumber(sku.width)} × ${formatNumber(sku.height)}`}
-                      </td>
-                      <td className="px-3 py-2 text-sm text-slate-700">{formatNumber(sku.weight)}</td>
-                      <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(sku.label?.printedAt)}</td>
-                      <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(sku.label?.installedAt)}</td>
-                    </tr>
-                  ))
-                ) : (
+                  SKU
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="radio"
+                    value="LOCATION"
+                    checked={selectedType === 'LOCATION'}
+                    onChange={() => setSelectedType('LOCATION')}
+                  />
+                  Ubicaciones
+                </label>
+              </div>
+            </div>
+
+            <div className="mb-4 grid gap-4 md:grid-cols-3">
+              <div className="rounded-md border border-slate-200 p-4">
+                <p className="text-xs uppercase text-slate-500">Zonas</p>
+                <p className="text-2xl font-semibold text-slate-900">{totalZones}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 p-4">
+                <p className="text-xs uppercase text-slate-500">Ubicaciones totales</p>
+                <p className="text-2xl font-semibold text-slate-900">{totalLocations}</p>
+              </div>
+              <div className="rounded-md border border-slate-200 p-4">
+                <p className="text-xs uppercase text-slate-500">Instaladas</p>
+                <p className="text-2xl font-semibold text-slate-900">{installedLocations}</p>
+              </div>
+            </div>
+
+            <div className="mb-4 overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
                   <tr>
-                    <td
-                      colSpan={selectedType === 'SKU' ? 8 : 9}
-                      className="px-3 py-8 text-center text-sm text-slate-500"
-                    >
-                      No hay SKUs cargados para este proyecto.
-                    </td>
-                  </tr>
-                )
-              ) : locations.length > 0 ? (
-                locations.map((location) => (
-                  <tr key={location.id}>
-                    <td className="px-3 py-2">
+                    <th className="px-3 py-2 text-left">
                       <input
                         type="checkbox"
-                        checked={selectedLocationIds.includes(location.id)}
-                        onChange={() => toggleLocationSelection(location.id)}
-                        aria-label={`Seleccionar ubicación ${location.codeZRNP}`}
+                        checked={selectedType === 'SKU' ? allSkusSelected : allLocationsSelected}
+                        onChange={(event) => handleSelectAll(event.target.checked)}
+                        aria-label="Seleccionar todos"
                       />
-                    </td>
-                    <td className="px-3 py-2 text-sm font-medium text-slate-900">{location.codeZRNP}</td>
-                    <td className="px-3 py-2 text-sm text-slate-700">{location.zone.name}</td>
-                    <td className="px-3 py-2 text-sm text-slate-700">{location.rack.name}</td>
-                    <td className="px-3 py-2 text-sm text-slate-700">{location.row}</td>
-                    <td className="px-3 py-2 text-sm text-slate-700">{location.level}</td>
-                    <td className="px-3 py-2 text-sm text-slate-700">{location.pos}</td>
-                    <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(location.label?.printedAt)}</td>
-                    <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(location.label?.installedAt)}</td>
+                    </th>
+                    {selectedType === 'SKU' ? (
+                      <>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Código
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Nombre
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          UoM
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Dimensiones (L × W × H)
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Peso
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Impreso
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Instalado
+                        </th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Código ZRNP
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Zona
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Rack
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Fila
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Nivel
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Posición
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Esperado
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Impreso
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Instalado
+                        </th>
+                      </>
+                    )}
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={selectedType === 'SKU' ? 8 : 9}
-                    className="px-3 py-8 text-center text-sm text-slate-500"
-                  >
-                    No hay ubicaciones registradas. Genera rangos en la sección anterior.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan={selectedType === 'SKU' ? 8 : 10}
+                        className="px-3 py-8 text-center text-sm text-slate-500"
+                      >
+                        Cargando información…
+                      </td>
+                    </tr>
+                  ) : selectedType === 'SKU' ? (
+                    skus.length > 0 ? (
+                      skus.map((sku) => (
+                        <tr key={sku.id}>
+                          <td className="px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedSkuIds.includes(sku.id)}
+                              onChange={() => toggleSkuSelection(sku.id)}
+                              aria-label={`Seleccionar SKU ${sku.code}`}
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-sm font-medium text-slate-900">{sku.code}</td>
+                          <td className="px-3 py-2 text-sm text-slate-700">{sku.name}</td>
+                          <td className="px-3 py-2 text-sm text-slate-700">{sku.uom}</td>
+                          <td className="px-3 py-2 text-sm text-slate-700">
+                            {`${formatNumber(sku.length)} × ${formatNumber(sku.width)} × ${formatNumber(sku.height)}`}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-slate-700">{formatNumber(sku.weight)}</td>
+                          <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(sku.label?.printedAt)}</td>
+                          <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(sku.label?.installedAt)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={selectedType === 'SKU' ? 8 : 10}
+                          className="px-3 py-8 text-center text-sm text-slate-500"
+                        >
+                          No hay SKUs cargados para este proyecto.
+                        </td>
+                      </tr>
+                    )
+                  ) : locations.length > 0 ? (
+                    locations.map((location) => (
+                      <tr key={location.id}>
+                        <td className="px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedLocationIds.includes(location.id)}
+                            onChange={() => toggleLocationSelection(location.id)}
+                            aria-label={`Seleccionar ubicación ${location.codeZRNP}`}
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-sm font-medium text-slate-900">{location.codeZRNP}</td>
+                        <td className="px-3 py-2 text-sm text-slate-700">{location.zone.name}</td>
+                        <td className="px-3 py-2 text-sm text-slate-700">{location.rack.name}</td>
+                        <td className="px-3 py-2 text-sm text-slate-700">{location.row}</td>
+                        <td className="px-3 py-2 text-sm text-slate-700">{location.level}</td>
+                        <td className="px-3 py-2 text-sm text-slate-700">{location.pos}</td>
+                        <td className="px-3 py-2 text-sm text-slate-700">{formatNumber(location.expectedQty)}</td>
+                        <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(location.label?.printedAt)}</td>
+                        <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(location.label?.installedAt)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={selectedType === 'SKU' ? 8 : 10}
+                        className="px-3 py-8 text-center text-sm text-slate-500"
+                      >
+                        No hay ubicaciones registradas. Genera rangos en la sección anterior.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleGeneratePdf}
-            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-            disabled={generating || selectedIds.length === 0}
-          >
-            {generating ? 'Generando…' : 'Generar PDF'}
-          </button>
-          <button
-            type="button"
-            onClick={handleMarkInstalled}
-            className="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
-            disabled={installing || selectedLabelIds.length === 0}
-          >
-            {installing ? 'Actualizando…' : 'Marcar instaladas'}
-          </button>
-          <span className="text-sm text-slate-500">
-            Seleccionados: {selectedIds.length}. Con etiqueta emitida: {selectedLabelIds.length}.
-          </span>
-        </div>
-      </section>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleGeneratePdf}
+                className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+                disabled={generating || selectedIds.length === 0}
+              >
+                {generating ? 'Generando…' : 'Generar PDF'}
+              </button>
+              <button
+                type="button"
+                onClick={handleMarkInstalled}
+                className="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                disabled={installing || selectedLabelIds.length === 0}
+              >
+                {installing ? 'Actualizando…' : 'Marcar instaladas'}
+              </button>
+              <span className="text-sm text-slate-500">
+                Seleccionados: {selectedIds.length}. Con etiqueta emitida: {selectedLabelIds.length}.
+              </span>
+            </div>
+          </section>
+        </>
+      ) : (
+        <BlindCountSection
+          projectId={projectId}
+          skus={skus}
+          locations={locations}
+          zones={zones}
+          loadingMaster={loading}
+        />
+      )}
     </div>
   );
+
 };
 
 export default InventoryTab;

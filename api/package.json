@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "esbuild src/server.ts --platform=node --bundle --format=cjs --outfile=dist/server.cjs --sourcemap --packages=external",
+    "postbuild": "mkdir -p dist/templates && cp -R src/templates/*.hbs dist/templates/",
     "start": "node dist/server.cjs",
     "prisma": "prisma",
     "dev:db:migrate": "prisma migrate dev",

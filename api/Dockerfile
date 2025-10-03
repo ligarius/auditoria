@@ -48,6 +48,7 @@ FROM deps AS build
 
 COPY . .
 RUN npm run build
+RUN mkdir -p dist/templates && cp -R src/templates/*.hbs dist/templates/
 RUN npm prune --omit=dev
 
 # --- runner ---

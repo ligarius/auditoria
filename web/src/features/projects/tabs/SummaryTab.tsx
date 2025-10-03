@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Download } from 'lucide-react';
 
 import { ES } from '../../../i18n/es';
 import WorkflowPanel from '../../../modules/projects/WorkflowPanel';
 import api from '../../../lib/api';
 import { getErrorMessage } from '../../../lib/errors';
+import { downloadModuleReport } from '../../../lib/reports';
 
 interface SummaryResponse {
   project: {
@@ -104,6 +106,8 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const loadSummary = useCallback(async () => {
     if (!projectId) return;
@@ -287,6 +291,24 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
     navigate(path);
   };
 
+  const handleDownloadFinalReport = async () => {
+    if (!projectId) return;
+    setDownloadError(null);
+    setDownloadingReport(true);
+    try {
+      await downloadModuleReport(
+        projectId,
+        'final',
+        summary?.project.name ?? 'informe-final',
+      );
+    } catch (downloadException) {
+      console.error('No se pudo generar el informe final', downloadException);
+      setDownloadError('No se pudo descargar el informe final. Inténtalo nuevamente.');
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -329,6 +351,25 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
               <div className="text-sm text-slate-500">
                 <p>Inicio: {formatDate(summary.project.startDate)}</p>
                 <p>Cierre: {formatDate(summary.project.endDate)}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-500">
+                Descarga el informe final consolidado en PDF para compartir con el equipo y el cliente.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {downloadError ? (
+                  <span className="text-sm text-red-600">{downloadError}</span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleDownloadFinalReport}
+                  disabled={downloadingReport}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                >
+                  <Download className="h-4 w-4" />
+                  {downloadingReport ? 'Generando…' : 'Descargar informe final'}
+                </button>
               </div>
             </div>
           </div>

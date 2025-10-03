@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{reportTitle}} · {{projectName}}</title>
+    <style>
+      @page {
+        margin: 25mm 18mm 28mm;
+      }
+
+      body {
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+        color: #0f172a;
+        background: #f8fafc;
+        margin: 0;
+        padding: 0;
+        font-size: 12px;
+      }
+
+      h1, h2, h3, h4 {
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0;
+      }
+
+      .cover {
+        background: linear-gradient(135deg, #0f172a, #1e40af);
+        color: #f8fafc;
+        border-radius: 24px;
+        padding: 64px 56px;
+        margin-bottom: 32px;
+      }
+
+      .cover .overline {
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-size: 12px;
+        opacity: 0.7;
+        margin-bottom: 12px;
+      }
+
+      .cover h1 {
+        font-size: 36px;
+        line-height: 1.2;
+        margin-bottom: 12px;
+      }
+
+      .cover .meta {
+        margin-top: 24px;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .cover .meta span {
+        display: block;
+        opacity: 0.85;
+      }
+
+      .toc {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 28px 32px;
+        margin-bottom: 32px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      .toc h2 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+
+      .toc ol {
+        margin: 0;
+        padding-left: 20px;
+        color: #334155;
+      }
+
+      .toc li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+      }
+
+      .section {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 32px;
+        margin-bottom: 32px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        page-break-inside: avoid;
+      }
+
+      .section h2 {
+        font-size: 20px;
+        margin-bottom: 8px;
+      }
+
+      .section .description {
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 20px;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .metric-card {
+        background: #eef2ff;
+        border-radius: 16px;
+        padding: 16px;
+      }
+
+      .metric-card .label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #4338ca;
+      }
+
+      .metric-card .value {
+        font-size: 22px;
+        font-weight: 600;
+        margin-top: 6px;
+        color: #1e3a8a;
+      }
+
+      .entries {
+        display: grid;
+        gap: 16px;
+      }
+
+      .entry {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 20px;
+        background: #f8fafc;
+      }
+
+      .entry h3 {
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+
+      .entry .subtitle {
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 10px;
+      }
+
+      .entry .description {
+        font-size: 13px;
+        color: #1e293b;
+        margin-bottom: 12px;
+        line-height: 1.6;
+      }
+
+      .entry ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 12px;
+        color: #475569;
+      }
+
+      .entry ul li {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .entry ul li:last-child {
+        border-bottom: none;
+      }
+
+      .entry ul li span {
+        display: block;
+      }
+
+      .entry ul li .label {
+        font-weight: 600;
+        color: #0f172a;
+      }
+
+      .signature-block {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 32px;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      .signature {
+        text-align: center;
+        font-size: 12px;
+      }
+
+      .signature .line {
+        display: block;
+        height: 1px;
+        background: #cbd5f5;
+        margin: 28px 0 12px;
+      }
+
+      .signature .role {
+        font-weight: 600;
+        color: #1e3a8a;
+      }
+
+      .note {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 16px;
+        text-align: center;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="cover">
+      <div class="overline">{{reportTitle}}</div>
+      <h1>{{projectName}}</h1>
+      <h2>{{companyName}}</h2>
+      <div class="meta">
+        <span>Elaborado por: {{preparedBy}}</span>
+        <span>Fecha de emisión: {{generatedAt}}</span>
+      </div>
+    </section>
+
+    <section class="toc">
+      <h2>Índice</h2>
+      <ol>
+        {{#each sections}}
+          <li><a href="#{{id}}">{{title}}</a></li>
+        {{/each}}
+        <li><a href="#firmas">Firmas</a></li>
+      </ol>
+    </section>
+
+    {{#each sections}}
+      <section class="section" id="{{id}}">
+        <h2>{{title}}</h2>
+        {{#if description}}
+          <p class="description">{{description}}</p>
+        {{/if}}
+
+        {{#if metrics}}
+          <div class="metrics">
+            {{#each metrics}}
+              <div class="metric-card">
+                <div class="label">{{label}}</div>
+                <div class="value">{{value}}</div>
+              </div>
+            {{/each}}
+          </div>
+        {{/if}}
+
+        {{#if entries}}
+          <div class="entries">
+            {{#each entries}}
+              <div class="entry">
+                <h3>{{title}}</h3>
+                {{#if subtitle}}
+                  <div class="subtitle">{{subtitle}}</div>
+                {{/if}}
+                {{#if description}}
+                  <div class="description">{{description}}</div>
+                {{/if}}
+                {{#if metadata}}
+                  <ul>
+                    {{#each metadata}}
+                      <li>
+                        <span class="label">{{label}}</span>
+                        <span class="value">{{value}}</span>
+                      </li>
+                    {{/each}}
+                  </ul>
+                {{/if}}
+              </div>
+            {{/each}}
+          </div>
+        {{/if}}
+      </section>
+    {{/each}}
+
+    <section class="section" id="firmas">
+      <h2>Firmas</h2>
+      <p class="description">
+        Las siguientes firmas dan validez al contenido del presente informe y su distribución.
+      </p>
+      <div class="signature-block">
+        {{#each signatures}}
+          <div class="signature">
+            <span class="line"></span>
+            <div class="role">{{label}}</div>
+            {{#if name}}
+              <div>{{name}}</div>
+            {{/if}}
+          </div>
+        {{/each}}
+      </div>
+      <p class="note">Documento generado automáticamente por la plataforma de auditoría logística.</p>
+    </section>
+  </body>
+</html>

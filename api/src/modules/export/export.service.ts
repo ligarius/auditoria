@@ -117,7 +117,7 @@ export const exportService = {
       pocs
     );
 
-    const decisions = await prisma.decisionLog.findMany({
+    const decisions = await prisma.decision.findMany({
       where: { projectId }
     });
     createSheet(

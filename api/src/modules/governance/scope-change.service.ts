@@ -26,6 +26,8 @@ export const scopeChangeService = {
         meeting: { select: { id: true, title: true, scheduledAt: true } },
         approvalWorkflow: {
           select: { id: true, status: true, dueAt: true, overdue: true }
+        } as unknown as {
+          select: { id: true; status: true; dueAt: true; overdue: true };
         }
       }
     });
@@ -38,6 +40,8 @@ export const scopeChangeService = {
         meeting: { select: { id: true, title: true, scheduledAt: true } },
         approvalWorkflow: {
           select: { id: true, status: true, dueAt: true, overdue: true }
+        } as unknown as {
+          select: { id: true; status: true; dueAt: true; overdue: true };
         }
       }
     });
@@ -54,6 +58,8 @@ export const scopeChangeService = {
         meeting: { select: { id: true, title: true, scheduledAt: true } },
         approvalWorkflow: {
           select: { id: true, status: true, dueAt: true, overdue: true }
+        } as unknown as {
+          select: { id: true; status: true; dueAt: true; overdue: true };
         }
       }
     });
@@ -71,6 +77,8 @@ export const scopeChangeService = {
         meeting: { select: { id: true, title: true, scheduledAt: true } },
         approvalWorkflow: {
           select: { id: true, status: true, dueAt: true, overdue: true }
+        } as unknown as {
+          select: { id: true; status: true; dueAt: true; overdue: true };
         }
       }
     });

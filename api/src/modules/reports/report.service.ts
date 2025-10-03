@@ -3,6 +3,8 @@ import type {
   Prisma,
   RoutePlanStatus
 } from '@prisma/client';
+import puppeteer from 'puppeteer';
+import type { Browser } from 'puppeteer';
 
 import { prisma } from '../../core/config/db';
 import { HttpError } from '../../core/errors/http-error';
@@ -146,13 +148,12 @@ const createPdfFromHtml = async (
   preparedBy: string,
   generatedAt: Date
 ) => {
-  const puppeteer = await import('puppeteer');
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-
+  let browser: Browser | null = null;
   try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.emulateMediaType('screen');
@@ -175,7 +176,7 @@ const createPdfFromHtml = async (
 
     return pdf;
   } finally {
-    await browser.close();
+    await browser?.close();
   }
 };
 

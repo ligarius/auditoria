@@ -35,7 +35,7 @@ export const minuteService = {
           select: { id: true, projectId: true, title: true, scheduledAt: true }
         },
         author: {
-          select: { id: true, firstName: true, lastName: true, email: true }
+          select: { id: true, name: true, email: true }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -50,7 +50,7 @@ export const minuteService = {
           select: { id: true, projectId: true, title: true, scheduledAt: true }
         },
         author: {
-          select: { id: true, firstName: true, lastName: true, email: true }
+          select: { id: true, name: true, email: true }
         }
       }
     });
@@ -73,7 +73,7 @@ export const minuteService = {
           select: { id: true, projectId: true, title: true, scheduledAt: true }
         },
         author: {
-          select: { id: true, firstName: true, lastName: true, email: true }
+          select: { id: true, name: true, email: true }
         }
       }
     });
@@ -97,7 +97,7 @@ export const minuteService = {
           select: { id: true, projectId: true, title: true, scheduledAt: true }
         },
         author: {
-          select: { id: true, firstName: true, lastName: true, email: true }
+          select: { id: true, name: true, email: true }
         }
       }
     });

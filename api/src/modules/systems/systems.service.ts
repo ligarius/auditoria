@@ -14,9 +14,17 @@ const entityMap = {
 
 type EntityKey = keyof typeof entityMap;
 
+type RepoLike<T> = {
+  findMany: (args: any) => Promise<T[]>;
+  findUnique?: (args: any) => Promise<T | null>;
+  create?: (args: any) => Promise<T>;
+  update?: (args: any) => Promise<T>;
+  delete?: (args: any) => Promise<T>;
+};
+
 export const systemsService = {
   async list(projectId: string, key: EntityKey) {
-    const repo = entityMap[key];
+    const repo = entityMap[key] as RepoLike<any>;
     const items = await repo.findMany({ where: { projectId } });
     if (key === 'costs') {
       return items.map((item) => ({ ...item, tco3y: computeTco(item) }));
@@ -30,8 +38,8 @@ export const systemsService = {
     payload: any,
     userId: string
   ) {
-    const repo = entityMap[key];
-    const created = await repo.create({ data: { ...payload, projectId } });
+    const repo = entityMap[key] as RepoLike<any>;
+    const created = await repo.create!({ data: { ...payload, projectId } });
     await auditService.record(
       repoName(key),
       created.id,
@@ -47,10 +55,10 @@ export const systemsService = {
   },
 
   async update(id: string, key: EntityKey, payload: any, userId: string) {
-    const repo = entityMap[key];
-    const before = await repo.findUnique({ where: { id } });
+    const repo = entityMap[key] as RepoLike<any>;
+    const before = await repo.findUnique!({ where: { id } });
     if (!before) throw new HttpError(404, 'Registro no encontrado');
-    const updated = await repo.update({ where: { id }, data: payload });
+    const updated = await repo.update!({ where: { id }, data: payload });
     await auditService.record(
       repoName(key),
       id,
@@ -66,10 +74,10 @@ export const systemsService = {
   },
 
   async remove(id: string, key: EntityKey, userId: string) {
-    const repo = entityMap[key];
-    const before = await repo.findUnique({ where: { id } });
+    const repo = entityMap[key] as RepoLike<any>;
+    const before = await repo.findUnique!({ where: { id } });
     if (!before) throw new HttpError(404, 'Registro no encontrado');
-    await repo.delete({ where: { id } });
+    await repo.delete!({ where: { id } });
     await auditService.record(
       repoName(key),
       id,

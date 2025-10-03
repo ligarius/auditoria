@@ -74,7 +74,7 @@ export const sopService = {
               create: data.steps.map((step, index) => ({
                 order: step.order ?? index + 1,
                 text: step.text,
-                kpi: step.kpi ?? null
+                kpi: step.kpi ?? Prisma.JsonNull
               }))
             }
           : undefined
@@ -121,7 +121,7 @@ export const sopService = {
               sopId: id,
               order: step.order ?? index + 1,
               text: step.text,
-              kpi: step.kpi ?? null
+              kpi: step.kpi ?? Prisma.JsonNull
             }))
           });
         }

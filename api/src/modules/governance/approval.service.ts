@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 import { prisma } from '../../core/config/db';
 import { HttpError } from '../../core/errors/http-error';
 import { auditService } from '../audit/audit.service';
@@ -34,14 +36,15 @@ export const approvalService = {
     status?: 'pending' | 'approved' | 'rejected';
   }) {
     const { projectId, resourceType, resourceId, overdue, status } = filters;
+    const where = {
+      projectId: projectId ?? undefined,
+      resourceType: resourceType ?? undefined,
+      resourceId: resourceId ?? undefined,
+      overdue: overdue === undefined ? undefined : overdue,
+      status: status ?? undefined
+    } as Prisma.ApprovalWorkflowWhereInput & { overdue?: boolean };
     return prisma.approvalWorkflow.findMany({
-      where: {
-        projectId: projectId ?? undefined,
-        resourceType: resourceType ?? undefined,
-        resourceId: resourceId ?? undefined,
-        overdue: overdue === undefined ? undefined : overdue,
-        status: status ?? undefined
-      },
+      where,
       include: {
         steps: {
           include: {
@@ -102,7 +105,7 @@ export const approvalService = {
               }
             }
           : undefined
-      },
+      } as Prisma.ApprovalWorkflowUncheckedCreateInput & { overdue?: boolean },
       include: {
         steps: {
           include: {
@@ -139,7 +142,7 @@ export const approvalService = {
         status: data.status ?? undefined,
         dueAt: data.dueAt === undefined ? undefined : data.dueAt,
         overdue: data.overdue === undefined ? undefined : data.overdue
-      },
+      } as Prisma.ApprovalWorkflowUpdateInput & { overdue?: boolean },
       include: {
         steps: {
           include: {
@@ -222,6 +225,9 @@ export const approvalService = {
     if (!workflow) {
       throw new HttpError(404, 'Flujo de aprobación no encontrado');
     }
+    const workflowWithOverdue = workflow as typeof workflow & {
+      overdue: boolean;
+    };
     const step = workflow.steps.find(
       (item) => item.status === 'pending' && item.approverId === userId
     );
@@ -244,8 +250,8 @@ export const approvalService = {
         where: { id },
         data: {
           status: newStatus,
-          overdue: newStatus !== 'pending' ? false : workflow.overdue
-        }
+          overdue: newStatus !== 'pending' ? false : workflowWithOverdue.overdue
+        } as Prisma.ApprovalWorkflowUpdateInput & { overdue?: boolean }
       });
     });
 
@@ -301,7 +307,7 @@ export const approvalService = {
         data: {
           status: 'rejected',
           overdue: false
-        }
+        } as Prisma.ApprovalWorkflowUpdateInput & { overdue?: boolean }
       });
     });
 
@@ -327,7 +333,7 @@ export const approvalService = {
           not: null,
           lt: referenceDate
         }
-      },
+      } as Prisma.ApprovalWorkflowWhereInput & { overdue?: boolean },
       include: {
         steps: {
           include: {
@@ -335,7 +341,8 @@ export const approvalService = {
           },
           orderBy: { order: 'asc' }
         },
-        project: { select: { id: true, name: true } }
+        project: { select: { id: true, name: true } },
+        slaTimers: true
       }
     });
 
@@ -343,7 +350,9 @@ export const approvalService = {
     for (const workflow of candidates) {
       const refreshed = await prisma.approvalWorkflow.update({
         where: { id: workflow.id },
-        data: { overdue: true },
+        data: { overdue: true } as Prisma.ApprovalWorkflowUpdateInput & {
+          overdue?: boolean;
+        },
         include: {
           steps: {
             include: {
@@ -351,7 +360,8 @@ export const approvalService = {
             },
             orderBy: { order: 'asc' }
           },
-          project: { select: { id: true, name: true } }
+          project: { select: { id: true, name: true } },
+          slaTimers: true
         }
       });
       updated.push(refreshed);

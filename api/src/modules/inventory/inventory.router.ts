@@ -9,7 +9,10 @@ import {
 } from '../../core/middleware/auth';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access';
 
-import { inventoryService } from './inventory.service';
+import {
+  inventoryService,
+  type LocationRangeDefinition
+} from './inventory.service';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -91,7 +94,7 @@ inventoryRouter.post(
       return res.status(400).json({ message: 'definitions requerido' });
     }
 
-    const parsedDefinitions = definitions
+    const parsedDefinitions: LocationRangeDefinition[] = definitions
       .map((definition) => {
         if (typeof definition !== 'object' || definition === null) return null;
         const value = definition as Record<string, any>;
@@ -123,7 +126,7 @@ inventoryRouter.post(
           )
         };
       })
-      .filter(Boolean);
+      .filter((item): item is LocationRangeDefinition => item !== null);
 
     if (parsedDefinitions.length === 0) {
       return res.status(400).json({ message: 'No hay definiciones válidas' });

@@ -110,7 +110,8 @@ formsRouter.post(
   authenticate,
   requireRole('admin', 'consultor'),
   requireProjectMembership('projectId'),
-  async (req: AuthenticatedRequest & { projectId: string }, res) => {
+  async (req: AuthenticatedRequest, res) => {
+    const { projectId } = req as AuthenticatedRequest & { projectId: string };
     const body = linkSchema.parse(req.body);
     const expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
     if (expiresAt && Number.isNaN(expiresAt.getTime())) {
@@ -120,7 +121,7 @@ formsRouter.post(
       { id: req.user!.id, role: req.user!.role },
       req.params.versionId,
       {
-        projectId: body.projectId,
+        projectId: body.projectId ?? projectId,
         targetType: body.targetType,
         expiresAt,
         maxResponses: body.maxResponses ?? null

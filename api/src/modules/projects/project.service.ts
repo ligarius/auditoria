@@ -363,7 +363,7 @@ export const projectService = {
       prisma.risk.findMany({ where: { projectId: id } }),
       prisma.finding.findMany({ where: { projectId: id } }),
       prisma.pOCItem.findMany({ where: { projectId: id } }),
-      prisma.decisionLog.count({ where: { projectId: id } }),
+      prisma.decision.count({ where: { projectId: id } }),
       prisma.kPI.findMany({
         where: { projectId: id },
         orderBy: { date: 'desc' }
@@ -372,66 +372,71 @@ export const projectService = {
     ]);
 
     const now = new Date();
-    const pendingDataItems = dataItems.filter((item) =>
+    const pendingDataItems = dataItems.filter((item: any) =>
       ['Pending', 'En progreso', 'Pendiente'].includes(item.status)
     );
     const overdueDataItems = dataItems.filter(
-      (item) =>
+      (item: any) =>
         item.dueDate &&
         new Date(item.dueDate) < now &&
         item.status !== 'Recibido'
     );
 
     const activeSurveyLinks = surveyLinks.filter(
-      (link) => !link.expiresAt || link.expiresAt > now
+      (link: any) => !link.expiresAt || link.expiresAt > now
     );
     const publishedSurveyLinks = surveyLinks.filter(
-      (link) => link.version.status === 'PUBLISHED'
+      (link: any) => link.version.status === 'PUBLISHED'
     );
     const totalQuestions = surveyLinks.reduce(
-      (acc, link) => acc + countFormComponents(link.version.formJson),
+      (acc: number, link: any) =>
+        acc + countFormComponents(link.version.formJson),
       0
     );
 
+    const totalCoverage = coverages.reduce(
+      (acc: number, item: any) => acc + (item.coverage ?? 0),
+      0
+    );
     const coverageAverage = coverages.length
-      ? coverages.reduce((acc, item) => acc + (item.coverage ?? 0), 0) /
-        coverages.length
+      ? totalCoverage / coverages.length
       : null;
-    const coverageGaps = coverages.filter((item) => item.hasGap).length;
+    const coverageGaps = coverages.filter((item: any) => item.hasGap).length;
 
     const openVulnerabilities = securityEntries.filter(
-      (entry) => (entry.openVulns ?? '').trim().length > 0
+      (entry: any) => (entry.openVulns ?? '').trim().length > 0
     ).length;
 
     const totalTco = costEntries.reduce(
-      (acc, item) => acc + computeTco(item),
+      (acc: number, item: any) => acc + computeTco(item),
       0
     );
 
     const criticalRisks = risks.filter(
-      (risk) => risk.severity >= 4 || (risk.rag ?? '').toLowerCase() === 'rojo'
+      (risk: any) =>
+        risk.severity >= 4 || (risk.rag ?? '').toLowerCase() === 'rojo'
     ).length;
 
-    const openFindings = findings.filter((finding) => {
+    const openFindings = findings.filter((finding: any) => {
       const status = (finding.status ?? '').toLowerCase();
       return (
         status !== 'closed' && status !== 'cerrado' && status !== 'implementado'
       );
     }).length;
 
-    const activePoc = pocItems.filter((item) => {
+    const activePoc = pocItems.filter((item: any) => {
       const status = (item.status ?? '').toLowerCase();
       return status !== 'completado' && status !== 'cerrado';
     }).length;
 
     const lateTasks = tasks.filter(
-      (task) =>
+      (task: any) =>
         task.endDate < now &&
         !['completado', 'cerrado'].includes((task.status ?? '').toLowerCase())
     );
     const upcomingTasks = tasks
-      .filter((task) => task.startDate >= now)
-      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+      .filter((task: any) => task.startDate >= now)
+      .sort((a: any, b: any) => a.startDate.getTime() - b.startDate.getTime());
     const nextTask = upcomingTasks[0] ?? null;
 
     return {

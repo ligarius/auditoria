@@ -3,6 +3,7 @@ import type { ChartConfiguration } from 'chart.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import dayjs from 'dayjs';
 import puppeteer from 'puppeteer';
+import type { Browser } from 'puppeteer';
 import { type ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
 import { prisma } from '../../core/config/db';
@@ -616,10 +617,10 @@ export async function generateProjectReportPdf(projectId: string) {
   </body>
 </html>`;
 
-  let browser: puppeteer.Browser | null = null;
+  let browser: Browser | null = null;
   try {
     browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const page = await browser.newPage();

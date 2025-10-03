@@ -17,8 +17,8 @@ export const dataRequestCategoryService = {
       category.id,
       'CREATE',
       userId,
-      null,
-      null,
+      undefined,
+      undefined,
       category
     );
     return category;
@@ -44,7 +44,7 @@ export const dataRequestCategoryService = {
       id,
       'UPDATE',
       userId,
-      null,
+      undefined,
       before,
       category
     );
@@ -64,9 +64,9 @@ export const dataRequestCategoryService = {
       id,
       'DELETE',
       userId,
-      null,
+      undefined,
       before,
-      null
+      undefined
     );
   }
 };

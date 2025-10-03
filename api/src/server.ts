@@ -1,8 +1,6 @@
 import 'dotenv/config';
 import 'express-async-errors';
 
-import type { IncomingHttpHeaders } from 'http';
-
 import cors from 'cors';
 import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
@@ -40,16 +38,25 @@ const allowedOrigins = env.clientUrl
   ? Array.from(new Set([env.clientUrl, ...env.corsAllowlist]))
   : env.corsAllowlist;
 
-const sanitizeHeaders = (headers: IncomingHttpHeaders | undefined) => {
-  if (!headers) return headers;
-  const sanitized: IncomingHttpHeaders = { ...headers };
-  if (sanitized.authorization) {
-    sanitized.authorization = 'Bearer <redacted>';
-  }
-  if (sanitized.cookie) {
-    sanitized.cookie = '<redacted>';
-  }
-  return sanitized;
+const sanitizeHeaders = (
+  headers: Record<string, string | string[]>
+): Record<string, string> => {
+  return Object.entries(headers).reduce<Record<string, string>>(
+    (acc, [key, value]) => {
+      const lowerKey = key.toLowerCase();
+      if (lowerKey === 'authorization') {
+        acc[key] = 'Bearer <redacted>';
+        return acc;
+      }
+      if (lowerKey === 'cookie') {
+        acc[key] = '<redacted>';
+        return acc;
+      }
+      acc[key] = Array.isArray(value) ? value.join(', ') : value;
+      return acc;
+    },
+    {}
+  );
 };
 
 app.use(
@@ -80,22 +87,35 @@ app.use(
       req(request) {
         const serialized = pino.stdSerializers.req(request);
         if (serialized && serialized.headers) {
-          serialized.headers = sanitizeHeaders(serialized.headers);
+          const headers = (serialized.headers ?? {}) as Record<
+            string,
+            string | string[]
+          >;
+          const cleaned = sanitizeHeaders(headers);
+          serialized.headers = cleaned;
+          if (Array.isArray(headers['set-cookie'])) {
+            serialized.headers['set-cookie'] = headers['set-cookie'].join(', ');
+          }
         }
         return serialized;
       },
       res(response) {
         const serialized = pino.stdSerializers.res(response);
-        if (
-          serialized &&
-          serialized.headers &&
-          serialized.headers['set-cookie']
-        ) {
-          serialized.headers['set-cookie'] = Array.isArray(
-            serialized.headers['set-cookie']
-          )
-            ? serialized.headers['set-cookie'].map(() => '<redacted>')
-            : '<redacted>';
+        if (serialized && serialized.headers) {
+          const headers = serialized.headers as Record<
+            string,
+            string | string[]
+          >;
+          const cleaned = sanitizeHeaders(headers);
+          serialized.headers = cleaned;
+          const setCookie = headers['set-cookie'];
+          if (Array.isArray(setCookie)) {
+            serialized.headers['set-cookie'] = setCookie
+              .map(() => '<redacted>')
+              .join(', ');
+          } else if (typeof setCookie === 'string') {
+            serialized.headers['set-cookie'] = '<redacted>';
+          }
         }
         return serialized;
       }

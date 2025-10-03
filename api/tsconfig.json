@@ -12,5 +12,5 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
-  "exclude": ["dist", "node_modules", "prisma"]
+  "exclude": ["dist", "node_modules", "prisma", "src/tests/**"]
 }

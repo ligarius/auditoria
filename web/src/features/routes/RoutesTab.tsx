@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import api from '../../lib/api';
+import { downloadModuleReport } from '../../lib/reports';
 
 type RoutePlanStatus = 'draft' | 'optimizing' | 'completed';
 
@@ -207,6 +208,8 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
   const [creating, setCreating] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   const loadPlans = useCallback(async () => {
     setLoading(true);
@@ -467,9 +470,48 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
     };
   }, [editingPlan]);
 
+  const handleDownloadReport = async () => {
+    setReportError(null);
+    setDownloadingReport(true);
+    try {
+      await downloadModuleReport(projectId, 'rutas', 'rutas');
+    } catch (downloadException) {
+      console.error('No se pudo descargar el informe de rutas', downloadException);
+      setReportError('No se pudo descargar el informe de rutas. Intenta nuevamente.');
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
   return (
-    <div className="flex gap-6">
-      <aside className="w-64 flex-shrink-0 space-y-4">
+    <div className="space-y-6">
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Informe de rutas</h2>
+            <p className="text-sm text-slate-500">
+              Genera un PDF con los escenarios planificados, demanda cubierta y costos asociados.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end">
+            {reportError ? (
+              <span className="text-sm text-red-600">{reportError}</span>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleDownloadReport}
+              disabled={downloadingReport}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              <Download className="h-4 w-4" />
+              {downloadingReport ? 'Generando…' : 'Descargar informe PDF'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-6">
+        <aside className="w-64 flex-shrink-0 space-y-4">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-700">Escenarios</h2>
@@ -550,9 +592,9 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
         </div>
         {error ? <p className="text-xs text-red-600">{error}</p> : null}
         {successMessage ? <p className="text-xs text-emerald-600">{successMessage}</p> : null}
-      </aside>
+        </aside>
 
-      <section className="flex-1 space-y-6">
+        <section className="flex-1 space-y-6">
         {editingPlan ? (
           <div className="space-y-6">
             <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -1190,7 +1232,8 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
             </p>
           </div>
         )}
-      </section>
+        </section>
+      </div>
     </div>
   );
 };

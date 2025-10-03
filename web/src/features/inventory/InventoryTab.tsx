@@ -1,6 +1,8 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
 
 import api from '../../lib/api';
+import { downloadModuleReport } from '../../lib/reports';
 import BlindCountSection from './BlindCountSection';
 import type { LabelInfo, LocationItem, SkuItem, ZoneSummary } from './types';
 
@@ -58,6 +60,8 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
   const [generating, setGenerating] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [activeSection, setActiveSection] = useState<'master' | 'counts'>('master');
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   const fetchInventory = async () => {
     setLoading(true);
@@ -278,39 +282,66 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
     [zones],
   );
 
+  const handleDownloadReport = async () => {
+    setReportError(null);
+    setDownloadingReport(true);
+    try {
+      await downloadModuleReport(projectId, 'inventario', 'inventario');
+    } catch (downloadException) {
+      console.error('No se pudo descargar el informe de inventario', downloadException);
+      setReportError('No se pudo descargar el informe de inventario. Intenta nuevamente.');
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-2">
           <h1 className="text-xl font-semibold text-slate-900">Inventario</h1>
           <p className="text-sm text-slate-500">
             Administra el maestro de SKU, las ubicaciones y ejecuta el barrido ciego del inventario.
           </p>
+          {reportError ? (
+            <p className="text-sm text-red-600">{reportError}</p>
+          ) : null}
         </div>
-        <div className="inline-flex rounded-md border border-slate-200 bg-slate-100 p-1">
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
           <button
             type="button"
-            onClick={() => setActiveSection('master')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-              activeSection === 'master'
-                ? 'bg-white text-slate-900 shadow'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={handleDownloadReport}
+            disabled={downloadingReport}
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
           >
-            Maestro & Etiquetas
+            <Download className="h-4 w-4" />
+            {downloadingReport ? 'Generando…' : 'Descargar informe PDF'}
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveSection('counts')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-              activeSection === 'counts'
-                ? 'bg-white text-slate-900 shadow'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Conteo ciego
-          </button>
+          <div className="inline-flex rounded-md border border-slate-200 bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setActiveSection('master')}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                activeSection === 'master'
+                  ? 'bg-white text-slate-900 shadow'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Maestro & Etiquetas
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection('counts')}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                activeSection === 'counts'
+                  ? 'bg-white text-slate-900 shadow'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Conteo ciego
+            </button>
+          </div>
         </div>
       </div>
 

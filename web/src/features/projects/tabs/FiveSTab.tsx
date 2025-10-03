@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
 
 import api from '../../../lib/api';
+import { downloadModuleReport } from '../../../lib/reports';
 
 type PhotoType = 'before' | 'after';
 
@@ -147,6 +149,8 @@ const FiveSTab = ({ projectId }: FiveSTabProps) => {
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
   const [savingAuditId, setSavingAuditId] = useState<string | null>(null);
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   const resetForm = () => {
     setArea('');
@@ -319,6 +323,20 @@ const FiveSTab = ({ projectId }: FiveSTabProps) => {
     });
   };
 
+  const handleDownloadReport = async () => {
+    if (!projectId) return;
+    setReportError(null);
+    setDownloadingReport(true);
+    try {
+      await downloadModuleReport(projectId, '5s', 'programa-5s');
+    } catch (downloadException) {
+      console.error('No se pudo descargar el informe 5S', downloadException);
+      setReportError('No se pudo descargar el informe 5S. Inténtalo nuevamente.');
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
   const handleActionChange = <K extends keyof EditableAction>(
     index: number,
     field: K,
@@ -421,6 +439,31 @@ const FiveSTab = ({ projectId }: FiveSTabProps) => {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Informe programa 5S</h2>
+            <p className="text-sm text-slate-500">
+              Genera un PDF con las auditorías registradas, evidencia y acciones de mejora.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end">
+            {reportError ? (
+              <span className="text-sm text-red-600">{reportError}</span>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleDownloadReport}
+              disabled={downloadingReport}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              <Download className="h-4 w-4" />
+              {downloadingReport ? 'Generando…' : 'Descargar informe 5S'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">
           Registrar nueva auditoría 5S

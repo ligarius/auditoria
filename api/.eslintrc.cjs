@@ -38,5 +38,5 @@ module.exports = {
     { files: ['**/*.js'], rules: { '@typescript-eslint/no-var-requires': 'off' } },
     { files: ['src/tests/**/*'], env: { jest: true } },
   ],
-  ignorePatterns: ['dist/**', 'node_modules/**'],
+  ignorePatterns: ['dist/**', 'node_modules/**', 'prisma/**'],
 };

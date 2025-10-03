@@ -37,16 +37,21 @@ services:
   api:
     build:
       context: ./api
+      target: runner
       args:
         NPM_CONFIG_PROXY: ${NPM_CONFIG_PROXY:-}
         NPM_CONFIG_HTTPS_PROXY: ${NPM_CONFIG_HTTPS_PROXY:-}
         NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-}
+      cache_from:
+        - type=local,src=.docker-cache/api
+      cache_to:
+        - type=local,dest=.docker-cache/api,mode=max
     container_name: auditoria-api
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
@@ -80,10 +85,15 @@ services:
   web:
     build:
       context: ./web
+      target: runner
       args:
         NPM_CONFIG_PROXY: ${NPM_CONFIG_PROXY:-}
         NPM_CONFIG_HTTPS_PROXY: ${NPM_CONFIG_HTTPS_PROXY:-}
         NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-}
+      cache_from:
+        - type=local,src=.docker-cache/web
+      cache_to:
+        - type=local,dest=.docker-cache/web,mode=max
     container_name: auditoria-web
     restart: unless-stopped
     environment:
@@ -91,7 +101,7 @@ services:
     depends_on:
       - api
     ports:
-      - "${WEB_PORT:-5173}:5173"
+      - "${WEB_PORT:-8080}:80"
 
 volumes:
   postgres-data:

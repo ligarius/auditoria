@@ -10,6 +10,8 @@ const config: Config = {
     '<rootDir>/src/modules/receptions/reception.service.ts'
   ],
   moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/utils/resolveAsset$': '<rootDir>/src/utils/resolveAsset.ts',
     '^@core/(.*)$': '<rootDir>/src/core/$1',
     '^@modules/(.*)$': '<rootDir>/src/modules/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1'

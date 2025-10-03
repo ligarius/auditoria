@@ -1,6 +1,8 @@
-import { readFileSync } from 'node:fs';
+import fs from 'node:fs';
 
 import Handlebars from 'handlebars';
+
+import { resolveAsset } from '@/utils/resolveAsset';
 
 export interface ReportMetric {
   label: string;
@@ -37,10 +39,8 @@ export interface ModuleReportTemplateData {
   signatures: { label: string; name?: string | null }[];
 }
 
-const templateSource = readFileSync(
-  new URL('./module-report.hbs', import.meta.url),
-  'utf-8'
-);
+const templatePath = resolveAsset('module-report.hbs');
+const templateSource = fs.readFileSync(templatePath, 'utf8');
 const template = Handlebars.compile<ModuleReportTemplateData>(templateSource);
 
 export const renderModuleReport = (data: ModuleReportTemplateData) => {

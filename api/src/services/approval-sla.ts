@@ -41,6 +41,9 @@ const runMonitor = async () => {
     }
 
     for (const workflow of overdueWorkflows) {
+      const workflowWithTimers = workflow as typeof workflow & {
+        slaTimers: unknown[];
+      };
       const pendingApprovers = workflow.steps
         .filter((step) => step.status === 'pending' && step.approver?.email)
         .map((step) => step.approver?.email!)
@@ -58,7 +61,10 @@ const runMonitor = async () => {
         'Flujo de aprobación marcado como vencido'
       );
 
-      const { subject, html } = buildEmailContent(workflow);
+      const { subject, html } = buildEmailContent({
+        ...workflowWithTimers,
+        slaTimers: workflowWithTimers.slaTimers ?? []
+      });
       await notificationService.sendEmail({
         to: pendingApprovers,
         subject,

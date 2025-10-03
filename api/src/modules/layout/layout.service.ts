@@ -1,6 +1,10 @@
 import fs from 'fs/promises';
 
-import type { CapacityCalc, File as FileRecord } from '@prisma/client';
+import {
+  Prisma,
+  type CapacityCalc,
+  type File as FileRecord
+} from '@prisma/client';
 
 import { prisma } from '../../core/config/db';
 import { fileService } from '../files/file.service';
@@ -12,22 +16,29 @@ interface SimulationRow {
   pp: number;
 }
 
-const normalizeMemo = (memo: unknown, totalPP: number) => {
+const normalizeMemo = (
+  memo: unknown,
+  totalPP: number
+): Prisma.InputJsonValue => {
   const timestamp = new Date().toISOString();
   if (memo === null || memo === undefined) {
-    return { totalPP, savedAt: timestamp } as Record<string, unknown>;
+    return { totalPP, savedAt: timestamp } as Prisma.InputJsonValue;
   }
   if (typeof memo === 'string') {
-    return { notes: memo, totalPP, savedAt: timestamp };
+    return {
+      notes: memo,
+      totalPP,
+      savedAt: timestamp
+    } as Prisma.InputJsonValue;
   }
   if (typeof memo === 'object') {
     return {
       ...(memo as Record<string, unknown>),
       totalPP,
       savedAt: timestamp
-    };
+    } as Prisma.InputJsonValue;
   }
-  return { value: memo, totalPP, savedAt: timestamp };
+  return { value: memo, totalPP, savedAt: timestamp } as Prisma.InputJsonValue;
 };
 
 const readPlanDataUrl = async (file: FileRecord) => {

@@ -15,9 +15,9 @@ interface CsvSkuRow {
   weight?: string;
 }
 
-interface LocationRangeDefinition {
-  zone: { code: string; name?: string };
-  rack: { code: string; name?: string };
+export interface LocationRangeDefinition {
+  zone: { code: string; name: string | undefined };
+  rack: { code: string; name: string | undefined };
   rowStart: number;
   rowEnd: number;
   levelStart: number;

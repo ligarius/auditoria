@@ -4,7 +4,7 @@ import { prisma } from '../../core/config/db';
 import { HttpError } from '../../core/errors/http-error';
 import { auditService } from '../audit/audit.service';
 
-interface ChecklistItemInput {
+export interface ChecklistItemInput {
   id?: string;
   text: string;
   isDone?: boolean;

@@ -8,6 +8,7 @@ dist
 api/dist
 web/dist
 api/coverage
+.docker-cache
 
 # build
 api/dist

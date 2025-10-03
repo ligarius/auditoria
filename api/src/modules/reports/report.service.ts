@@ -3,20 +3,19 @@ import type {
   Prisma,
   RoutePlanStatus
 } from '@prisma/client';
-import puppeteer from 'puppeteer';
-import type { Browser } from 'puppeteer';
+import * as puppeteer from 'puppeteer';
 
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
-import { logger } from '../../core/config/logger';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import { logger } from '../../core/config/logger.js';
 
-import { renderExecutiveReport } from './templates/executive-report';
+import { renderExecutiveReport } from './templates/executive-report.js';
 import {
   renderModuleReport,
   type ModuleReportTemplateData,
   type ReportEntry,
   type ReportSection
-} from './templates/module-report';
+} from './templates/module-report.js';
 
 const CLOSED_FINDING_STATUSES = [
   'closed',
@@ -148,7 +147,7 @@ const createPdfFromHtml = async (
   preparedBy: string,
   generatedAt: Date
 ) => {
-  let browser: Browser | null = null;
+  let browser: puppeteer.Browser | null = null;
   try {
     browser = await puppeteer.launch({
       headless: true,

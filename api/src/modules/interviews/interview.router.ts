@@ -1,9 +1,12 @@
 import { Router } from 'express';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import {
+  authenticate,
+  requireProjectRole
+} from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-import { interviewService } from './interview.service';
+import { interviewService } from './interview.service.js';
 
 const readRoles = ['ConsultorLider', 'Auditor', 'SponsorPM', 'Invitado'];
 const writeRoles = ['ConsultorLider', 'Auditor'];

@@ -1,5 +1,5 @@
-import { formsService } from '../../modules/forms/forms.service';
-import { HttpError } from '../../core/errors/http-error';
+import { formsService } from '../../modules/forms/forms.service.js';
+import { HttpError } from '../../core/errors/http-error.js';
 
 const mockSurveyLinkFindUnique = jest.fn();
 const mockTransaction = jest.fn();

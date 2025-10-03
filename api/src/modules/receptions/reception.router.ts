@@ -1,9 +1,12 @@
 import { Router } from 'express';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import {
+  authenticate,
+  requireProjectRole
+} from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-import { receptionService } from './reception.service';
+import { receptionService } from './reception.service.js';
 
 const receptionRouter = Router();
 

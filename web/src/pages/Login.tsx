@@ -22,7 +22,8 @@ export default function Login() {
       const accessToken = r.data?.accessToken || r.data?.token;
       const refreshToken = r.data?.refreshToken;
       const role = r.data?.user?.role;
-      if (!accessToken || !refreshToken) throw new Error('Respuesta sin tokens');
+      if (!accessToken || !refreshToken)
+        throw new Error('Respuesta sin tokens');
       storeTokens({ accessToken, refreshToken });
       localStorage.setItem(ROLE_KEY, role || 'viewer');
       let targetProject = localStorage.getItem(LAST_PROJECT_KEY) || '';

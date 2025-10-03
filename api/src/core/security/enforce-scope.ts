@@ -1,8 +1,8 @@
-import type { AuthenticatedRequest } from '../middleware/auth';
-import { prisma } from '../config/db';
-import { HttpError } from '../errors/http-error';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
+import { prisma } from '../config/db.js';
+import { HttpError } from '../errors/http-error.js';
 
-import { enforceProjectAccess } from './enforce-project-access';
+import { enforceProjectAccess } from './enforce-project-access.js';
 
 const extractString = (value: unknown): string | undefined => {
   if (typeof value === 'string' && value.trim().length > 0) {

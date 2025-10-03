@@ -2,8 +2,8 @@ import type { Express } from 'express';
 import request from 'supertest';
 import { BarcodeLabelType, SopStatus } from '@prisma/client';
 
-import { signAccessToken } from '../../core/utils/jwt';
-import { approvalService } from '../../modules/governance/approval.service';
+import { signAccessToken } from '../../core/utils/jwt.js';
+import { approvalService } from '../../modules/governance/approval.service.js';
 
 const prismaMock = {
   membership: {
@@ -86,7 +86,7 @@ describe('Critical endpoints smoke tests', () => {
   });
 
   beforeAll(async () => {
-    ({ app } = await import('../../server'));
+    ({ app } = await import('../../server.js'));
   });
 
   beforeEach(() => {

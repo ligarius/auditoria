@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db';
-import { authenticate, requireRole } from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import { authenticate, requireRole } from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-import { meetingService } from './meeting.service';
-import { minuteService } from './minute.service';
+import { meetingService } from './meeting.service.js';
+import { minuteService } from './minute.service.js';
 
 const minuteRouter = Router();
 
@@ -81,14 +80,10 @@ minuteRouter.post('/', requireRole('admin', 'consultor'), async (req, res) => {
 
 minuteRouter.get('/:id', async (req, res) => {
   const minute = await minuteService.get(req.params.id);
-  const meeting = await prisma.meeting.findUnique({
-    where: { id: minute.meetingId },
-    select: { projectId: true }
-  });
-  if (!meeting) {
+  if (!minute.meeting) {
     return res.status(404).json({ title: 'Reunión no encontrada' });
   }
-  await enforceProjectAccess(req.user, meeting.projectId);
+  await enforceProjectAccess(req.user, minute.meeting.projectId);
   res.json(minute);
 });
 
@@ -98,14 +93,10 @@ minuteRouter.put(
   async (req, res) => {
     const payload = updateSchema.parse(req.body);
     const minute = await minuteService.get(req.params.id);
-    const meeting = await prisma.meeting.findUnique({
-      where: { id: minute.meetingId },
-      select: { projectId: true }
-    });
-    if (!meeting) {
+    if (!minute.meeting) {
       return res.status(404).json({ title: 'Reunión no encontrada' });
     }
-    await enforceProjectAccess(req.user, meeting.projectId);
+    await enforceProjectAccess(req.user, minute.meeting.projectId);
     const updated = await minuteService.update(req.params.id, {
       content: payload.content ?? undefined,
       authorId:
@@ -122,14 +113,10 @@ minuteRouter.put(
 
 minuteRouter.delete('/:id', requireRole('admin'), async (req, res) => {
   const minute = await minuteService.get(req.params.id);
-  const meeting = await prisma.meeting.findUnique({
-    where: { id: minute.meetingId },
-    select: { projectId: true }
-  });
-  if (!meeting) {
+  if (!minute.meeting) {
     return res.status(404).json({ title: 'Reunión no encontrada' });
   }
-  await enforceProjectAccess(req.user, meeting.projectId);
+  await enforceProjectAccess(req.user, minute.meeting.projectId);
   await minuteService.remove(req.params.id);
   res.status(204).end();
 });

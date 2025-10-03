@@ -57,7 +57,8 @@ interface LayoutTabProps {
 }
 
 const calculatePP = (aisles: number, rackType: string) => {
-  const option = RACK_TYPES.find((item) => item.value === rackType) ?? RACK_TYPES[0];
+  const option =
+    RACK_TYPES.find((item) => item.value === rackType) ?? RACK_TYPES[0];
   return Math.max(0, Math.round(aisles * option.ppPerAisle));
 };
 
@@ -94,7 +95,9 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get<LayoutApiResponse>(`/layout/projects/${projectId}`);
+      const response = await api.get<LayoutApiResponse>(
+        `/layout/projects/${projectId}`
+      );
       const data = response.data;
       setPlan(data.plan ?? null);
       setBaselineTotal(data.totalPP ?? 0);
@@ -131,7 +134,7 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
 
   const totalWhatIf = useMemo(
     () => rows.reduce((accumulator, row) => accumulator + row.pp, 0),
-    [rows],
+    [rows]
   );
 
   const handleRackTypeChange = (zoneId: string, value: string) => {
@@ -143,14 +146,16 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
               rackType: value,
               pp: calculatePP(row.aisles, value),
             }
-          : row,
-      ),
+          : row
+      )
     );
   };
 
   const handleAislesChange = (zoneId: string, value: string) => {
     const parsed = Number(value);
-    const aisles = Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
+    const aisles = Number.isFinite(parsed)
+      ? Math.max(0, Math.round(parsed))
+      : 0;
     setRows((previous) =>
       previous.map((row) =>
         row.id === zoneId
@@ -159,8 +164,8 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
               aisles,
               pp: calculatePP(aisles, row.rackType),
             }
-          : row,
-      ),
+          : row
+      )
     );
   };
 
@@ -208,7 +213,9 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
       await fetchLayout();
     } catch (err) {
       console.error('No se pudo guardar la simulación de capacidad', err);
-      setError('No se pudo guardar la simulación. Verifica los datos e inténtalo nuevamente.');
+      setError(
+        'No se pudo guardar la simulación. Verifica los datos e inténtalo nuevamente.'
+      );
     } finally {
       setSaving(false);
     }
@@ -219,13 +226,21 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Plano del layout</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Plano del layout
+            </h2>
             <p className="text-sm text-slate-500">
-              Carga una imagen del plano para utilizarla como referencia al simular capacidad.
+              Carga una imagen del plano para utilizarla como referencia al
+              simular capacidad.
             </p>
           </div>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
-            <input className="hidden" type="file" accept="image/*" onChange={handlePlanUpload} />
+            <input
+              className="hidden"
+              type="file"
+              accept="image/*"
+              onChange={handlePlanUpload}
+            />
             <span>Actualizar plano</span>
           </label>
         </div>
@@ -244,7 +259,8 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
         </div>
         {plan ? (
           <p className="mt-2 text-xs text-slate-500">
-            Última actualización: {formatDateTime(plan.createdAt)} · {plan.filename}
+            Última actualización: {formatDateTime(plan.createdAt)} ·{' '}
+            {plan.filename}
           </p>
         ) : null}
       </section>
@@ -252,25 +268,39 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Capacidad por zona</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Capacidad por zona
+            </h2>
             <p className="text-sm text-slate-500">
-              Ajusta el tipo de rack y la cantidad de pasillos para simular posiciones de pallets (PP) por zona.
+              Ajusta el tipo de rack y la cantidad de pasillos para simular
+              posiciones de pallets (PP) por zona.
             </p>
           </div>
           <div className="text-sm text-slate-600">
-            <p>PP actual registradas: <span className="font-semibold text-slate-900">{baselineTotal}</span></p>
+            <p>
+              PP actual registradas:{' '}
+              <span className="font-semibold text-slate-900">
+                {baselineTotal}
+              </span>
+            </p>
             <p>
               PP simuladas (what-if):{' '}
-              <span className="font-semibold text-indigo-600">{totalWhatIf}</span>
+              <span className="font-semibold text-indigo-600">
+                {totalWhatIf}
+              </span>
             </p>
           </div>
         </header>
 
         {error ? (
-          <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p>
+          <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+            {error}
+          </p>
         ) : null}
         {success ? (
-          <p className="mt-4 rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700">{success}</p>
+          <p className="mt-4 rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700">
+            {success}
+          </p>
         ) : null}
 
         <div className="mt-4 overflow-x-auto">
@@ -300,8 +330,13 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
             <tbody className="divide-y divide-slate-200 bg-white">
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-sm text-slate-500">
-                    {loading ? 'Cargando zonas…' : 'No hay zonas configuradas para este proyecto.'}
+                  <td
+                    colSpan={6}
+                    className="px-3 py-6 text-center text-sm text-slate-500"
+                  >
+                    {loading
+                      ? 'Cargando zonas…'
+                      : 'No hay zonas configuradas para este proyecto.'}
                   </td>
                 </tr>
               ) : (
@@ -314,7 +349,9 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
                     <td className="px-3 py-3">
                       <select
                         value={row.rackType}
-                        onChange={(event) => handleRackTypeChange(row.id, event.target.value)}
+                        onChange={(event) =>
+                          handleRackTypeChange(row.id, event.target.value)
+                        }
                         className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       >
                         {RACK_TYPES.map((option) => (
@@ -330,16 +367,24 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
                         inputMode="numeric"
                         min={0}
                         value={row.aisles}
-                        onChange={(event) => handleAislesChange(row.id, event.target.value)}
+                        onChange={(event) =>
+                          handleAislesChange(row.id, event.target.value)
+                        }
                         className="mt-1 block w-24 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                     </td>
                     <td className="px-3 py-3 text-right text-sm font-semibold text-slate-900">
                       {row.pp}
                     </td>
-                    <td className="px-3 py-3 text-xs text-slate-500">{formatDateTime(row.updatedAt)}</td>
                     <td className="px-3 py-3 text-xs text-slate-500">
-                      {row.memoNote ? row.memoNote : <span className="text-slate-400">—</span>}
+                      {formatDateTime(row.updatedAt)}
+                    </td>
+                    <td className="px-3 py-3 text-xs text-slate-500">
+                      {row.memoNote ? (
+                        row.memoNote
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -350,7 +395,10 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[2fr,1fr]">
           <div>
-            <label htmlFor="layoutMemo" className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor="layoutMemo"
+              className="block text-sm font-medium text-slate-700"
+            >
               Memoria de cálculo
             </label>
             <textarea
@@ -365,8 +413,9 @@ const LayoutTab = ({ projectId }: LayoutTabProps) => {
           <div className="flex flex-col justify-between gap-4">
             <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
               <p>
-                El what-if aplica factores de PP por pasillo según el tipo de rack seleccionado. Ajusta los valores y guarda la
-                simulación para registrar el total y la memoria de cálculo.
+                El what-if aplica factores de PP por pasillo según el tipo de
+                rack seleccionado. Ajusta los valores y guarda la simulación
+                para registrar el total y la memoria de cálculo.
               </p>
             </div>
             <button

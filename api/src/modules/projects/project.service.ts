@@ -4,10 +4,10 @@ import type {
 } from '@prisma/client';
 import { ProjectWorkflowState } from '@prisma/client';
 
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
-import { auditService } from '../audit/audit.service';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import { auditService } from '../audit/audit.service.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
 const WORKFLOW_STATES: readonly ProjectWorkflowStateType[] = [
   ProjectWorkflowState.planificacion,
@@ -274,7 +274,8 @@ export const projectService = {
     if (project.status === nextState) {
       return { state: project.status };
     }
-    const allowedTargets = WORKFLOW_TRANSITIONS[project.status];
+    const currentStatus = project.status as ProjectWorkflowStateType;
+    const allowedTargets = WORKFLOW_TRANSITIONS[currentStatus];
     if (!allowedTargets.includes(nextState)) {
       throw new HttpError(400, 'Transición de estado no permitida');
     }
@@ -325,6 +326,62 @@ export const projectService = {
 
     const enabledFeatures = extractEnabledFeatures(project.settings);
 
+    const dataItemsPromise = prisma.dataRequestItem.findMany({
+      where: { projectId: id }
+    });
+    const surveyLinksPromise = prisma.surveyLink.findMany({
+      where: { projectId: id },
+      include: { version: { select: { formJson: true, status: true } } }
+    });
+    const questionnaireResponsesCountPromise =
+      prisma.questionnaireResponse.count({
+        where: { projectId: id }
+      });
+    const interviewsCountPromise = prisma.interview.count({
+      where: { projectId: id }
+    });
+    const processAssetsCountPromise = prisma.processAsset.count({
+      where: { projectId: id }
+    });
+    const inventoryCountPromise = prisma.systemInventory.count({
+      where: { projectId: id }
+    });
+    const coveragesPromise = prisma.processCoverage.findMany({
+      where: { projectId: id }
+    });
+    const integrationsCountPromise = prisma.integration.count({
+      where: { projectId: id }
+    });
+    const dataQualityCountPromise = prisma.dataModelQuality.count({
+      where: { projectId: id }
+    });
+    const securityEntriesPromise = prisma.securityPosture.findMany({
+      where: { projectId: id }
+    });
+    const performanceCountPromise = prisma.performance.count({
+      where: { projectId: id }
+    });
+    const costEntriesPromise = prisma.costLicensing.findMany({
+      where: { projectId: id }
+    });
+    const risksPromise = prisma.risk.findMany({ where: { projectId: id } });
+    const findingsPromise = prisma.finding.findMany({
+      where: { projectId: id }
+    });
+    const pocItemsPromise = prisma.pOCItem.findMany({
+      where: { projectId: id }
+    });
+    const decisionsCountPromise = prisma.decision.count({
+      where: { projectId: id }
+    });
+    const kpisPromise = prisma.kPI.findMany({
+      where: { projectId: id },
+      orderBy: { date: 'desc' }
+    });
+    const tasksPromise = prisma.projectTask.findMany({
+      where: { projectId: id }
+    });
+
     const [
       dataItems,
       surveyLinks,
@@ -345,98 +402,113 @@ export const projectService = {
       kpis,
       tasks
     ] = await Promise.all([
-      prisma.dataRequestItem.findMany({ where: { projectId: id } }),
-      prisma.surveyLink.findMany({
-        where: { projectId: id },
-        include: { version: { select: { formJson: true, status: true } } }
-      }),
-      prisma.questionnaireResponse.count({ where: { projectId: id } }),
-      prisma.interview.count({ where: { projectId: id } }),
-      prisma.processAsset.count({ where: { projectId: id } }),
-      prisma.systemInventory.count({ where: { projectId: id } }),
-      prisma.processCoverage.findMany({ where: { projectId: id } }),
-      prisma.integration.count({ where: { projectId: id } }),
-      prisma.dataModelQuality.count({ where: { projectId: id } }),
-      prisma.securityPosture.findMany({ where: { projectId: id } }),
-      prisma.performance.count({ where: { projectId: id } }),
-      prisma.costLicensing.findMany({ where: { projectId: id } }),
-      prisma.risk.findMany({ where: { projectId: id } }),
-      prisma.finding.findMany({ where: { projectId: id } }),
-      prisma.pOCItem.findMany({ where: { projectId: id } }),
-      prisma.decision.count({ where: { projectId: id } }),
-      prisma.kPI.findMany({
-        where: { projectId: id },
-        orderBy: { date: 'desc' }
-      }),
-      prisma.projectTask.findMany({ where: { projectId: id } })
+      dataItemsPromise,
+      surveyLinksPromise,
+      questionnaireResponsesCountPromise,
+      interviewsCountPromise,
+      processAssetsCountPromise,
+      inventoryCountPromise,
+      coveragesPromise,
+      integrationsCountPromise,
+      dataQualityCountPromise,
+      securityEntriesPromise,
+      performanceCountPromise,
+      costEntriesPromise,
+      risksPromise,
+      findingsPromise,
+      pocItemsPromise,
+      decisionsCountPromise,
+      kpisPromise,
+      tasksPromise
     ]);
 
     const now = new Date();
-    const pendingDataItems = dataItems.filter((item: any) =>
-      ['Pending', 'En progreso', 'Pendiente'].includes(item.status)
-    );
-    const overdueDataItems = dataItems.filter(
-      (item: any) =>
-        item.dueDate &&
-        new Date(item.dueDate) < now &&
-        item.status !== 'Recibido'
-    );
+    type DataRequestItemRecord = (typeof dataItems)[number];
+    type SurveyLinkWithVersion = (typeof surveyLinks)[number];
+    type ProcessCoverageRecord = (typeof coverages)[number];
+    type SecurityPostureRecord = (typeof securityEntries)[number];
+    type RiskRecord = (typeof risks)[number];
+    type FindingRecord = (typeof findings)[number];
+    type PocItemRecord = (typeof pocItems)[number];
+    type ProjectTaskRecord = (typeof tasks)[number];
+
+    const pendingDataItems = dataItems.filter((item: DataRequestItemRecord) => {
+      const status = (item.status ?? '').toString();
+      return ['Pending', 'En progreso', 'Pendiente'].includes(status);
+    });
+    const overdueDataItems = dataItems.filter((item: DataRequestItemRecord) => {
+      if (!item.dueDate) {
+        return false;
+      }
+      const dueDate =
+        item.dueDate instanceof Date ? item.dueDate : new Date(item.dueDate);
+      const status = (item.status ?? '').toString();
+      return dueDate < now && status !== 'Recibido';
+    });
 
     const activeSurveyLinks = surveyLinks.filter(
-      (link: any) => !link.expiresAt || link.expiresAt > now
+      (link: SurveyLinkWithVersion) => !link.expiresAt || link.expiresAt > now
     );
     const publishedSurveyLinks = surveyLinks.filter(
-      (link: any) => link.version.status === 'PUBLISHED'
+      (link: SurveyLinkWithVersion) => link.version.status === 'PUBLISHED'
     );
-    const totalQuestions = surveyLinks.reduce(
-      (acc: number, link: any) =>
-        acc + countFormComponents(link.version.formJson),
-      0
-    );
+    let totalQuestions = 0;
+    for (const link of surveyLinks) {
+      totalQuestions += countFormComponents(link.version.formJson);
+    }
 
-    const totalCoverage = coverages.reduce(
-      (acc: number, item: any) => acc + (item.coverage ?? 0),
-      0
-    );
+    let totalCoverage = 0;
+    for (const coverage of coverages) {
+      totalCoverage += coverage.coverage ?? 0;
+    }
     const coverageAverage = coverages.length
       ? totalCoverage / coverages.length
       : null;
-    const coverageGaps = coverages.filter((item: any) => item.hasGap).length;
+    const coverageGaps = coverages.filter((item: ProcessCoverageRecord) =>
+      Boolean(item.hasGap)
+    ).length;
 
     const openVulnerabilities = securityEntries.filter(
-      (entry: any) => (entry.openVulns ?? '').trim().length > 0
+      (entry: SecurityPostureRecord) =>
+        ((entry.openVulns ?? '') as string).trim().length > 0
     ).length;
 
-    const totalTco = costEntries.reduce(
-      (acc: number, item: any) => acc + computeTco(item),
-      0
-    );
+    let totalTco = 0;
+    for (const entry of costEntries) {
+      totalTco += computeTco(entry);
+    }
 
-    const criticalRisks = risks.filter(
-      (risk: any) =>
-        risk.severity >= 4 || (risk.rag ?? '').toLowerCase() === 'rojo'
-    ).length;
+    const criticalRisks = risks.filter((risk: RiskRecord) => {
+      const severity = risk.severity ?? 0;
+      const rag = (risk.rag ?? '').toLowerCase();
+      return severity >= 4 || rag === 'rojo';
+    }).length;
 
-    const openFindings = findings.filter((finding: any) => {
+    const openFindings = findings.filter((finding: FindingRecord) => {
       const status = (finding.status ?? '').toLowerCase();
       return (
         status !== 'closed' && status !== 'cerrado' && status !== 'implementado'
       );
     }).length;
 
-    const activePoc = pocItems.filter((item: any) => {
+    const activePoc = pocItems.filter((item: PocItemRecord) => {
       const status = (item.status ?? '').toLowerCase();
       return status !== 'completado' && status !== 'cerrado';
     }).length;
 
-    const lateTasks = tasks.filter(
-      (task: any) =>
-        task.endDate < now &&
-        !['completado', 'cerrado'].includes((task.status ?? '').toLowerCase())
-    );
+    const lateTasks = tasks.filter((task: ProjectTaskRecord) => {
+      if (!task.endDate) {
+        return false;
+      }
+      const status = (task.status ?? '').toLowerCase();
+      return task.endDate < now && !['completado', 'cerrado'].includes(status);
+    });
     const upcomingTasks = tasks
-      .filter((task: any) => task.startDate >= now)
-      .sort((a: any, b: any) => a.startDate.getTime() - b.startDate.getTime());
+      .filter(
+        (task): task is ProjectTaskRecord & { startDate: Date } =>
+          Boolean(task.startDate) && task.startDate >= now
+      )
+      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
     const nextTask = upcomingTasks[0] ?? null;
 
     return {

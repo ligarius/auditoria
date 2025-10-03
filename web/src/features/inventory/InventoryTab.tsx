@@ -4,7 +4,7 @@ import { Download } from 'lucide-react';
 import api from '../../lib/api';
 import { downloadModuleReport } from '../../lib/reports';
 import BlindCountSection from './BlindCountSection';
-import type { LabelInfo, LocationItem, SkuItem, ZoneSummary } from './types';
+import type { LocationItem, SkuItem, ZoneSummary } from './types';
 
 interface LocationsResponse {
   locations: LocationItem[];
@@ -59,9 +59,13 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [installing, setInstalling] = useState(false);
-  const [activeSection, setActiveSection] = useState<'master' | 'counts'>('master');
+  const [activeSection, setActiveSection] = useState<'master' | 'counts'>(
+    'master'
+  );
   const [downloadingReport, setDownloadingReport] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
+
+  const columnCount = selectedType === 'SKU' ? 8 : 10;
 
   const fetchInventory = async () => {
     setLoading(true);
@@ -72,12 +76,19 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
         api.get<LocationsResponse>(`/inventory/locations/${projectId}`),
       ]);
       setSkus(Array.isArray(skuResponse.data) ? skuResponse.data : []);
-      const locationData = locationResponse.data ?? { locations: [], zones: [] };
-      setLocations(Array.isArray(locationData.locations) ? locationData.locations : []);
+      const locationData = locationResponse.data ?? {
+        locations: [],
+        zones: [],
+      };
+      setLocations(
+        Array.isArray(locationData.locations) ? locationData.locations : []
+      );
       setZones(Array.isArray(locationData.zones) ? locationData.zones : []);
     } catch (error) {
       console.error('No se pudo cargar la información de inventario', error);
-      setLoadError('No se pudieron cargar los datos del maestro y las ubicaciones.');
+      setLoadError(
+        'No se pudieron cargar los datos del maestro y las ubicaciones.'
+      );
     } finally {
       setLoading(false);
     }
@@ -105,23 +116,25 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await api.post<{ total: number; created: number; updated: number }>(
-        `/inventory/skus/import/${projectId}`,
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        },
-      );
+      const response = await api.post<{
+        total: number;
+        created: number;
+        updated: number;
+      }>(`/inventory/skus/import/${projectId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       const total = response.data?.total ?? 0;
       setActionMessage(
         total > 0
           ? `Se procesaron ${total} SKU${total === 1 ? '' : 's'} del archivo.`
-          : 'El archivo no contenía registros nuevos.',
+          : 'El archivo no contenía registros nuevos.'
       );
       await fetchInventory();
     } catch (error) {
       console.error('No se pudo importar el CSV de SKUs', error);
-      setActionError('No se pudo importar el archivo CSV. Verifica el formato e inténtalo nuevamente.');
+      setActionError(
+        'No se pudo importar el archivo CSV. Verifica el formato e inténtalo nuevamente.'
+      );
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -139,7 +152,9 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
     setActionError(null);
     setActionMessage(null);
     if (!bulkForm.zoneCode.trim() || !bulkForm.rackCode.trim()) {
-      setBulkError('Debes indicar al menos un código de zona y un código de rack.');
+      setBulkError(
+        'Debes indicar al menos un código de zona y un código de rack.'
+      );
       return;
     }
 
@@ -162,25 +177,31 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
 
     setBulkSaving(true);
     try {
-      const response = await api.post(`/inventory/locations/${projectId}/bulk`, {
-        definitions: [definition],
-      });
+      const response = await api.post(
+        `/inventory/locations/${projectId}/bulk`,
+        {
+          definitions: [definition],
+        }
+      );
       const created = response.data?.created ?? 0;
       const reused = response.data?.reused ?? 0;
       setActionMessage(
-        `Se generaron ${created} ubicaciones y se actualizaron ${reused}.`,
+        `Se generaron ${created} ubicaciones y se actualizaron ${reused}.`
       );
       setBulkForm(initialBulkState);
       await fetchInventory();
     } catch (error) {
       console.error('No se pudieron crear las ubicaciones', error);
-      setBulkError('No se pudieron generar las ubicaciones con los datos entregados.');
+      setBulkError(
+        'No se pudieron generar las ubicaciones con los datos entregados.'
+      );
     } finally {
       setBulkSaving(false);
     }
   };
 
-  const selectedIds = selectedType === 'SKU' ? selectedSkuIds : selectedLocationIds;
+  const selectedIds =
+    selectedType === 'SKU' ? selectedSkuIds : selectedLocationIds;
 
   const selectedLabelIds = useMemo(() => {
     if (selectedType === 'SKU') {
@@ -202,12 +223,16 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
     setActionError(null);
     setActionMessage(null);
     try {
-      const response = await api.post(`/inventory/labels/${projectId}/generate`, {
-        type: selectedType,
-        ids: selectedIds,
-      }, {
-        responseType: 'blob',
-      });
+      const response = await api.post(
+        `/inventory/labels/${projectId}/generate`,
+        {
+          type: selectedType,
+          ids: selectedIds,
+        },
+        {
+          responseType: 'blob',
+        }
+      );
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -220,7 +245,9 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
       await fetchInventory();
     } catch (error) {
       console.error('No se pudo generar el PDF de etiquetas', error);
-      setActionError('No se pudo generar el PDF de etiquetas. Intenta nuevamente.');
+      setActionError(
+        'No se pudo generar el PDF de etiquetas. Intenta nuevamente.'
+      );
     } finally {
       setGenerating(false);
     }
@@ -228,7 +255,9 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
 
   const handleMarkInstalled = async () => {
     if (selectedLabelIds.length === 0) {
-      setActionError('Las selecciones actuales no tienen etiquetas emitidas para marcar como instaladas.');
+      setActionError(
+        'Las selecciones actuales no tienen etiquetas emitidas para marcar como instaladas.'
+      );
       return;
     }
     setInstalling(true);
@@ -241,7 +270,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
       setActionMessage('Se marcaron las etiquetas como instaladas.');
       await fetchInventory();
     } catch (error) {
-      console.error('No se pudieron marcar las etiquetas como instaladas', error);
+      console.error(
+        'No se pudieron marcar las etiquetas como instaladas',
+        error
+      );
       setActionError('No se pudieron actualizar los estados de instalación.');
     } finally {
       setInstalling(false);
@@ -250,17 +282,22 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
 
   const toggleSkuSelection = (id: string) => {
     setSelectedSkuIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
     );
   };
 
   const toggleLocationSelection = (id: string) => {
     setSelectedLocationIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
     );
   };
 
-  const allSkusSelected = skus.length > 0 && selectedSkuIds.length === skus.length;
+  const allSkusSelected =
+    skus.length > 0 && selectedSkuIds.length === skus.length;
   const allLocationsSelected =
     locations.length > 0 && selectedLocationIds.length === locations.length;
 
@@ -268,18 +305,20 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
     if (selectedType === 'SKU') {
       setSelectedSkuIds(checked ? skus.map((sku) => sku.id) : []);
     } else {
-      setSelectedLocationIds(checked ? locations.map((location) => location.id) : []);
+      setSelectedLocationIds(
+        checked ? locations.map((location) => location.id) : []
+      );
     }
   };
 
   const totalZones = zones.length;
   const totalLocations = useMemo(
     () => zones.reduce((acc, zone) => acc + zone.totalLocations, 0),
-    [zones],
+    [zones]
   );
   const installedLocations = useMemo(
     () => zones.reduce((acc, zone) => acc + zone.installedLocations, 0),
-    [zones],
+    [zones]
   );
 
   const handleDownloadReport = async () => {
@@ -288,13 +327,17 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
     try {
       await downloadModuleReport(projectId, 'inventario', 'inventario');
     } catch (downloadException) {
-      console.error('No se pudo descargar el informe de inventario', downloadException);
-      setReportError('No se pudo descargar el informe de inventario. Intenta nuevamente.');
+      console.error(
+        'No se pudo descargar el informe de inventario',
+        downloadException
+      );
+      setReportError(
+        'No se pudo descargar el informe de inventario. Intenta nuevamente.'
+      );
     } finally {
       setDownloadingReport(false);
     }
   };
-
 
   return (
     <div className="space-y-6">
@@ -302,7 +345,8 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
         <div className="space-y-2">
           <h1 className="text-xl font-semibold text-slate-900">Inventario</h1>
           <p className="text-sm text-slate-500">
-            Administra el maestro de SKU, las ubicaciones y ejecuta el barrido ciego del inventario.
+            Administra el maestro de SKU, las ubicaciones y ejecuta el barrido
+            ciego del inventario.
           </p>
           {reportError ? (
             <p className="text-sm text-red-600">{reportError}</p>
@@ -365,9 +409,12 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
           <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Importar maestro de SKU</h2>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Importar maestro de SKU
+                </h2>
                 <p className="text-sm text-slate-500">
-                  Carga un CSV con columnas code, name, uom, length, width, height y weight para mantener el maestro actualizado.
+                  Carga un CSV con columnas code, name, uom, length, width,
+                  height y weight para mantener el maestro actualizado.
                 </p>
               </div>
               <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
@@ -388,14 +435,23 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
 
           <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Generar ubicaciones masivas</h2>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Generar ubicaciones masivas
+              </h2>
               <p className="text-sm text-slate-500">
-                Define un rango de filas, niveles y posiciones para crear todas las ubicaciones en bloque dentro de una zona y rack.
+                Define un rango de filas, niveles y posiciones para crear todas
+                las ubicaciones en bloque dentro de una zona y rack.
               </p>
             </div>
-            <form className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" onSubmit={handleBulkSubmit}>
+            <form
+              className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+              onSubmit={handleBulkSubmit}
+            >
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="zoneCode">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="zoneCode"
+                >
                   Código de zona
                 </label>
                 <input
@@ -408,7 +464,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="zoneName">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="zoneName"
+                >
                   Nombre de zona
                 </label>
                 <input
@@ -420,7 +479,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rackCode">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="rackCode"
+                >
                   Código de rack
                 </label>
                 <input
@@ -433,7 +495,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rackName">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="rackName"
+                >
                   Nombre de rack
                 </label>
                 <input
@@ -445,7 +510,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rowStart">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="rowStart"
+                >
                   Fila inicial
                 </label>
                 <input
@@ -459,7 +527,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="rowEnd">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="rowEnd"
+                >
                   Fila final
                 </label>
                 <input
@@ -473,7 +544,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="levelStart">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="levelStart"
+                >
                   Nivel inicial
                 </label>
                 <input
@@ -487,7 +561,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="levelEnd">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="levelEnd"
+                >
                   Nivel final
                 </label>
                 <input
@@ -501,7 +578,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="positionStart">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="positionStart"
+                >
                   Posición inicial
                 </label>
                 <input
@@ -515,7 +595,10 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="positionEnd">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="positionEnd"
+                >
                   Posición final
                 </label>
                 <input
@@ -536,7 +619,9 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 >
                   {bulkSaving ? 'Generando…' : 'Crear ubicaciones'}
                 </button>
-                {bulkError && <p className="mt-2 text-sm text-rose-600">{bulkError}</p>}
+                {bulkError && (
+                  <p className="mt-2 text-sm text-rose-600">{bulkError}</p>
+                )}
               </div>
             </form>
           </section>
@@ -544,9 +629,12 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
           <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Wizard de etiquetado</h2>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Wizard de etiquetado
+                </h2>
                 <p className="text-sm text-slate-500">
-                  Selecciona SKU o ubicaciones para emitir el PDF de etiquetas Code-128 y actualiza el estado de instalación.
+                  Selecciona SKU o ubicaciones para emitir el PDF de etiquetas
+                  Code-128 y actualiza el estado de instalación.
                 </p>
               </div>
               <div className="flex items-center gap-4">
@@ -574,15 +662,23 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
             <div className="mb-4 grid gap-4 md:grid-cols-3">
               <div className="rounded-md border border-slate-200 p-4">
                 <p className="text-xs uppercase text-slate-500">Zonas</p>
-                <p className="text-2xl font-semibold text-slate-900">{totalZones}</p>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {totalZones}
+                </p>
               </div>
               <div className="rounded-md border border-slate-200 p-4">
-                <p className="text-xs uppercase text-slate-500">Ubicaciones totales</p>
-                <p className="text-2xl font-semibold text-slate-900">{totalLocations}</p>
+                <p className="text-xs uppercase text-slate-500">
+                  Ubicaciones totales
+                </p>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {totalLocations}
+                </p>
               </div>
               <div className="rounded-md border border-slate-200 p-4">
                 <p className="text-xs uppercase text-slate-500">Instaladas</p>
-                <p className="text-2xl font-semibold text-slate-900">{installedLocations}</p>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {installedLocations}
+                </p>
               </div>
             </div>
 
@@ -593,8 +689,14 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                     <th className="px-3 py-2 text-left">
                       <input
                         type="checkbox"
-                        checked={selectedType === 'SKU' ? allSkusSelected : allLocationsSelected}
-                        onChange={(event) => handleSelectAll(event.target.checked)}
+                        checked={
+                          selectedType === 'SKU'
+                            ? allSkusSelected
+                            : allLocationsSelected
+                        }
+                        onChange={(event) =>
+                          handleSelectAll(event.target.checked)
+                        }
                         aria-label="Seleccionar todos"
                       />
                     </th>
@@ -659,7 +761,7 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                   {loading ? (
                     <tr>
                       <td
-                        colSpan={selectedType === 'SKU' ? 8 : 10}
+                        colSpan={columnCount}
                         className="px-3 py-8 text-center text-sm text-slate-500"
                       >
                         Cargando información…
@@ -677,21 +779,33 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                               aria-label={`Seleccionar SKU ${sku.code}`}
                             />
                           </td>
-                          <td className="px-3 py-2 text-sm font-medium text-slate-900">{sku.code}</td>
-                          <td className="px-3 py-2 text-sm text-slate-700">{sku.name}</td>
-                          <td className="px-3 py-2 text-sm text-slate-700">{sku.uom}</td>
+                          <td className="px-3 py-2 text-sm font-medium text-slate-900">
+                            {sku.code}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-slate-700">
+                            {sku.name}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-slate-700">
+                            {sku.uom}
+                          </td>
                           <td className="px-3 py-2 text-sm text-slate-700">
                             {`${formatNumber(sku.length)} × ${formatNumber(sku.width)} × ${formatNumber(sku.height)}`}
                           </td>
-                          <td className="px-3 py-2 text-sm text-slate-700">{formatNumber(sku.weight)}</td>
-                          <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(sku.label?.printedAt)}</td>
-                          <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(sku.label?.installedAt)}</td>
+                          <td className="px-3 py-2 text-sm text-slate-700">
+                            {formatNumber(sku.weight)}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-slate-500">
+                            {formatDateTime(sku.label?.printedAt)}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-slate-500">
+                            {formatDateTime(sku.label?.installedAt)}
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
                         <td
-                          colSpan={selectedType === 'SKU' ? 8 : 10}
+                          colSpan={columnCount}
                           className="px-3 py-8 text-center text-sm text-slate-500"
                         >
                           No hay SKUs cargados para este proyecto.
@@ -705,28 +819,49 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                           <input
                             type="checkbox"
                             checked={selectedLocationIds.includes(location.id)}
-                            onChange={() => toggleLocationSelection(location.id)}
+                            onChange={() =>
+                              toggleLocationSelection(location.id)
+                            }
                             aria-label={`Seleccionar ubicación ${location.codeZRNP}`}
                           />
                         </td>
-                        <td className="px-3 py-2 text-sm font-medium text-slate-900">{location.codeZRNP}</td>
-                        <td className="px-3 py-2 text-sm text-slate-700">{location.zone.name}</td>
-                        <td className="px-3 py-2 text-sm text-slate-700">{location.rack.name}</td>
-                        <td className="px-3 py-2 text-sm text-slate-700">{location.row}</td>
-                        <td className="px-3 py-2 text-sm text-slate-700">{location.level}</td>
-                        <td className="px-3 py-2 text-sm text-slate-700">{location.pos}</td>
-                        <td className="px-3 py-2 text-sm text-slate-700">{formatNumber(location.expectedQty)}</td>
-                        <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(location.label?.printedAt)}</td>
-                        <td className="px-3 py-2 text-sm text-slate-500">{formatDateTime(location.label?.installedAt)}</td>
+                        <td className="px-3 py-2 text-sm font-medium text-slate-900">
+                          {location.codeZRNP}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-700">
+                          {location.zone.name}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-700">
+                          {location.rack.name}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-700">
+                          {location.row}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-700">
+                          {location.level}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-700">
+                          {location.pos}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-700">
+                          {formatNumber(location.expectedQty)}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-500">
+                          {formatDateTime(location.label?.printedAt)}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-500">
+                          {formatDateTime(location.label?.installedAt)}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan={selectedType === 'SKU' ? 8 : 10}
+                        colSpan={columnCount}
                         className="px-3 py-8 text-center text-sm text-slate-500"
                       >
-                        No hay ubicaciones registradas. Genera rangos en la sección anterior.
+                        No hay ubicaciones registradas. Genera rangos en la
+                        sección anterior.
                       </td>
                     </tr>
                   )}
@@ -752,7 +887,8 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
                 {installing ? 'Actualizando…' : 'Marcar instaladas'}
               </button>
               <span className="text-sm text-slate-500">
-                Seleccionados: {selectedIds.length}. Con etiqueta emitida: {selectedLabelIds.length}.
+                Seleccionados: {selectedIds.length}. Con etiqueta emitida:{' '}
+                {selectedLabelIds.length}.
               </span>
             </div>
           </section>
@@ -768,7 +904,6 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
       )}
     </div>
   );
-
 };
 
 export default InventoryTab;

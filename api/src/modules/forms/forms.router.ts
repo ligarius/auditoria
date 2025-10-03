@@ -3,17 +3,17 @@ import type { Request } from 'express';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
 import {
   authenticate,
   requireProjectMembership,
   requireRole,
   type AuthenticatedRequest
-} from '../../core/middleware/auth';
-import { verifyAccessToken } from '../../core/utils/jwt';
+} from '../../core/middleware/auth.js';
+import { verifyAccessToken } from '../../core/utils/jwt.js';
 
-import { formsService } from './forms.service';
+import { formsService } from './forms.service.js';
 
 const formsRouter = Router();
 
@@ -111,17 +111,20 @@ formsRouter.post(
   requireRole('admin', 'consultor'),
   requireProjectMembership('projectId'),
   async (req: AuthenticatedRequest, res) => {
-    const { projectId } = req as AuthenticatedRequest & { projectId: string };
     const body = linkSchema.parse(req.body);
     const expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
     if (expiresAt && Number.isNaN(expiresAt.getTime())) {
       throw new HttpError(400, 'expiresAt inválido');
     }
+    const resolvedProjectId = body.projectId ?? req.projectId;
+    if (!resolvedProjectId) {
+      throw new HttpError(400, 'projectId requerido');
+    }
     const link = await formsService.createLink(
       { id: req.user!.id, role: req.user!.role },
       req.params.versionId,
       {
-        projectId: body.projectId ?? projectId,
+        projectId: resolvedProjectId,
         targetType: body.targetType,
         expiresAt,
         maxResponses: body.maxResponses ?? null

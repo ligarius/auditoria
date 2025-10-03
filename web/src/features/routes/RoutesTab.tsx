@@ -134,7 +134,9 @@ const toInputDate = (value: string | null) =>
   value ? new Date(value).toISOString().slice(0, 16) : '';
 
 const numberToString = (value: number | null | undefined) =>
-  value === null || value === undefined || Number.isNaN(value) ? '' : String(value);
+  value === null || value === undefined || Number.isNaN(value)
+    ? ''
+    : String(value);
 
 const toEditablePlan = (plan: ApiRoutePlan): EditablePlan => ({
   id: plan.id,
@@ -221,9 +223,10 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
       const data = Array.isArray(response.data) ? response.data : [];
       setPlans(data);
       if (data.length > 0) {
-        const targetId = selectedPlanId && data.some((plan) => plan.id === selectedPlanId)
-          ? selectedPlanId
-          : data[0].id;
+        const targetId =
+          selectedPlanId && data.some((plan) => plan.id === selectedPlanId)
+            ? selectedPlanId
+            : data[0].id;
         setSelectedPlanId(targetId);
         const targetPlan = data.find((plan) => plan.id === targetId) ?? null;
         setEditingPlan(targetPlan ? toEditablePlan(targetPlan) : null);
@@ -290,7 +293,9 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
   const handleDuplicatePlan = async (planId: string) => {
     setError(null);
     try {
-      const response = await api.post<ApiRoutePlan>(`/routes/plans/${planId}/duplicate`);
+      const response = await api.post<ApiRoutePlan>(
+        `/routes/plans/${planId}/duplicate`
+      );
       const duplicated = response.data;
       setPlans((prev) => [...prev, duplicated]);
       setSelectedPlanId(duplicated.id);
@@ -303,7 +308,11 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
   };
 
   const handleDeletePlan = async (planId: string) => {
-    if (!window.confirm('¿Eliminar este escenario de rutas? Esta acción no se puede deshacer.')) {
+    if (
+      !window.confirm(
+        '¿Eliminar este escenario de rutas? Esta acción no se puede deshacer.'
+      )
+    ) {
       return;
     }
     setError(null);
@@ -365,9 +374,14 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
         })),
       };
 
-      const response = await api.put<ApiRoutePlan>(`/routes/plans/${editingPlan.id}`, payload);
+      const response = await api.put<ApiRoutePlan>(
+        `/routes/plans/${editingPlan.id}`,
+        payload
+      );
       const updated = response.data;
-      setPlans((prev) => prev.map((plan) => (plan.id === updated.id ? updated : plan)));
+      setPlans((prev) =>
+        prev.map((plan) => (plan.id === updated.id ? updated : plan))
+      );
       setEditingPlan(toEditablePlan(updated));
       setSuccessMessage('Escenario actualizado correctamente.');
     } catch (err) {
@@ -383,13 +397,22 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
     setSaving(true);
     setError(null);
     try {
-      const response = await api.put<ApiRoutePlan>(`/routes/plans/${editingPlan.id}`, {
-        approved: !editingPlan.approved,
-      });
+      const response = await api.put<ApiRoutePlan>(
+        `/routes/plans/${editingPlan.id}`,
+        {
+          approved: !editingPlan.approved,
+        }
+      );
       const updated = response.data;
-      setPlans((prev) => prev.map((plan) => (plan.id === updated.id ? updated : plan)));
+      setPlans((prev) =>
+        prev.map((plan) => (plan.id === updated.id ? updated : plan))
+      );
       setEditingPlan(toEditablePlan(updated));
-      setSuccessMessage(updated.approved ? 'Escenario aprobado.' : 'Escenario marcado como pendiente.');
+      setSuccessMessage(
+        updated.approved
+          ? 'Escenario aprobado.'
+          : 'Escenario marcado como pendiente.'
+      );
     } catch (err) {
       console.error('No se pudo actualizar el estado de aprobación', err);
       setError('No se pudo actualizar el estado aprobado del escenario.');
@@ -413,7 +436,9 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      const safeScenario = editingPlan.scenario.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+      const safeScenario = editingPlan.scenario
+        .replace(/[^a-z0-9]+/gi, '-')
+        .toLowerCase();
       anchor.download = `vrp-${projectId}-${safeScenario || 'escenario'}.xlsx`;
       anchor.click();
       URL.revokeObjectURL(url);
@@ -476,8 +501,13 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
     try {
       await downloadModuleReport(projectId, 'rutas', 'rutas');
     } catch (downloadException) {
-      console.error('No se pudo descargar el informe de rutas', downloadException);
-      setReportError('No se pudo descargar el informe de rutas. Intenta nuevamente.');
+      console.error(
+        'No se pudo descargar el informe de rutas',
+        downloadException
+      );
+      setReportError(
+        'No se pudo descargar el informe de rutas. Intenta nuevamente.'
+      );
     } finally {
       setDownloadingReport(false);
     }
@@ -488,9 +518,12 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Informe de rutas</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Informe de rutas
+            </h2>
             <p className="text-sm text-slate-500">
-              Genera un PDF con los escenarios planificados, demanda cubierta y costos asociados.
+              Genera un PDF con los escenarios planificados, demanda cubierta y
+              costos asociados.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
@@ -512,486 +545,656 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
 
       <div className="flex gap-6">
         <aside className="w-64 flex-shrink-0 space-y-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">Escenarios</h2>
-            <button
-              type="button"
-              onClick={handleCreatePlan}
-              disabled={creating}
-              className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo
-            </button>
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-700">
+                Escenarios
+              </h2>
+              <button
+                type="button"
+                onClick={handleCreatePlan}
+                disabled={creating}
+                className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+              >
+                <Plus className="h-4 w-4" />
+                Nuevo
+              </button>
+            </div>
+            {loading ? (
+              <p className="text-xs text-slate-500">Cargando escenarios…</p>
+            ) : plans.length === 0 ? (
+              <p className="text-xs text-slate-500">
+                Aún no hay escenarios de rutas.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {plans.map((plan) => {
+                  const isActive = plan.id === selectedPlanId;
+                  return (
+                    <li key={plan.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPlan(plan.id)}
+                        className={`w-full rounded-md border px-3 py-2 text-left text-sm transition ${
+                          isActive
+                            ? 'border-slate-900 bg-slate-900/90 text-white shadow'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <span className="font-medium">{plan.scenario}</span>
+                          {plan.approved ? (
+                            <BadgeCheck className="h-4 w-4 text-emerald-400" />
+                          ) : null}
+                        </div>
+                        <p
+                          className={`text-xs ${isActive ? 'text-slate-100/80' : 'text-slate-500'}`}
+                        >
+                          {labelForStatus(plan.status)}
+                        </p>
+                        <div className="mt-2 flex gap-2 text-xs">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDuplicatePlan(plan.id);
+                            }}
+                            className={`inline-flex items-center gap-1 rounded border px-2 py-1 transition ${
+                              isActive
+                                ? 'border-white/40 text-white hover:bg-white/10'
+                                : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                            }`}
+                          >
+                            <Copy className="h-3.5 w-3.5" /> Duplicar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDeletePlan(plan.id);
+                            }}
+                            className={`inline-flex items-center gap-1 rounded border px-2 py-1 transition ${
+                              isActive
+                                ? 'border-red-200 text-red-50 hover:bg-red-500/20'
+                                : 'border-red-200 text-red-600 hover:border-red-300'
+                            }`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                          </button>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
-          {loading ? (
-            <p className="text-xs text-slate-500">Cargando escenarios…</p>
-          ) : plans.length === 0 ? (
-            <p className="text-xs text-slate-500">Aún no hay escenarios de rutas.</p>
-          ) : (
-            <ul className="space-y-2">
-              {plans.map((plan) => {
-                const isActive = plan.id === selectedPlanId;
-                return (
-                  <li key={plan.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPlan(plan.id)}
-                      className={`w-full rounded-md border px-3 py-2 text-left text-sm transition ${
-                        isActive
-                          ? 'border-slate-900 bg-slate-900/90 text-white shadow'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <span className="font-medium">{plan.scenario}</span>
-                        {plan.approved ? (
-                          <BadgeCheck className="h-4 w-4 text-emerald-400" />
-                        ) : null}
-                      </div>
-                      <p className={`text-xs ${isActive ? 'text-slate-100/80' : 'text-slate-500'}`}>
-                        {labelForStatus(plan.status)}
-                      </p>
-                      <div className="mt-2 flex gap-2 text-xs">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleDuplicatePlan(plan.id);
-                          }}
-                          className={`inline-flex items-center gap-1 rounded border px-2 py-1 transition ${
-                            isActive
-                              ? 'border-white/40 text-white hover:bg-white/10'
-                              : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                          }`}
-                        >
-                          <Copy className="h-3.5 w-3.5" /> Duplicar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleDeletePlan(plan.id);
-                          }}
-                          className={`inline-flex items-center gap-1 rounded border px-2 py-1 transition ${
-                            isActive
-                              ? 'border-red-200 text-red-50 hover:bg-red-500/20'
-                              : 'border-red-200 text-red-600 hover:border-red-300'
-                          }`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Eliminar
-                        </button>
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-        {error ? <p className="text-xs text-red-600">{error}</p> : null}
-        {successMessage ? <p className="text-xs text-emerald-600">{successMessage}</p> : null}
+          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+          {successMessage ? (
+            <p className="text-xs text-emerald-600">{successMessage}</p>
+          ) : null}
         </aside>
 
         <section className="flex-1 space-y-6">
-        {editingPlan ? (
-          <div className="space-y-6">
-            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Escenario
-                    </label>
-                    <input
-                      type="text"
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                      value={editingPlan.scenario}
-                      onChange={(event) =>
-                        setEditingPlan((prev) =>
-                          prev ? { ...prev, scenario: event.target.value } : prev,
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+          {editingPlan ? (
+            <div className="space-y-6">
+              <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-3">
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Estado
-                      </label>
-                      <select
-                        value={editingPlan.status}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                        onChange={(event) =>
-                          setEditingPlan((prev) =>
-                            prev
-                              ? { ...prev, status: event.target.value as RoutePlanStatus }
-                              : prev,
-                          )
-                        }
-                      >
-                        {STATUS_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Transportista
+                        Escenario
                       </label>
                       <input
                         type="text"
-                        className="mt-1 w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500"
-                        value={editingPlan.carrierName ?? 'No asignado'}
-                        readOnly
+                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                        value={editingPlan.scenario}
+                        onChange={(event) =>
+                          setEditingPlan((prev) =>
+                            prev
+                              ? { ...prev, scenario: event.target.value }
+                              : prev
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Estado
+                        </label>
+                        <select
+                          value={editingPlan.status}
+                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                          onChange={(event) =>
+                            setEditingPlan((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    status: event.target
+                                      .value as RoutePlanStatus,
+                                  }
+                                : prev
+                            )
+                          }
+                        >
+                          {STATUS_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Transportista
+                        </label>
+                        <input
+                          type="text"
+                          className="mt-1 w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500"
+                          value={editingPlan.carrierName ?? 'No asignado'}
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Notas
+                      </label>
+                      <textarea
+                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                        rows={3}
+                        value={editingPlan.notes}
+                        onChange={(event) =>
+                          setEditingPlan((prev) =>
+                            prev ? { ...prev, notes: event.target.value } : prev
+                          )
+                        }
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Notas
-                    </label>
-                    <textarea
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                      rows={3}
-                      value={editingPlan.notes}
-                      onChange={(event) =>
-                        setEditingPlan((prev) =>
-                          prev ? { ...prev, notes: event.target.value } : prev,
-                        )
-                      }
-                    />
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={handleToggleApproved}
+                      disabled={saving}
+                      className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition ${
+                        editingPlan.approved
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {editingPlan.approved
+                        ? 'Escenario aprobado'
+                        : 'Marcar como aprobado'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportExcel}
+                      disabled={exporting}
+                      className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      <Download className="h-4 w-4" /> Exportar Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSavePlan}
+                      disabled={saving}
+                      className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+                    >
+                      <Save className="h-4 w-4" /> Guardar cambios
+                    </button>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                  <h3 className="mb-4 text-lg font-semibold text-slate-800">
+                    Clientes y ventanas
+                  </h3>
+                  <div className="space-y-3">
+                    {editingPlan.stops.map((stop, index) => (
+                      <div
+                        key={stop.id ?? index}
+                        className="rounded-md border border-slate-200 p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 space-y-3">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Cliente
+                                </label>
+                                <input
+                                  type="text"
+                                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                                  value={stop.client}
+                                  onChange={(event) =>
+                                    setEditingPlan((prev) => {
+                                      if (!prev) return prev;
+                                      const updatedStops = [...prev.stops];
+                                      updatedStops[index] = {
+                                        ...updatedStops[index],
+                                        client: event.target.value,
+                                      };
+                                      return { ...prev, stops: updatedStops };
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Orden de visita
+                                </label>
+                                <input
+                                  type="number"
+                                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                                  value={stop.sequence ?? ''}
+                                  onChange={(event) =>
+                                    setEditingPlan((prev) => {
+                                      if (!prev) return prev;
+                                      const updatedStops = [...prev.stops];
+                                      updatedStops[index] = {
+                                        ...updatedStops[index],
+                                        sequence:
+                                          event.target.value === ''
+                                            ? null
+                                            : Number(event.target.value),
+                                      };
+                                      return { ...prev, stops: updatedStops };
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Ventana inicio
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                                  value={stop.windowStart}
+                                  onChange={(event) =>
+                                    setEditingPlan((prev) => {
+                                      if (!prev) return prev;
+                                      const updatedStops = [...prev.stops];
+                                      updatedStops[index] = {
+                                        ...updatedStops[index],
+                                        windowStart: event.target.value,
+                                      };
+                                      return { ...prev, stops: updatedStops };
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Ventana fin
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                                  value={stop.windowEnd}
+                                  onChange={(event) =>
+                                    setEditingPlan((prev) => {
+                                      if (!prev) return prev;
+                                      const updatedStops = [...prev.stops];
+                                      updatedStops[index] = {
+                                        ...updatedStops[index],
+                                        windowEnd: event.target.value,
+                                      };
+                                      return { ...prev, stops: updatedStops };
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Demanda volumen (m³)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                                  value={stop.demandVol}
+                                  onChange={(event) =>
+                                    setEditingPlan((prev) => {
+                                      if (!prev) return prev;
+                                      const updatedStops = [...prev.stops];
+                                      updatedStops[index] = {
+                                        ...updatedStops[index],
+                                        demandVol: event.target.value,
+                                      };
+                                      return { ...prev, stops: updatedStops };
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Demanda peso (kg)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                                  value={stop.demandKg}
+                                  onChange={(event) =>
+                                    setEditingPlan((prev) => {
+                                      if (!prev) return prev;
+                                      const updatedStops = [...prev.stops];
+                                      updatedStops[index] = {
+                                        ...updatedStops[index],
+                                        demandKg: event.target.value,
+                                      };
+                                      return { ...prev, stops: updatedStops };
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Notas
+                              </label>
+                              <textarea
+                                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                                rows={2}
+                                value={stop.notes ?? ''}
+                                onChange={(event) =>
+                                  setEditingPlan((prev) => {
+                                    if (!prev) return prev;
+                                    const updatedStops = [...prev.stops];
+                                    updatedStops[index] = {
+                                      ...updatedStops[index],
+                                      notes: event.target.value,
+                                    };
+                                    return { ...prev, stops: updatedStops };
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="rounded-md border border-red-200 p-2 text-red-500 hover:bg-red-50"
+                            onClick={() =>
+                              setEditingPlan((prev) => {
+                                if (!prev) return prev;
+                                const updatedStops = prev.stops.filter(
+                                  (_, idx) => idx !== index
+                                );
+                                return { ...prev, stops: updatedStops };
+                              })
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                   <button
                     type="button"
-                    onClick={handleToggleApproved}
-                    disabled={saving}
-                    className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition ${
-                      editingPlan.approved
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
+                    onClick={() =>
+                      setEditingPlan((prev) =>
+                        prev
+                          ? { ...prev, stops: [...prev.stops, emptyStop()] }
+                          : prev
+                      )
+                    }
+                    className="mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   >
-                    <CheckCircle2 className="h-4 w-4" />
-                    {editingPlan.approved ? 'Escenario aprobado' : 'Marcar como aprobado'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleExportExcel}
-                    disabled={exporting}
-                    className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                  >
-                    <Download className="h-4 w-4" /> Exportar Excel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSavePlan}
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-                  >
-                    <Save className="h-4 w-4" /> Guardar cambios
+                    <Plus className="h-4 w-4" /> Agregar cliente
                   </button>
                 </div>
-              </div>
-            </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 text-lg font-semibold text-slate-800">Clientes y ventanas</h3>
-                <div className="space-y-3">
-                  {editingPlan.stops.map((stop, index) => (
-                    <div
-                      key={stop.id ?? index}
-                      className="rounded-md border border-slate-200 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 space-y-3">
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div>
-                              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Cliente
-                              </label>
-                              <input
-                                type="text"
-                                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                                value={stop.client}
-                                onChange={(event) =>
-                                  setEditingPlan((prev) => {
-                                    if (!prev) return prev;
-                                    const updatedStops = [...prev.stops];
-                                    updatedStops[index] = {
-                                      ...updatedStops[index],
-                                      client: event.target.value,
-                                    };
-                                    return { ...prev, stops: updatedStops };
-                                  })
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Orden de visita
-                              </label>
-                              <input
-                                type="number"
-                                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                                value={stop.sequence ?? ''}
-                                onChange={(event) =>
-                                  setEditingPlan((prev) => {
-                                    if (!prev) return prev;
-                                    const updatedStops = [...prev.stops];
-                                    updatedStops[index] = {
-                                      ...updatedStops[index],
-                                      sequence:
-                                        event.target.value === ''
-                                          ? null
-                                          : Number(event.target.value),
-                                    };
-                                    return { ...prev, stops: updatedStops };
-                                  })
-                                }
-                              />
-                            </div>
-                          </div>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div>
-                              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Ventana inicio
-                              </label>
-                              <input
-                                type="datetime-local"
-                                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                                value={stop.windowStart}
-                                onChange={(event) =>
-                                  setEditingPlan((prev) => {
-                                    if (!prev) return prev;
-                                    const updatedStops = [...prev.stops];
-                                    updatedStops[index] = {
-                                      ...updatedStops[index],
-                                      windowStart: event.target.value,
-                                    };
-                                    return { ...prev, stops: updatedStops };
-                                  })
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Ventana fin
-                              </label>
-                              <input
-                                type="datetime-local"
-                                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                                value={stop.windowEnd}
-                                onChange={(event) =>
-                                  setEditingPlan((prev) => {
-                                    if (!prev) return prev;
-                                    const updatedStops = [...prev.stops];
-                                    updatedStops[index] = {
-                                      ...updatedStops[index],
-                                      windowEnd: event.target.value,
-                                    };
-                                    return { ...prev, stops: updatedStops };
-                                  })
-                                }
-                              />
-                            </div>
-                          </div>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div>
-                              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Demanda volumen (m³)
-                              </label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                                value={stop.demandVol}
-                                onChange={(event) =>
-                                  setEditingPlan((prev) => {
-                                    if (!prev) return prev;
-                                    const updatedStops = [...prev.stops];
-                                    updatedStops[index] = {
-                                      ...updatedStops[index],
-                                      demandVol: event.target.value,
-                                    };
-                                    return { ...prev, stops: updatedStops };
-                                  })
-                                }
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Demanda peso (kg)
-                              </label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                                value={stop.demandKg}
-                                onChange={(event) =>
-                                  setEditingPlan((prev) => {
-                                    if (!prev) return prev;
-                                    const updatedStops = [...prev.stops];
-                                    updatedStops[index] = {
-                                      ...updatedStops[index],
-                                      demandKg: event.target.value,
-                                    };
-                                    return { ...prev, stops: updatedStops };
-                                  })
-                                }
-                              />
-                            </div>
-                          </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                  <h3 className="mb-4 text-lg font-semibold text-slate-800">
+                    Vehículos
+                  </h3>
+                  <div className="space-y-3">
+                    {editingPlan.vehicles.map((vehicle, index) => (
+                      <div
+                        key={vehicle.id ?? index}
+                        className="rounded-md border border-slate-200 p-4"
+                      >
+                        <div className="grid gap-3 sm:grid-cols-2">
                           <div>
                             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Notas
+                              Nombre
                             </label>
-                            <textarea
+                            <input
+                              type="text"
                               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                              rows={2}
-                              value={stop.notes ?? ''}
+                              value={vehicle.name}
                               onChange={(event) =>
                                 setEditingPlan((prev) => {
                                   if (!prev) return prev;
-                                  const updatedStops = [...prev.stops];
-                                  updatedStops[index] = {
-                                    ...updatedStops[index],
-                                    notes: event.target.value,
+                                  const updatedVehicles = [...prev.vehicles];
+                                  updatedVehicles[index] = {
+                                    ...updatedVehicles[index],
+                                    name: event.target.value,
                                   };
-                                  return { ...prev, stops: updatedStops };
+                                  return { ...prev, vehicles: updatedVehicles };
+                                })
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Capacidad (m³)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                              value={vehicle.capacity}
+                              onChange={(event) =>
+                                setEditingPlan((prev) => {
+                                  if (!prev) return prev;
+                                  const updatedVehicles = [...prev.vehicles];
+                                  updatedVehicles[index] = {
+                                    ...updatedVehicles[index],
+                                    capacity: event.target.value,
+                                  };
+                                  return { ...prev, vehicles: updatedVehicles };
+                                })
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Costo por km
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                              value={vehicle.costKm}
+                              onChange={(event) =>
+                                setEditingPlan((prev) => {
+                                  if (!prev) return prev;
+                                  const updatedVehicles = [...prev.vehicles];
+                                  updatedVehicles[index] = {
+                                    ...updatedVehicles[index],
+                                    costKm: event.target.value,
+                                  };
+                                  return { ...prev, vehicles: updatedVehicles };
+                                })
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Costo fijo
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                              value={vehicle.fixed}
+                              onChange={(event) =>
+                                setEditingPlan((prev) => {
+                                  if (!prev) return prev;
+                                  const updatedVehicles = [...prev.vehicles];
+                                  updatedVehicles[index] = {
+                                    ...updatedVehicles[index],
+                                    fixed: event.target.value,
+                                  };
+                                  return { ...prev, vehicles: updatedVehicles };
                                 })
                               }
                             />
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          className="rounded-md border border-red-200 p-2 text-red-500 hover:bg-red-50"
-                          onClick={() =>
-                            setEditingPlan((prev) => {
-                              if (!prev) return prev;
-                              const updatedStops = prev.stops.filter((_, idx) => idx !== index);
-                              return { ...prev, stops: updatedStops };
-                            })
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="mt-3 text-right">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-500 hover:bg-red-50"
+                            onClick={() =>
+                              setEditingPlan((prev) => {
+                                if (!prev) return prev;
+                                const updatedVehicles = prev.vehicles.filter(
+                                  (_, idx) => idx !== index
+                                );
+                                return { ...prev, vehicles: updatedVehicles };
+                              })
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" /> Quitar vehículo
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditingPlan((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              vehicles: [...prev.vehicles, emptyVehicle()],
+                            }
+                          : prev
+                      )
+                    }
+                    className="mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <Plus className="h-4 w-4" /> Agregar vehículo
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setEditingPlan((prev) =>
-                      prev ? { ...prev, stops: [...prev.stops, emptyStop()] } : prev,
-                    )
-                  }
-                  className="mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  <Plus className="h-4 w-4" /> Agregar cliente
-                </button>
               </div>
 
               <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 text-lg font-semibold text-slate-800">Vehículos</h3>
-                <div className="space-y-3">
-                  {editingPlan.vehicles.map((vehicle, index) => (
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-800">
+                      Costos logísticos
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      Define las tarifas de viaje para construir la matriz de
+                      costos del solver.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {editingPlan.tariffs.map((tariff, index) => (
                     <div
-                      key={vehicle.id ?? index}
+                      key={tariff.id ?? index}
                       className="rounded-md border border-slate-200 p-4"
                     >
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
+                      <div className="grid gap-3 md:grid-cols-4">
+                        <div className="md:col-span-2">
                           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Nombre
+                            Cliente origen
                           </label>
                           <input
                             type="text"
                             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                            value={vehicle.name}
+                            value={tariff.fromClient}
                             onChange={(event) =>
                               setEditingPlan((prev) => {
                                 if (!prev) return prev;
-                                const updatedVehicles = [...prev.vehicles];
-                                updatedVehicles[index] = {
-                                  ...updatedVehicles[index],
-                                  name: event.target.value,
+                                const updatedTariffs = [...prev.tariffs];
+                                updatedTariffs[index] = {
+                                  ...updatedTariffs[index],
+                                  fromClient: event.target.value,
                                 };
-                                return { ...prev, vehicles: updatedVehicles };
+                                return { ...prev, tariffs: updatedTariffs };
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Cliente destino
+                          </label>
+                          <input
+                            type="text"
+                            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                            value={tariff.toClient}
+                            onChange={(event) =>
+                              setEditingPlan((prev) => {
+                                if (!prev) return prev;
+                                const updatedTariffs = [...prev.tariffs];
+                                updatedTariffs[index] = {
+                                  ...updatedTariffs[index],
+                                  toClient: event.target.value,
+                                };
+                                return { ...prev, tariffs: updatedTariffs };
                               })
                             }
                           />
                         </div>
                         <div>
                           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Capacidad (m³)
+                            Distancia (km)
                           </label>
                           <input
                             type="number"
                             step="0.01"
                             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                            value={vehicle.capacity}
+                            value={tariff.distanceKm}
                             onChange={(event) =>
                               setEditingPlan((prev) => {
                                 if (!prev) return prev;
-                                const updatedVehicles = [...prev.vehicles];
-                                updatedVehicles[index] = {
-                                  ...updatedVehicles[index],
-                                  capacity: event.target.value,
+                                const updatedTariffs = [...prev.tariffs];
+                                updatedTariffs[index] = {
+                                  ...updatedTariffs[index],
+                                  distanceKm: event.target.value,
                                 };
-                                return { ...prev, vehicles: updatedVehicles };
+                                return { ...prev, tariffs: updatedTariffs };
                               })
                             }
                           />
                         </div>
                         <div>
                           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Costo por km
+                            Costo (USD)
                           </label>
                           <input
                             type="number"
                             step="0.01"
                             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                            value={vehicle.costKm}
+                            value={tariff.cost}
                             onChange={(event) =>
                               setEditingPlan((prev) => {
                                 if (!prev) return prev;
-                                const updatedVehicles = [...prev.vehicles];
-                                updatedVehicles[index] = {
-                                  ...updatedVehicles[index],
-                                  costKm: event.target.value,
+                                const updatedTariffs = [...prev.tariffs];
+                                updatedTariffs[index] = {
+                                  ...updatedTariffs[index],
+                                  cost: event.target.value,
                                 };
-                                return { ...prev, vehicles: updatedVehicles };
-                              })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Costo fijo
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                            value={vehicle.fixed}
-                            onChange={(event) =>
-                              setEditingPlan((prev) => {
-                                if (!prev) return prev;
-                                const updatedVehicles = [...prev.vehicles];
-                                updatedVehicles[index] = {
-                                  ...updatedVehicles[index],
-                                  fixed: event.target.value,
-                                };
-                                return { ...prev, vehicles: updatedVehicles };
+                                return { ...prev, tariffs: updatedTariffs };
                               })
                             }
                           />
@@ -1004,12 +1207,14 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
                           onClick={() =>
                             setEditingPlan((prev) => {
                               if (!prev) return prev;
-                              const updatedVehicles = prev.vehicles.filter((_, idx) => idx !== index);
-                              return { ...prev, vehicles: updatedVehicles };
+                              const updatedTariffs = prev.tariffs.filter(
+                                (_, idx) => idx !== index
+                              );
+                              return { ...prev, tariffs: updatedTariffs };
                             })
                           }
                         >
-                          <Trash2 className="h-4 w-4" /> Quitar vehículo
+                          <Trash2 className="h-4 w-4" /> Quitar tarifa
                         </button>
                       </div>
                     </div>
@@ -1019,219 +1224,111 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
                   type="button"
                   onClick={() =>
                     setEditingPlan((prev) =>
-                      prev ? { ...prev, vehicles: [...prev.vehicles, emptyVehicle()] } : prev,
+                      prev
+                        ? { ...prev, tariffs: [...prev.tariffs, emptyTariff()] }
+                        : prev
                     )
                   }
                   className="mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  <Plus className="h-4 w-4" /> Agregar vehículo
+                  <Plus className="h-4 w-4" /> Agregar tarifa
                 </button>
               </div>
-            </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-800">Costos logísticos</h3>
-                  <p className="text-sm text-slate-500">
-                    Define las tarifas de viaje para construir la matriz de costos del solver.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {editingPlan.tariffs.map((tariff, index) => (
-                  <div
-                    key={tariff.id ?? index}
-                    className="rounded-md border border-slate-200 p-4"
-                  >
-                    <div className="grid gap-3 md:grid-cols-4">
-                      <div className="md:col-span-2">
-                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Cliente origen
-                        </label>
-                        <input
-                          type="text"
-                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                          value={tariff.fromClient}
-                          onChange={(event) =>
-                            setEditingPlan((prev) => {
-                              if (!prev) return prev;
-                              const updatedTariffs = [...prev.tariffs];
-                              updatedTariffs[index] = {
-                                ...updatedTariffs[index],
-                                fromClient: event.target.value,
-                              };
-                              return { ...prev, tariffs: updatedTariffs };
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Cliente destino
-                        </label>
-                        <input
-                          type="text"
-                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                          value={tariff.toClient}
-                          onChange={(event) =>
-                            setEditingPlan((prev) => {
-                              if (!prev) return prev;
-                              const updatedTariffs = [...prev.tariffs];
-                              updatedTariffs[index] = {
-                                ...updatedTariffs[index],
-                                toClient: event.target.value,
-                              };
-                              return { ...prev, tariffs: updatedTariffs };
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Distancia (km)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                          value={tariff.distanceKm}
-                          onChange={(event) =>
-                            setEditingPlan((prev) => {
-                              if (!prev) return prev;
-                              const updatedTariffs = [...prev.tariffs];
-                              updatedTariffs[index] = {
-                                ...updatedTariffs[index],
-                                distanceKm: event.target.value,
-                              };
-                              return { ...prev, tariffs: updatedTariffs };
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Costo (USD)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                          value={tariff.cost}
-                          onChange={(event) =>
-                            setEditingPlan((prev) => {
-                              if (!prev) return prev;
-                              const updatedTariffs = [...prev.tariffs];
-                              updatedTariffs[index] = {
-                                ...updatedTariffs[index],
-                                cost: event.target.value,
-                              };
-                              return { ...prev, tariffs: updatedTariffs };
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-3 text-right">
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-500 hover:bg-red-50"
-                        onClick={() =>
-                          setEditingPlan((prev) => {
-                            if (!prev) return prev;
-                            const updatedTariffs = prev.tariffs.filter((_, idx) => idx !== index);
-                            return { ...prev, tariffs: updatedTariffs };
-                          })
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" /> Quitar tarifa
-                      </button>
-                    </div>
+              <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-800">
+                  Resumen de capacidad y costos
+                </h3>
+                <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Clientes
+                    </dt>
+                    <dd className="text-2xl font-semibold text-slate-800">
+                      {totals.totalStops}
+                    </dd>
+                    <p className="text-xs text-slate-500">
+                      Ventanas registradas
+                    </p>
                   </div>
-                ))}
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Vehículos
+                    </dt>
+                    <dd className="text-2xl font-semibold text-slate-800">
+                      {totals.totalVehicles}
+                    </dd>
+                    <p className="text-xs text-slate-500">Flota disponible</p>
+                  </div>
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Tarifas
+                    </dt>
+                    <dd className="text-2xl font-semibold text-slate-800">
+                      {totals.totalTariffs}
+                    </dd>
+                    <p className="text-xs text-slate-500">
+                      Rutas con costo definido
+                    </p>
+                  </div>
+                </dl>
+                <dl className="mt-6 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Demanda total (m³)
+                    </dt>
+                    <dd className="text-xl font-semibold text-slate-800">
+                      {totals.totalDemandVol.toLocaleString('es-AR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </dd>
+                  </div>
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Demanda total (kg)
+                    </dt>
+                    <dd className="text-xl font-semibold text-slate-800">
+                      {totals.totalDemandKg.toLocaleString('es-AR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </dd>
+                  </div>
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Costo fijo vehículos
+                    </dt>
+                    <dd className="text-xl font-semibold text-slate-800">
+                      USD{' '}
+                      {totals.totalFixedCost.toLocaleString('es-AR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </dd>
+                  </div>
+                  <div className="rounded-md border border-slate-200 p-4">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Costo variable tarifas
+                    </dt>
+                    <dd className="text-xl font-semibold text-slate-800">
+                      USD{' '}
+                      {totals.totalTariffCost.toLocaleString('es-AR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </dd>
+                  </div>
+                </dl>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setEditingPlan((prev) =>
-                    prev ? { ...prev, tariffs: [...prev.tariffs, emptyTariff()] } : prev,
-                  )
-                }
-                className="mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                <Plus className="h-4 w-4" /> Agregar tarifa
-              </button>
             </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-800">Resumen de capacidad y costos</h3>
-              <dl className="mt-4 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-md border border-slate-200 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Clientes
-                  </dt>
-                  <dd className="text-2xl font-semibold text-slate-800">{totals.totalStops}</dd>
-                  <p className="text-xs text-slate-500">Ventanas registradas</p>
-                </div>
-                <div className="rounded-md border border-slate-200 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Vehículos
-                  </dt>
-                  <dd className="text-2xl font-semibold text-slate-800">{totals.totalVehicles}</dd>
-                  <p className="text-xs text-slate-500">Flota disponible</p>
-                </div>
-                <div className="rounded-md border border-slate-200 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Tarifas
-                  </dt>
-                  <dd className="text-2xl font-semibold text-slate-800">{totals.totalTariffs}</dd>
-                  <p className="text-xs text-slate-500">Rutas con costo definido</p>
-                </div>
-              </dl>
-              <dl className="mt-6 grid gap-4 md:grid-cols-2">
-                <div className="rounded-md border border-slate-200 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Demanda total (m³)
-                  </dt>
-                  <dd className="text-xl font-semibold text-slate-800">
-                    {totals.totalDemandVol.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </dd>
-                </div>
-                <div className="rounded-md border border-slate-200 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Demanda total (kg)
-                  </dt>
-                  <dd className="text-xl font-semibold text-slate-800">
-                    {totals.totalDemandKg.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </dd>
-                </div>
-                <div className="rounded-md border border-slate-200 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Costo fijo vehículos
-                  </dt>
-                  <dd className="text-xl font-semibold text-slate-800">
-                    USD {totals.totalFixedCost.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </dd>
-                </div>
-                <div className="rounded-md border border-slate-200 p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Costo variable tarifas
-                  </dt>
-                  <dd className="text-xl font-semibold text-slate-800">
-                    USD {totals.totalTariffCost.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </dd>
-                </div>
-              </dl>
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+              <p className="text-sm text-slate-500">
+                Seleccioná o creá un escenario para empezar a planificar rutas.
+              </p>
             </div>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
-            <p className="text-sm text-slate-500">
-              Seleccioná o creá un escenario para empezar a planificar rutas.
-            </p>
-          </div>
-        )}
+          )}
         </section>
       </div>
     </div>

@@ -40,7 +40,7 @@ const performRefresh = async (): Promise<SessionTokens> => {
   const response = await axios.post(
     `${api.defaults.baseURL?.replace(/\/$/, '')}/auth/refresh`,
     { refreshToken },
-    { withCredentials: true },
+    { withCredentials: true }
   );
   const tokens = response.data as Partial<SessionTokens>;
   if (!tokens.accessToken || !tokens.refreshToken) {
@@ -56,7 +56,12 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const originalRequest = error?.config;
 
-    if (status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.endsWith('/auth/refresh')) {
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.endsWith('/auth/refresh')
+    ) {
       originalRequest._retry = true;
       try {
         refreshPromise = refreshPromise ?? performRefresh();
@@ -79,7 +84,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;

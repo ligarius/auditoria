@@ -2,9 +2,12 @@ import path from 'path';
 
 import { Router } from 'express';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth';
+import {
+  authenticate,
+  requireProjectRole
+} from '../../core/middleware/auth.js';
 
-import { exportService } from './export.service';
+import { exportService } from './export.service.js';
 
 const exportRouter = Router();
 

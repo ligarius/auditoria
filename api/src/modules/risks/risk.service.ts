@@ -1,8 +1,8 @@
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
-import { auditService } from '../audit/audit.service';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import { auditService } from '../audit/audit.service.js';
 
-import { computeRiskValues } from './risk.utils';
+import { computeRiskValues } from './risk.utils.js';
 
 export const riskService = {
   async list(projectId: string, rag?: string) {

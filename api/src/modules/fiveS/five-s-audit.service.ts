@@ -1,9 +1,9 @@
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
-import { auditService } from '../audit/audit.service';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import { auditService } from '../audit/audit.service.js';
 
 const photoSchema = z.object({
   type: z.enum(['before', 'after']),

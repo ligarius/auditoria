@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
 
 /**
  * Builder de Form.io embebido vía iframe.
@@ -6,9 +6,9 @@ import { useMemo } from "react";
  * Ajusta la URL base y el proyecto/route según tu instalación.
  */
 export default function EmbeddedFormioBuilder({
-  project = "default",
-  formPath = "auditoria-form", // ruta del form dentro de Form.io
-  baseUrl = import.meta.env.VITE_FORMIO_BASE_URL || "http://localhost:3001",
+  project = 'default',
+  formPath = 'auditoria-form', // ruta del form dentro de Form.io
+  baseUrl = import.meta.env.VITE_FORMIO_BASE_URL || 'http://localhost:3001',
 }: {
   project?: string;
   formPath?: string;

@@ -1,9 +1,9 @@
 import type { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
-import { hashPassword } from '../../core/utils/password';
-import { auditService } from '../audit/audit.service';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import { hashPassword } from '../../core/utils/password.js';
+import { auditService } from '../audit/audit.service.js';
 
 const baseSelect = {
   id: true,

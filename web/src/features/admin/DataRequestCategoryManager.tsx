@@ -37,7 +37,10 @@ export default function DataRequestCategoryManager({ onChange }: Props) {
       setError(null);
     } catch (error: unknown) {
       setError(
-        getErrorMessage(error, 'No se pudieron cargar las categorías disponibles')
+        getErrorMessage(
+          error,
+          'No se pudieron cargar las categorías disponibles'
+        )
       );
     } finally {
       setLoading(false);
@@ -136,7 +139,10 @@ export default function DataRequestCategoryManager({ onChange }: Props) {
               className="mt-1 rounded border px-3 py-2"
               value={form.description}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, description: event.target.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  description: event.target.value,
+                }))
               }
               rows={2}
             />
@@ -236,7 +242,9 @@ export default function DataRequestCategoryManager({ onChange }: Props) {
                   {category.name}
                 </p>
                 {category.description && (
-                  <p className="text-xs text-slate-500">{category.description}</p>
+                  <p className="text-xs text-slate-500">
+                    {category.description}
+                  </p>
                 )}
               </div>
               <div className="flex items-center gap-2">

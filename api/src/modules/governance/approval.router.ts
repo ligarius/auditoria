@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireRole } from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import { authenticate, requireRole } from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-import { approvalService } from './approval.service';
+import { approvalService } from './approval.service.js';
 
 const approvalRouter = Router();
 

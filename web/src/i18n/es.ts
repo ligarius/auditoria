@@ -24,5 +24,5 @@ export const ES = {
     siguiente: 'Siguientes pasos',
     historial: 'Historial',
   },
-  export: { pdf: 'Exportar PDF', zip: 'Exportar ZIP' }
+  export: { pdf: 'Exportar PDF', zip: 'Exportar ZIP' },
 };

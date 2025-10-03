@@ -38,14 +38,16 @@ runMigrations();
 const prisma = new PrismaClient();
 
 const ensureWorkflowEnum = (): void => {
-  const expected = [
+  const expected: ProjectWorkflowState[] = [
     'planificacion',
     'recoleccion_datos',
     'analisis',
     'recomendaciones',
     'cierre',
   ];
-  const values = Object.values(ProjectWorkflowState);
+  const values = Object.values(
+    ProjectWorkflowState,
+  ) as ProjectWorkflowState[];
   for (const item of expected) {
     if (!values.includes(item)) {
       throw new Error(

@@ -195,9 +195,7 @@ export default function ProcessesTab({ projectId }: ProcessesTabProps) {
         });
         setChecklists(Array.isArray(response.data) ? response.data : []);
       } catch (err) {
-        setError(
-          getErrorMessage(err, 'No se pudieron cargar las checklists')
-        );
+        setError(getErrorMessage(err, 'No se pudieron cargar las checklists'));
       }
     },
     [projectId]
@@ -481,7 +479,8 @@ export default function ProcessesTab({ projectId }: ProcessesTabProps) {
     const nextItems = checklist.items.map((entry) =>
       entry.id === item.id ? { ...entry, isDone: nextIsDone } : entry
     );
-    const allDone = nextItems.length > 0 && nextItems.every((entry) => entry.isDone);
+    const allDone =
+      nextItems.length > 0 && nextItems.every((entry) => entry.isDone);
     const anyDone = nextItems.some((entry) => entry.isDone);
     let nextStatus: ChecklistRecord['status'] = checklist.status;
     if (allDone) {

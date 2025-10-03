@@ -1,6 +1,6 @@
-import { prisma } from '../config/db';
-import { HttpError } from '../errors/http-error';
-import type { AuthenticatedRequest } from '../middleware/auth';
+import { prisma } from '../config/db.js';
+import { HttpError } from '../errors/http-error.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 export const enforceProjectAccess = async (
   user:

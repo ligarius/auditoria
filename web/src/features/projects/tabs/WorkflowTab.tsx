@@ -40,16 +40,24 @@ type WorkflowResponse = {
   definition: null | { xml?: unknown } | unknown;
 };
 
+type BpmnCanvas = {
+  zoom: (value: string) => void;
+};
+
 interface WorkflowTabProps {
   projectId: string;
 }
 
-const getXmlFromDefinition = (definition: WorkflowResponse['definition']): string | null => {
+const getXmlFromDefinition = (
+  definition: WorkflowResponse['definition']
+): string | null => {
   if (!definition || typeof definition !== 'object') {
     return null;
   }
   const maybeXml = (definition as { xml?: unknown }).xml;
-  return typeof maybeXml === 'string' && maybeXml.trim().length > 0 ? maybeXml : null;
+  return typeof maybeXml === 'string' && maybeXml.trim().length > 0
+    ? maybeXml
+    : null;
 };
 
 export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
@@ -66,7 +74,10 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
   const [diagramXml, setDiagramXml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const currentDiagram = useMemo(() => diagramXml ?? DEFAULT_DIAGRAM, [diagramXml]);
+  const currentDiagram = useMemo(
+    () => diagramXml ?? DEFAULT_DIAGRAM,
+    [diagramXml]
+  );
   const stateLabel = ES.projectStatus[state] ?? state;
   const stateDescription = ES.projectStatusDescriptions[state] ?? undefined;
 
@@ -94,7 +105,7 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
     try {
       await instance.importXML(xml);
       if (!isEditor && 'get' in instance) {
-        const canvas = (instance as BpmnViewer).get('canvas');
+        const canvas = (instance as BpmnViewer).get<BpmnCanvas>('canvas');
         canvas.zoom('fit-viewport');
       }
     } catch (importError) {
@@ -107,7 +118,9 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get<WorkflowResponse>(`/projects/${projectId}/workflow`);
+      const response = await api.get<WorkflowResponse>(
+        `/projects/${projectId}/workflow`
+      );
       const workflow = response.data;
       const xml = getXmlFromDefinition(workflow.definition);
       setState(workflow.state);
@@ -168,11 +181,18 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
     }
     try {
       setUpdatingState(true);
-      await api.post(`/projects/${projectId}/workflow/transition`, { state: next });
+      await api.post(`/projects/${projectId}/workflow/transition`, {
+        state: next,
+      });
       setState(next);
     } catch (transitionError) {
-      console.error('No se pudo cambiar el estado del workflow', transitionError);
-      setError('No se pudo cambiar el estado. Revisa las transiciones permitidas.');
+      console.error(
+        'No se pudo cambiar el estado del workflow',
+        transitionError
+      );
+      setError(
+        'No se pudo cambiar el estado. Revisa las transiciones permitidas.'
+      );
     } finally {
       setUpdatingState(false);
     }
@@ -196,8 +216,13 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">Estado de auditoría</p>
-          <p className="text-lg font-semibold text-slate-900" title={stateDescription}>
+          <p className="text-xs uppercase tracking-wide text-slate-500">
+            Estado de auditoría
+          </p>
+          <p
+            className="text-lg font-semibold text-slate-900"
+            title={stateDescription}
+          >
             {stateLabel}
           </p>
         </div>
@@ -210,7 +235,9 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
               id="workflow-state"
               className="rounded border border-slate-300 px-3 py-2 text-sm"
               value={state}
-              onChange={(event) => handleStateChange(event.target.value as WorkflowState)}
+              onChange={(event) =>
+                handleStateChange(event.target.value as WorkflowState)
+              }
               disabled={updatingState}
             >
               {WORKFLOW_STATES.map((option) => (

@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth';
+import {
+  authenticate,
+  requireProjectRole
+} from '../../core/middleware/auth.js';
 
-import { kpiService } from './kpi.service';
+import { kpiService } from './kpi.service.js';
 
 const kpiRouter = Router();
 

@@ -1,7 +1,7 @@
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
-import type { AuthenticatedRequest } from '../../core/middleware/auth';
-import { auditService } from '../audit/audit.service';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import type { AuthenticatedRequest } from '../../core/middleware/auth.js';
+import { auditService } from '../audit/audit.service.js';
 
 interface InterviewPayload {
   personName: string;

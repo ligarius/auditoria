@@ -4,10 +4,10 @@ import {
   authenticate,
   requireProjectRole,
   type AuthenticatedRequest
-} from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+} from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-import { hseService } from './hse.service';
+import { hseService } from './hse.service.js';
 
 const viewerRoles = ['ConsultorLider', 'Auditor', 'SponsorPM', 'Invitado'];
 const editorRoles = ['ConsultorLider', 'Auditor'];

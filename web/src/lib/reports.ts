@@ -1,6 +1,11 @@
 import api from './api';
 
-export type ModuleReportType = 'diagnostico' | '5s' | 'inventario' | 'rutas' | 'final';
+export type ModuleReportType =
+  | 'diagnostico'
+  | '5s'
+  | 'inventario'
+  | 'rutas'
+  | 'final';
 
 const sanitizeFilename = (value: string) => {
   return value
@@ -14,7 +19,7 @@ const sanitizeFilename = (value: string) => {
 export const downloadModuleReport = async (
   projectId: string,
   type: ModuleReportType,
-  displayName?: string,
+  displayName?: string
 ) => {
   const response = await api.get(`/reports/${type}/projects/${projectId}.pdf`, {
     responseType: 'blob',

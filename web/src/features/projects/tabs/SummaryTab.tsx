@@ -48,7 +48,13 @@ interface SummaryResponse {
     decisions: { total: number };
     kpis: {
       total: number;
-      latest: { id: string; name: string; value: number; unit?: string | null; date: string } | null;
+      latest: {
+        id: string;
+        name: string;
+        value: number;
+        unit?: string | null;
+        date: string;
+      } | null;
     };
     gantt: {
       total: number;
@@ -97,7 +103,8 @@ const statusLabel = (value: string) => {
 };
 
 const statusTooltip = (value: string) => {
-  const key = value?.toLowerCase?.() as keyof typeof ES.projectStatusDescriptions;
+  const key =
+    value?.toLowerCase?.() as keyof typeof ES.projectStatusDescriptions;
   return ES.projectStatusDescriptions[key];
 };
 
@@ -160,9 +167,7 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
         title: 'Entrevistas',
         description: 'Registro de sesiones realizadas.',
         tab: TAB_PATHS.interviews,
-        metrics: [
-          { label: 'Entrevistas', value: sections.interviews.total },
-        ],
+        metrics: [{ label: 'Entrevistas', value: sections.interviews.total }],
       },
       {
         key: 'processes',
@@ -195,8 +200,14 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
         tab: TAB_PATHS.security,
         metrics: [
           { label: 'Evaluaciones', value: sections.security.posture },
-          { label: 'Vulnerabilidades', value: sections.security.openVulnerabilities },
-          { label: 'TCO 3 años', value: formatCurrency(sections.security.totalTco) },
+          {
+            label: 'Vulnerabilidades',
+            value: sections.security.openVulnerabilities,
+          },
+          {
+            label: 'TCO 3 años',
+            value: formatCurrency(sections.security.totalTco),
+          },
         ],
       },
       {
@@ -234,9 +245,7 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
         title: 'Decisiones',
         description: 'Bitácora de decisiones clave.',
         tab: TAB_PATHS.decisions,
-        metrics: [
-          { label: 'Registradas', value: sections.decisions.total },
-        ],
+        metrics: [{ label: 'Registradas', value: sections.decisions.total }],
       },
       {
         key: 'kpis',
@@ -278,16 +287,16 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
         title: 'Exportación',
         description: 'Reportes ejecutivos listos para compartir.',
         tab: TAB_PATHS.export,
-        metrics: [
-          { label: 'Descargar', value: 'Zip + PDF' },
-        ],
+        metrics: [{ label: 'Descargar', value: 'Zip + PDF' }],
       },
     ];
   }, [summary]);
 
   const goToTab = (tabPath: string) => {
     if (!projectId) return;
-    const path = tabPath ? `/projects/${projectId}/${tabPath}` : `/projects/${projectId}`;
+    const path = tabPath
+      ? `/projects/${projectId}/${tabPath}`
+      : `/projects/${projectId}`;
     navigate(path);
   };
 
@@ -299,11 +308,13 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
       await downloadModuleReport(
         projectId,
         'final',
-        summary?.project.name ?? 'informe-final',
+        summary?.project.name ?? 'informe-final'
       );
     } catch (downloadException) {
       console.error('No se pudo generar el informe final', downloadException);
-      setDownloadError('No se pudo descargar el informe final. Inténtalo nuevamente.');
+      setDownloadError(
+        'No se pudo descargar el informe final. Inténtalo nuevamente.'
+      );
     } finally {
       setDownloadingReport(false);
     }
@@ -312,7 +323,9 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900">Resumen ejecutivo</h2>
+        <h2 className="text-xl font-semibold text-slate-900">
+          Resumen ejecutivo
+        </h2>
         <p className="text-sm text-slate-500">
           Vista rápida del estado del proyecto y accesos directos a cada módulo.
         </p>
@@ -336,7 +349,8 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">
-                  {summary.project.company?.name ?? 'Proyecto'} · {summary.project.name}
+                  {summary.project.company?.name ?? 'Proyecto'} ·{' '}
+                  {summary.project.name}
                 </h3>
                 <p className="text-sm text-slate-500">
                   Estado:{' '}
@@ -355,7 +369,8 @@ export default function SummaryTab({ projectId }: SummaryTabProps) {
             </div>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-500">
-                Descarga el informe final consolidado en PDF para compartir con el equipo y el cliente.
+                Descarga el informe final consolidado en PDF para compartir con
+                el equipo y el cliente.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 {downloadError ? (

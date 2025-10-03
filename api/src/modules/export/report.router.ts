@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { generateProjectReportPdf } from './report.service';
+import { generateProjectReportPdf } from './report.service.js';
 
 const router = Router();
 

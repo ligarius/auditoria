@@ -9,7 +9,7 @@
     "start": "node dist/server.cjs",
     "prisma": "prisma",
     "dev:db:migrate": "prisma migrate dev",
-    "db:seed": "ts-node --esm prisma/seed.ts",
+    "db:seed": "tsx --tsconfig tsconfig.seed.json prisma/seed.ts",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "seed": "npm run db:seed",
@@ -19,7 +19,8 @@
     "format": "prettier --write 'src/**/*.{ts,tsx,js,json}'",
     "test": "jest --coverage",
     "test:e2e": "jest --config jest.e2e.config.ts",
-    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix"
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
@@ -86,6 +87,6 @@
     "typescript": "^5.3.3"
   },
   "prisma": {
-    "seed": "ts-node --esm prisma/seed.ts"
+    "seed": "tsx --tsconfig tsconfig.seed.json prisma/seed.ts"
   }
 }

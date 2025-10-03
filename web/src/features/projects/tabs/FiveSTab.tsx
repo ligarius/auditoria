@@ -331,7 +331,9 @@ const FiveSTab = ({ projectId }: FiveSTabProps) => {
       await downloadModuleReport(projectId, '5s', 'programa-5s');
     } catch (downloadException) {
       console.error('No se pudo descargar el informe 5S', downloadException);
-      setReportError('No se pudo descargar el informe 5S. Inténtalo nuevamente.');
+      setReportError(
+        'No se pudo descargar el informe 5S. Inténtalo nuevamente.'
+      );
     } finally {
       setDownloadingReport(false);
     }
@@ -442,9 +444,12 @@ const FiveSTab = ({ projectId }: FiveSTabProps) => {
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Informe programa 5S</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Informe programa 5S
+            </h2>
             <p className="text-sm text-slate-500">
-              Genera un PDF con las auditorías registradas, evidencia y acciones de mejora.
+              Genera un PDF con las auditorías registradas, evidencia y acciones
+              de mejora.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">

@@ -67,7 +67,9 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
 
   const loadSurveys = useCallback(async () => {
     try {
-      const response = await api.get<Survey[]>(`/projects/${projectId}/surveys`);
+      const response = await api.get<Survey[]>(
+        `/projects/${projectId}/surveys`
+      );
       setSurveys(response.data ?? []);
       setError(null);
     } catch (error: unknown) {
@@ -115,7 +117,7 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
               ? Number(questionForm.scaleMax)
               : undefined,
           required: questionForm.required,
-        },
+        }
       );
       setQuestionForm((prev) => ({
         ...defaultQuestionForm,
@@ -452,7 +454,8 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
                                   style={{
                                     width: `${percentage}%`,
                                     backgroundColor: '#0f172a',
-                                    opacity: 0.3 + Math.min(percentage, 60) / 100,
+                                    opacity:
+                                      0.3 + Math.min(percentage, 60) / 100,
                                   }}
                                 />
                               );
@@ -482,7 +485,8 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
                               </span>
                             </div>
                           ))}
-                          {(!item.topResponses || item.topResponses.length === 0) && (
+                          {(!item.topResponses ||
+                            item.topResponses.length === 0) && (
                             <p className="text-xs text-slate-500">
                               Sin respuestas aún.
                             </p>

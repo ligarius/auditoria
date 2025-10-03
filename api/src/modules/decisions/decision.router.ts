@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth';
+import {
+  authenticate,
+  requireProjectRole
+} from '../../core/middleware/auth.js';
 
-import { decisionService } from './decision.service';
+import { decisionService } from './decision.service.js';
 
 const decisionRouter = Router();
 

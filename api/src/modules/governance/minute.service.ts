@@ -1,5 +1,5 @@
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
 
 export interface MinuteInput {
   meetingId: string;

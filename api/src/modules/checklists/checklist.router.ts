@@ -5,10 +5,13 @@ import {
   authenticate,
   requireProjectMembership,
   requireRole
-} from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+} from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-import { checklistService, type ChecklistItemInput } from './checklist.service';
+import {
+  checklistService,
+  type ChecklistItemInput
+} from './checklist.service.js';
 
 const checklistRouter = Router();
 
@@ -93,16 +96,17 @@ checklistRouter.patch(
   requireRole('admin', 'consultor'),
   async (req, res) => {
     const payload = itemSchema.partial({ text: true }).parse(req.body);
-    const fixedPayload: ChecklistItemInput = {
-      ...payload,
-      text: payload.text ?? ''
-    };
+    const payloadClean = {
+      ...(payload.id ? { id: payload.id } : {}),
+      ...(payload.text != null ? { text: payload.text } : {}),
+      ...(payload.isDone != null ? { isDone: payload.isDone } : {})
+    } as Partial<ChecklistItemInput>;
     const checklist = await checklistService.get(req.params.id);
     await enforceProjectAccess(req.user, checklist.sop.process.projectId);
     const updated = await checklistService.updateItem(
       req.params.id,
       req.params.itemId,
-      fixedPayload,
+      payloadClean,
       req.user!.id
     );
     res.json(updated);

@@ -97,19 +97,28 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
 
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [inventoryForm, setInventoryForm] = useState(defaultInventoryForm);
-  const [editingInventory, setEditingInventory] = useState<InventoryItem | null>(null);
+  const [editingInventory, setEditingInventory] =
+    useState<InventoryItem | null>(null);
 
   const [coverage, setCoverage] = useState<CoverageItem[]>([]);
   const [coverageForm, setCoverageForm] = useState(defaultCoverageForm);
-  const [editingCoverage, setEditingCoverage] = useState<CoverageItem | null>(null);
+  const [editingCoverage, setEditingCoverage] = useState<CoverageItem | null>(
+    null
+  );
 
   const [integrations, setIntegrations] = useState<IntegrationItem[]>([]);
-  const [integrationForm, setIntegrationForm] = useState(defaultIntegrationForm);
-  const [editingIntegration, setEditingIntegration] = useState<IntegrationItem | null>(null);
+  const [integrationForm, setIntegrationForm] = useState(
+    defaultIntegrationForm
+  );
+  const [editingIntegration, setEditingIntegration] =
+    useState<IntegrationItem | null>(null);
 
   const [dataQuality, setDataQuality] = useState<DataQualityItem[]>([]);
-  const [dataQualityForm, setDataQualityForm] = useState(defaultDataQualityForm);
-  const [editingDataQuality, setEditingDataQuality] = useState<DataQualityItem | null>(null);
+  const [dataQualityForm, setDataQualityForm] = useState(
+    defaultDataQualityForm
+  );
+  const [editingDataQuality, setEditingDataQuality] =
+    useState<DataQualityItem | null>(null);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -131,7 +140,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
       );
       setCoverage(response.data ?? []);
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo cargar la cobertura de procesos'));
+      setError(
+        getErrorMessage(error, 'No se pudo cargar la cobertura de procesos')
+      );
     }
   }, [projectId]);
 
@@ -142,7 +153,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
       );
       setIntegrations(response.data ?? []);
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudieron cargar las integraciones'));
+      setError(
+        getErrorMessage(error, 'No se pudieron cargar las integraciones')
+      );
     }
   }, [projectId]);
 
@@ -174,7 +187,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
       groups.get(key)!.push(item);
     });
     groups.forEach((items) =>
-      items.sort((a, b) => (a.subProcess ?? '').localeCompare(b.subProcess ?? ''))
+      items.sort((a, b) =>
+        (a.subProcess ?? '').localeCompare(b.subProcess ?? '')
+      )
     );
     return Array.from(groups.entries());
   }, [coverage]);
@@ -285,15 +300,18 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
     event.preventDefault();
     if (!editingIntegration) return;
     try {
-      await api.put(`/systems/integrations/${projectId}/${editingIntegration.id}`, {
-        source: editingIntegration.source,
-        target: editingIntegration.target,
-        type: editingIntegration.type,
-        periodicity: editingIntegration.periodicity || undefined,
-        dailyVolume: editingIntegration.dailyVolume ?? undefined,
-        format: editingIntegration.format || undefined,
-        notes: editingIntegration.notes || undefined,
-      });
+      await api.put(
+        `/systems/integrations/${projectId}/${editingIntegration.id}`,
+        {
+          source: editingIntegration.source,
+          target: editingIntegration.target,
+          type: editingIntegration.type,
+          periodicity: editingIntegration.periodicity || undefined,
+          dailyVolume: editingIntegration.dailyVolume ?? undefined,
+          format: editingIntegration.format || undefined,
+          notes: editingIntegration.notes || undefined,
+        }
+      );
       setEditingIntegration(null);
       await loadIntegrations();
     } catch (error: unknown) {
@@ -319,7 +337,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
       setDataQualityForm(defaultDataQualityForm);
       await loadDataQuality();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo registrar la calidad de datos'));
+      setError(
+        getErrorMessage(error, 'No se pudo registrar la calidad de datos')
+      );
     }
   };
 
@@ -327,19 +347,24 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
     event.preventDefault();
     if (!editingDataQuality) return;
     try {
-      await api.put(`/systems/data-quality/${projectId}/${editingDataQuality.id}`, {
-        systemName: editingDataQuality.systemName,
-        entity: editingDataQuality.entity,
-        hasCriticalFields: editingDataQuality.hasCriticalFields,
-        dataQuality: editingDataQuality.dataQuality,
-        hasBusinessRules: editingDataQuality.hasBusinessRules,
-        historyYears: editingDataQuality.historyYears ?? undefined,
-        notes: editingDataQuality.notes || undefined,
-      });
+      await api.put(
+        `/systems/data-quality/${projectId}/${editingDataQuality.id}`,
+        {
+          systemName: editingDataQuality.systemName,
+          entity: editingDataQuality.entity,
+          hasCriticalFields: editingDataQuality.hasCriticalFields,
+          dataQuality: editingDataQuality.dataQuality,
+          hasBusinessRules: editingDataQuality.hasBusinessRules,
+          historyYears: editingDataQuality.historyYears ?? undefined,
+          notes: editingDataQuality.notes || undefined,
+        }
+      );
       setEditingDataQuality(null);
       await loadDataQuality();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo actualizar la calidad de datos'));
+      setError(
+        getErrorMessage(error, 'No se pudo actualizar la calidad de datos')
+      );
     }
   };
 
@@ -379,7 +404,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
       await api.delete(`/systems/data-quality/${projectId}/${id}`);
       await loadDataQuality();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo eliminar el registro de calidad'));
+      setError(
+        getErrorMessage(error, 'No se pudo eliminar el registro de calidad')
+      );
     }
   };
 
@@ -388,19 +415,25 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
       <div>
         <h2 className="text-xl font-semibold text-slate-900">Sistemas</h2>
         <p className="text-sm text-slate-500">
-          Gestiona el inventario tecnológico, cobertura de procesos e integraciones clave del proyecto.
+          Gestiona el inventario tecnológico, cobertura de procesos e
+          integraciones clave del proyecto.
         </p>
       </div>
 
       {error && (
-        <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>
+        <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </p>
       )}
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <header className="space-y-1">
-          <h3 className="text-lg font-semibold text-slate-900">Inventario de sistemas</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Inventario de sistemas
+          </h3>
           <p className="text-sm text-slate-500">
-            Registra las plataformas relevantes, su criticidad y áreas responsables.
+            Registra las plataformas relevantes, su criticidad y áreas
+            responsables.
           </p>
         </header>
         {canEdit && !editingInventory && (
@@ -408,7 +441,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             onSubmit={handleCreateInventory}
             className="grid gap-3 rounded-lg border border-slate-200 p-4"
           >
-            <h4 className="text-base font-medium text-slate-800">Nuevo sistema</h4>
+            <h4 className="text-base font-medium text-slate-800">
+              Nuevo sistema
+            </h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="flex flex-col text-sm">
                 Nombre del sistema
@@ -511,7 +546,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-base font-medium text-slate-800">Editar sistema</h4>
+              <h4 className="text-base font-medium text-slate-800">
+                Editar sistema
+              </h4>
               <button
                 type="button"
                 className="text-sm text-blue-700 underline"
@@ -619,12 +656,15 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
               className="flex flex-wrap items-start justify-between gap-2 rounded border border-slate-200 bg-slate-50 p-3"
             >
               <div>
-                <p className="text-sm font-medium text-slate-800">{item.systemName}</p>
+                <p className="text-sm font-medium text-slate-800">
+                  {item.systemName}
+                </p>
                 <p className="text-xs text-slate-500">
                   {item.type} · Área: {item.ownerArea ?? 'No definida'}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Usuarios: {item.usersActive ?? 'N/D'} · Criticidad: {item.criticality ?? 'N/D'}
+                  Usuarios: {item.usersActive ?? 'N/D'} · Criticidad:{' '}
+                  {item.criticality ?? 'N/D'}
                 </p>
                 {item.notes && (
                   <p className="text-xs text-slate-500">{item.notes}</p>
@@ -651,16 +691,21 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             </div>
           ))}
           {inventory.length === 0 && (
-            <p className="text-sm text-slate-500">No hay sistemas registrados.</p>
+            <p className="text-sm text-slate-500">
+              No hay sistemas registrados.
+            </p>
           )}
         </div>
       </section>
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <header className="space-y-1">
-          <h3 className="text-lg font-semibold text-slate-900">Cobertura de procesos</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Cobertura de procesos
+          </h3>
           <p className="text-sm text-slate-500">
-            Analiza procesos, subprocesos y brechas identificadas en el inventario.
+            Analiza procesos, subprocesos y brechas identificadas en el
+            inventario.
           </p>
         </header>
         {canEdit && !editingCoverage && (
@@ -668,7 +713,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             onSubmit={handleCreateCoverage}
             className="grid gap-3 rounded-lg border border-slate-200 p-4"
           >
-            <h4 className="text-base font-medium text-slate-800">Nuevo registro</h4>
+            <h4 className="text-base font-medium text-slate-800">
+              Nuevo registro
+            </h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="flex flex-col text-sm">
                 Proceso
@@ -788,7 +835,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-base font-medium text-slate-800">Editar registro</h4>
+              <h4 className="text-base font-medium text-slate-800">
+                Editar registro
+              </h4>
               <button
                 type="button"
                 className="text-sm text-blue-700 underline"
@@ -830,7 +879,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   value={editingCoverage.systemNameRef ?? ''}
                   onChange={(event) =>
                     setEditingCoverage((prev) =>
-                      prev ? { ...prev, systemNameRef: event.target.value } : prev
+                      prev
+                        ? { ...prev, systemNameRef: event.target.value }
+                        : prev
                     )
                   }
                 />
@@ -845,7 +896,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   value={editingCoverage.coverage}
                   onChange={(event) =>
                     setEditingCoverage((prev) =>
-                      prev ? { ...prev, coverage: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, coverage: Number(event.target.value) }
+                        : prev
                     )
                   }
                   required
@@ -858,7 +911,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   value={editingCoverage.hasGap ? 'true' : 'false'}
                   onChange={(event) =>
                     setEditingCoverage((prev) =>
-                      prev ? { ...prev, hasGap: event.target.value === 'true' } : prev
+                      prev
+                        ? { ...prev, hasGap: event.target.value === 'true' }
+                        : prev
                     )
                   }
                 >
@@ -905,10 +960,15 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
 
         <div className="space-y-3">
           {coverageGroups.map(([processName, items]) => (
-            <div key={processName} className="space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
+            <div
+              key={processName}
+              className="space-y-2 rounded border border-slate-200 bg-slate-50 p-3"
+            >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{processName}</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {processName}
+                  </p>
                   <p className="text-xs text-slate-500">
                     Cobertura promedio:{' '}
                     {Math.round(
@@ -930,10 +990,12 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                         {item.subProcess || 'Sin subproceso'}
                       </p>
                       <p className="text-xs text-slate-500">
-                        Sistema: {item.systemNameRef || 'N/D'} · Cobertura: {item.coverage}%
+                        Sistema: {item.systemNameRef || 'N/D'} · Cobertura:{' '}
+                        {item.coverage}%
                       </p>
                       <p className="text-xs text-slate-500">
-                        Gap: {item.hasGap ? 'Sí' : 'No'} {item.gapDesc ? `· ${item.gapDesc}` : ''}
+                        Gap: {item.hasGap ? 'Sí' : 'No'}{' '}
+                        {item.gapDesc ? `· ${item.gapDesc}` : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -960,14 +1022,18 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             </div>
           ))}
           {coverage.length === 0 && (
-            <p className="text-sm text-slate-500">Aún no se registran coberturas de procesos.</p>
+            <p className="text-sm text-slate-500">
+              Aún no se registran coberturas de procesos.
+            </p>
           )}
         </div>
       </section>
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <header className="space-y-1">
-          <h3 className="text-lg font-semibold text-slate-900">Integraciones</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Integraciones
+          </h3>
           <p className="text-sm text-slate-500">
             Documenta los flujos de información entre sistemas y su volumetría.
           </p>
@@ -977,7 +1043,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             onSubmit={handleCreateIntegration}
             className="grid gap-3 rounded-lg border border-slate-200 p-4"
           >
-            <h4 className="text-base font-medium text-slate-800">Nueva integración</h4>
+            <h4 className="text-base font-medium text-slate-800">
+              Nueva integración
+            </h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="flex flex-col text-sm">
                 Origen
@@ -1094,7 +1162,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-base font-medium text-slate-800">Editar integración</h4>
+              <h4 className="text-base font-medium text-slate-800">
+                Editar integración
+              </h4>
               <button
                 type="button"
                 className="text-sm text-blue-700 underline"
@@ -1164,7 +1234,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   value={editingIntegration.dailyVolume ?? ''}
                   onChange={(event) =>
                     setEditingIntegration((prev) =>
-                      prev ? { ...prev, dailyVolume: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, dailyVolume: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1220,7 +1292,8 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   Tipo: {item.type} · Periodicidad: {item.periodicity || 'N/D'}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Volumen: {item.dailyVolume ?? 'N/D'} · Formato: {item.format ?? 'N/D'}
+                  Volumen: {item.dailyVolume ?? 'N/D'} · Formato:{' '}
+                  {item.format ?? 'N/D'}
                 </p>
                 {item.notes && (
                   <p className="text-xs text-slate-500">{item.notes}</p>
@@ -1247,16 +1320,21 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             </div>
           ))}
           {integrations.length === 0 && (
-            <p className="text-sm text-slate-500">No hay integraciones registradas.</p>
+            <p className="text-sm text-slate-500">
+              No hay integraciones registradas.
+            </p>
           )}
         </div>
       </section>
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <header className="space-y-1">
-          <h3 className="text-lg font-semibold text-slate-900">Calidad de datos</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Calidad de datos
+          </h3>
           <p className="text-sm text-slate-500">
-            Evalúa atributos de calidad y gobernanza sobre las entidades relevantes.
+            Evalúa atributos de calidad y gobernanza sobre las entidades
+            relevantes.
           </p>
         </header>
         {canEdit && !editingDataQuality && (
@@ -1264,7 +1342,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             onSubmit={handleCreateDataQuality}
             className="grid gap-3 rounded-lg border border-slate-200 p-4"
           >
-            <h4 className="text-base font-medium text-slate-800">Nuevo registro</h4>
+            <h4 className="text-base font-medium text-slate-800">
+              Nuevo registro
+            </h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="flex flex-col text-sm">
                 Sistema
@@ -1390,7 +1470,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-base font-medium text-slate-800">Editar registro</h4>
+              <h4 className="text-base font-medium text-slate-800">
+                Editar registro
+              </h4>
               <button
                 type="button"
                 className="text-sm text-blue-700 underline"
@@ -1430,11 +1512,16 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                 Campos críticos
                 <select
                   className="mt-1 rounded border px-3 py-2"
-                  value={editingDataQuality.hasCriticalFields ? 'true' : 'false'}
+                  value={
+                    editingDataQuality.hasCriticalFields ? 'true' : 'false'
+                  }
                   onChange={(event) =>
                     setEditingDataQuality((prev) =>
                       prev
-                        ? { ...prev, hasCriticalFields: event.target.value === 'true' }
+                        ? {
+                            ...prev,
+                            hasCriticalFields: event.target.value === 'true',
+                          }
                         : prev
                     )
                   }
@@ -1453,7 +1540,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   value={editingDataQuality.dataQuality}
                   onChange={(event) =>
                     setEditingDataQuality((prev) =>
-                      prev ? { ...prev, dataQuality: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, dataQuality: Number(event.target.value) }
+                        : prev
                     )
                   }
                   required
@@ -1467,7 +1556,10 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   onChange={(event) =>
                     setEditingDataQuality((prev) =>
                       prev
-                        ? { ...prev, hasBusinessRules: event.target.value === 'true' }
+                        ? {
+                            ...prev,
+                            hasBusinessRules: event.target.value === 'true',
+                          }
                         : prev
                     )
                   }
@@ -1485,7 +1577,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   value={editingDataQuality.historyYears ?? ''}
                   onChange={(event) =>
                     setEditingDataQuality((prev) =>
-                      prev ? { ...prev, historyYears: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, historyYears: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1526,10 +1620,12 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
                   {item.systemName} · {item.entity}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Calidad: {item.dataQuality}% · Campos críticos: {item.hasCriticalFields ? 'Sí' : 'No'}
+                  Calidad: {item.dataQuality}% · Campos críticos:{' '}
+                  {item.hasCriticalFields ? 'Sí' : 'No'}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Reglas de negocio: {item.hasBusinessRules ? 'Sí' : 'No'} · Historia: {item.historyYears ?? 'N/D'} años
+                  Reglas de negocio: {item.hasBusinessRules ? 'Sí' : 'No'} ·
+                  Historia: {item.historyYears ?? 'N/D'} años
                 </p>
                 {item.notes && (
                   <p className="text-xs text-slate-500">{item.notes}</p>
@@ -1556,7 +1652,9 @@ export default function SystemsTab({ projectId }: SystemsTabProps) {
             </div>
           ))}
           {dataQuality.length === 0 && (
-            <p className="text-sm text-slate-500">No hay registros de calidad de datos.</p>
+            <p className="text-sm text-slate-500">
+              No hay registros de calidad de datos.
+            </p>
           )}
         </div>
       </section>

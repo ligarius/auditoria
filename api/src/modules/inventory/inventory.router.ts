@@ -6,13 +6,13 @@ import {
   authenticate,
   requireProjectRole,
   type AuthenticatedRequest
-} from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+} from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
 import {
   inventoryService,
   type LocationRangeDefinition
-} from './inventory.service';
+} from './inventory.service.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -94,47 +94,49 @@ inventoryRouter.post(
       return res.status(400).json({ message: 'definitions requerido' });
     }
 
-    const parsedDefinitions: LocationRangeDefinition[] = definitions
-      .map((definition) => {
-        if (typeof definition !== 'object' || definition === null) return null;
-        const value = definition as Record<string, any>;
-        if (!value.zone || !value.rack) return null;
-        return {
-          zone: {
-            code: String(value.zone.code ?? ''),
-            name: value.zone.name ? String(value.zone.name) : undefined
-          },
-          rack: {
-            code: String(value.rack.code ?? ''),
-            name: value.rack.name ? String(value.rack.name) : undefined
-          },
-          rowStart: Number(value.rowStart ?? value.row ?? 0),
-          rowEnd: Number(value.rowEnd ?? value.row ?? value.rowStart ?? 0),
-          levelStart: Number(value.levelStart ?? value.level ?? 0),
-          levelEnd: Number(
-            value.levelEnd ?? value.level ?? value.levelStart ?? 0
-          ),
-          positionStart: Number(
-            value.positionStart ?? value.posStart ?? value.pos ?? 0
-          ),
-          positionEnd: Number(
-            value.positionEnd ??
-              value.posEnd ??
-              value.pos ??
-              value.positionStart ??
-              0
-          )
-        };
-      })
-      .filter((item): item is LocationRangeDefinition => item !== null);
+    const parsedDefinitions = definitions.map((definition) => {
+      if (typeof definition !== 'object' || definition === null) return null;
+      const value = definition as Record<string, any>;
+      if (!value.zone || !value.rack) return null;
+      return {
+        zone: {
+          code: String(value.zone.code ?? ''),
+          name: value.zone.name ? String(value.zone.name) : undefined
+        },
+        rack: {
+          code: String(value.rack.code ?? ''),
+          name: value.rack.name ? String(value.rack.name) : undefined
+        },
+        rowStart: Number(value.rowStart ?? value.row ?? 0),
+        rowEnd: Number(value.rowEnd ?? value.row ?? value.rowStart ?? 0),
+        levelStart: Number(value.levelStart ?? value.level ?? 0),
+        levelEnd: Number(
+          value.levelEnd ?? value.level ?? value.levelStart ?? 0
+        ),
+        positionStart: Number(
+          value.positionStart ?? value.posStart ?? value.pos ?? 0
+        ),
+        positionEnd: Number(
+          value.positionEnd ??
+            value.posEnd ??
+            value.pos ??
+            value.positionStart ??
+            0
+        )
+      };
+    });
 
-    if (parsedDefinitions.length === 0) {
+    const cleanDefinitions = parsedDefinitions.filter(
+      (item): item is LocationRangeDefinition => item !== null
+    );
+
+    if (cleanDefinitions.length === 0) {
       return res.status(400).json({ message: 'No hay definiciones válidas' });
     }
 
     const result = await inventoryService.bulkCreateLocations(
       projectId,
-      parsedDefinitions
+      cleanDefinitions
     );
     res.status(201).json(result);
   }

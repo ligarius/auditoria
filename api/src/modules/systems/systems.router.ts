@@ -1,8 +1,11 @@
 import { Router } from 'express';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth';
+import {
+  authenticate,
+  requireProjectRole
+} from '../../core/middleware/auth.js';
 
-import { systemsService } from './systems.service';
+import { systemsService } from './systems.service.js';
 
 const systemsRouter = Router();
 const categories = [

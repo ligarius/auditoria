@@ -1,9 +1,9 @@
 import type { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
-import type { AuthenticatedRequest } from '../../core/middleware/auth';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+import type { AuthenticatedRequest } from '../../core/middleware/auth.js';
 
 const isLikertType = (value: string) => value.toLowerCase().includes('likert');
 
@@ -183,11 +183,14 @@ export const projectSurveyService = {
     if (!survey) {
       throw new HttpError(404, 'Encuesta no encontrada');
     }
-    const summaries = survey.questions.map((question) => {
-      const answers = survey.responses.flatMap((response) =>
+    type SurveyResponse = (typeof survey.responses)[number];
+    type SurveyAnswer = SurveyResponse['answers'][number];
+    type SurveyQuestion = (typeof survey.questions)[number];
+    const summaries = survey.questions.map((question: SurveyQuestion) => {
+      const answers = survey.responses.flatMap((response: SurveyResponse) =>
         response.answers
-          .filter((answer) => answer.questionId === question.id)
-          .map((answer) => answer.value)
+          .filter((answer: SurveyAnswer) => answer.questionId === question.id)
+          .map((answer: SurveyAnswer) => answer.value)
       );
       return buildQuestionSummary(
         {

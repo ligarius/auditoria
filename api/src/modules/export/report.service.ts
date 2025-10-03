@@ -2,12 +2,11 @@ import 'chart.js/auto';
 import type { ChartConfiguration } from 'chart.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import dayjs from 'dayjs';
-import puppeteer from 'puppeteer';
-import type { Browser } from 'puppeteer';
+import * as puppeteer from 'puppeteer';
 import { type ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
 
 const chartRenderer = new ChartJSNodeCanvas({
   width: 960,
@@ -617,7 +616,7 @@ export async function generateProjectReportPdf(projectId: string) {
   </body>
 </html>`;
 
-  let browser: Browser | null = null;
+  let browser: puppeteer.Browser | null = null;
   try {
     browser = await puppeteer.launch({
       headless: true,

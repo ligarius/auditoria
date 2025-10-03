@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { HttpError } from '../errors/http-error';
-import { verifyAccessToken } from '../utils/jwt';
-import { prisma } from '../config/db';
-import { enforceProjectAccess } from '../security/enforce-project-access';
-import { ensureScopedAccess } from '../security/enforce-scope';
+import { HttpError } from '../errors/http-error.js';
+import { verifyAccessToken } from '../utils/jwt.js';
+import { prisma } from '../config/db.js';
+import { enforceProjectAccess } from '../security/enforce-project-access.js';
+import { ensureScopedAccess } from '../security/enforce-scope.js';
 
 export interface AuthenticatedRequest extends Request {
   user?: {

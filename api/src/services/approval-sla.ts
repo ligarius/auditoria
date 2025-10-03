@@ -1,7 +1,7 @@
-import { logger } from '../core/config/logger';
-import { approvalService } from '../modules/governance/approval.service';
+import { logger } from '../core/config/logger.js';
+import { approvalService } from '../modules/governance/approval.service.js';
 
-import { notificationService } from './notification';
+import { notificationService } from './notification.js';
 
 const DEFAULT_INTERVAL_MS = 60 * 1000;
 
@@ -41,9 +41,6 @@ const runMonitor = async () => {
     }
 
     for (const workflow of overdueWorkflows) {
-      const workflowWithTimers = workflow as typeof workflow & {
-        slaTimers: unknown[];
-      };
       const pendingApprovers = workflow.steps
         .filter((step) => step.status === 'pending' && step.approver?.email)
         .map((step) => step.approver?.email!)
@@ -61,10 +58,11 @@ const runMonitor = async () => {
         'Flujo de aprobación marcado como vencido'
       );
 
-      const { subject, html } = buildEmailContent({
-        ...workflowWithTimers,
-        slaTimers: workflowWithTimers.slaTimers ?? []
-      });
+      const workflowForEmail = {
+        ...workflow,
+        slaTimers: workflow.slaTimers ?? []
+      };
+      const { subject, html } = buildEmailContent(workflowForEmail);
       await notificationService.sendEmail({
         to: pendingApprovers,
         subject,

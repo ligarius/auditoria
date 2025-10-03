@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db';
+import { prisma } from '../../core/config/db.js';
 
 export const auditService = {
   async record(

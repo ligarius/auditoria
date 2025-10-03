@@ -1,8 +1,11 @@
 import { Router } from 'express';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth';
+import {
+  authenticate,
+  requireProjectRole
+} from '../../core/middleware/auth.js';
 
-import { projectPlanService } from './project-plan.service';
+import { projectPlanService } from './project-plan.service.js';
 
 const projectPlanRouter = Router();
 

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Form } from "@formio/react";
+import { useEffect, useMemo, useState } from 'react';
+import { Form } from '@formio/react';
 
 /**
  * Componente mínimo para renderizar un formulario Form.io.
@@ -14,32 +14,46 @@ import { Form } from "@formio/react";
  * Si no pasas formJson, intentará cargarlo por token de la URL:
  *   /encuesta/:token  -> GET /api/forms/links/:token  => { formJson }
  */
+type FormSchema = Record<string, unknown>;
+
+type FormSubmission = {
+  data: Record<string, unknown>;
+};
+
 type Props = {
-  formJson?: any;
-  initialData?: Record<string, any>;
-  onSubmit?: (data: any) => Promise<void> | void;
+  formJson?: FormSchema;
+  initialData?: Record<string, unknown>;
+  onSubmit?: (data: Record<string, unknown>) => Promise<void> | void;
 };
 
 export default function FormRunner({ formJson, initialData, onSubmit }: Props) {
-  const [schema, setSchema] = useState<any>(formJson);
+  const [schema, setSchema] = useState<FormSchema | undefined>(formJson);
   const [loading, setLoading] = useState<boolean>(!formJson);
   const [error, setError] = useState<string | null>(null);
 
   // Si no recibimos formJson por props, intentamos cargarlo por token en la ruta: /encuesta/:token
   useEffect(() => {
     if (formJson) return;
-    const token = window.location.pathname.split("/").pop();
+    const token = window.location.pathname.split('/').pop();
     if (!token) return;
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/forms/links/${encodeURIComponent(token)}`);
+        const res = await fetch(
+          `/api/forms/links/${encodeURIComponent(token)}`
+        );
         if (!res.ok) throw new Error(`Error ${res.status}`);
-        const payload = await res.json(); // { formJson: {...} }
+        const payload = (await res.json()) as {
+          formJson?: FormSchema;
+        };
         setSchema(payload.formJson);
         setError(null);
-      } catch (e: any) {
-        setError(e.message || "No se pudo cargar el formulario.");
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el formulario.';
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -57,8 +71,10 @@ export default function FormRunner({ formJson, initialData, onSubmit }: Props) {
   );
 
   if (loading) return <div className="p-4 text-sm">Cargando formulario…</div>;
-  if (error) return <div className="p-4 text-sm text-red-600">Error: {error}</div>;
-  if (!schema) return <div className="p-4 text-sm">Sin formulario disponible.</div>;
+  if (error)
+    return <div className="p-4 text-sm text-red-600">Error: {error}</div>;
+  if (!schema)
+    return <div className="p-4 text-sm">Sin formulario disponible.</div>;
 
   return (
     <div className="p-4">
@@ -66,25 +82,30 @@ export default function FormRunner({ formJson, initialData, onSubmit }: Props) {
         form={schema}
         submission={initialData ? { data: initialData } : undefined}
         options={formOptions}
-        onSubmit={async (submission: any) => {
+        onSubmit={async (submission: FormSubmission) => {
           try {
             if (onSubmit) {
               await onSubmit(submission.data);
               return;
             }
             // Por defecto, si estamos en /encuesta/:token, lo enviamos al endpoint de submit por token
-            const parts = window.location.pathname.split("/");
+            const parts = window.location.pathname.split('/');
             const token = parts[parts.length - 1];
-            if (!token) throw new Error("Token no encontrado en la URL.");
-            const res = await fetch(`/api/forms/submit/${encodeURIComponent(token)}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(submission.data),
-            });
+            if (!token) throw new Error('Token no encontrado en la URL.');
+            const res = await fetch(
+              `/api/forms/submit/${encodeURIComponent(token)}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(submission.data),
+              }
+            );
             if (!res.ok) throw new Error(`Error al enviar (${res.status})`);
-            alert("Respuesta enviada con éxito.");
-          } catch (e: any) {
-            alert(`No se pudo enviar: ${e.message || e}`);
+            alert('Respuesta enviada con éxito.');
+          } catch (error: unknown) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            alert(`No se pudo enviar: ${message}`);
           }
         }}
       />

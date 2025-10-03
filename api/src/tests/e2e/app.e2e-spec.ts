@@ -1,7 +1,7 @@
 import type { Express } from 'express';
 import request from 'supertest';
 
-import { signAccessToken } from '../../core/utils/jwt';
+import { signAccessToken } from '../../core/utils/jwt.js';
 interface MockMembership {
   userId: string;
   projectId: string;
@@ -80,6 +80,14 @@ let companies = seedCompanies();
 
 let app: Express;
 
+type DelegateMock = {
+  findMany: jest.Mock;
+  create: jest.Mock;
+  findUnique: jest.Mock;
+  update: jest.Mock;
+  delete: jest.Mock;
+};
+
 type PrismaMock = {
   membership: {
     findMany: jest.Mock;
@@ -112,6 +120,13 @@ type PrismaMock = {
   surveyQuestion: {
     create: jest.Mock;
   };
+  systemInventory: DelegateMock;
+  processCoverage: DelegateMock;
+  integration: DelegateMock;
+  dataModelQuality: DelegateMock;
+  securityPosture: DelegateMock;
+  performance: DelegateMock;
+  costLicensing: DelegateMock;
 };
 
 let prismaMock: PrismaMock;
@@ -354,7 +369,7 @@ afterEach(() => {
 });
 
 beforeAll(async () => {
-  ({ app } = await import('../../server'));
+  ({ app } = await import('../../server.js'));
 });
 
 describe('GET /api/projects/:id/features', () => {

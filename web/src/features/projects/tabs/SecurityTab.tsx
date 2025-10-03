@@ -95,11 +95,18 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
 
   const [securityItems, setSecurityItems] = useState<SecurityItem[]>([]);
   const [securityForm, setSecurityForm] = useState(defaultSecurityForm);
-  const [editingSecurity, setEditingSecurity] = useState<SecurityItem | null>(null);
+  const [editingSecurity, setEditingSecurity] = useState<SecurityItem | null>(
+    null
+  );
 
-  const [performanceItems, setPerformanceItems] = useState<PerformanceItem[]>([]);
-  const [performanceForm, setPerformanceForm] = useState(defaultPerformanceForm);
-  const [editingPerformance, setEditingPerformance] = useState<PerformanceItem | null>(null);
+  const [performanceItems, setPerformanceItems] = useState<PerformanceItem[]>(
+    []
+  );
+  const [performanceForm, setPerformanceForm] = useState(
+    defaultPerformanceForm
+  );
+  const [editingPerformance, setEditingPerformance] =
+    useState<PerformanceItem | null>(null);
 
   const [costItems, setCostItems] = useState<CostItem[]>([]);
   const [costForm, setCostForm] = useState(defaultCostForm);
@@ -114,7 +121,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       );
       setSecurityItems(response.data ?? []);
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo cargar la postura de seguridad'));
+      setError(
+        getErrorMessage(error, 'No se pudo cargar la postura de seguridad')
+      );
     }
   }, [projectId]);
 
@@ -125,7 +134,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       );
       setPerformanceItems(response.data ?? []);
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo cargar el rendimiento de sistemas'));
+      setError(
+        getErrorMessage(error, 'No se pudo cargar el rendimiento de sistemas')
+      );
     }
   }, [projectId]);
 
@@ -165,7 +176,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       setSecurityForm(defaultSecurityForm);
       await loadSecurity();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo registrar la postura de seguridad'));
+      setError(
+        getErrorMessage(error, 'No se pudo registrar la postura de seguridad')
+      );
     }
   };
 
@@ -190,7 +203,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       setEditingSecurity(null);
       await loadSecurity();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo actualizar la postura de seguridad'));
+      setError(
+        getErrorMessage(error, 'No se pudo actualizar la postura de seguridad')
+      );
     }
   };
 
@@ -200,8 +215,12 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
     try {
       await api.post(`/systems/performance/${projectId}`, {
         systemName: performanceForm.systemName,
-        peakUsers: performanceForm.peakUsers ? Number(performanceForm.peakUsers) : undefined,
-        latencyMs: performanceForm.latencyMs ? Number(performanceForm.latencyMs) : undefined,
+        peakUsers: performanceForm.peakUsers
+          ? Number(performanceForm.peakUsers)
+          : undefined,
+        latencyMs: performanceForm.latencyMs
+          ? Number(performanceForm.latencyMs)
+          : undefined,
         availabilityPct: performanceForm.availabilityPct
           ? Number(performanceForm.availabilityPct)
           : undefined,
@@ -210,13 +229,17 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
           : undefined,
         topRootCause: performanceForm.topRootCause || undefined,
         capacityInfo: performanceForm.capacityInfo || undefined,
-        scalability: performanceForm.scalability ? Number(performanceForm.scalability) : undefined,
+        scalability: performanceForm.scalability
+          ? Number(performanceForm.scalability)
+          : undefined,
         notes: performanceForm.notes || undefined,
       });
       setPerformanceForm(defaultPerformanceForm);
       await loadPerformance();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo registrar el desempeño del sistema'));
+      setError(
+        getErrorMessage(error, 'No se pudo registrar el desempeño del sistema')
+      );
     }
   };
 
@@ -224,21 +247,26 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
     event.preventDefault();
     if (!editingPerformance) return;
     try {
-      await api.put(`/systems/performance/${projectId}/${editingPerformance.id}`, {
-        systemName: editingPerformance.systemName,
-        peakUsers: editingPerformance.peakUsers ?? undefined,
-        latencyMs: editingPerformance.latencyMs ?? undefined,
-        availabilityPct: editingPerformance.availabilityPct ?? undefined,
-        incidents90d: editingPerformance.incidents90d ?? undefined,
-        topRootCause: editingPerformance.topRootCause || undefined,
-        capacityInfo: editingPerformance.capacityInfo || undefined,
-        scalability: editingPerformance.scalability ?? undefined,
-        notes: editingPerformance.notes || undefined,
-      });
+      await api.put(
+        `/systems/performance/${projectId}/${editingPerformance.id}`,
+        {
+          systemName: editingPerformance.systemName,
+          peakUsers: editingPerformance.peakUsers ?? undefined,
+          latencyMs: editingPerformance.latencyMs ?? undefined,
+          availabilityPct: editingPerformance.availabilityPct ?? undefined,
+          incidents90d: editingPerformance.incidents90d ?? undefined,
+          topRootCause: editingPerformance.topRootCause || undefined,
+          capacityInfo: editingPerformance.capacityInfo || undefined,
+          scalability: editingPerformance.scalability ?? undefined,
+          notes: editingPerformance.notes || undefined,
+        }
+      );
       setEditingPerformance(null);
       await loadPerformance();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo actualizar el desempeño del sistema'));
+      setError(
+        getErrorMessage(error, 'No se pudo actualizar el desempeño del sistema')
+      );
     }
   };
 
@@ -249,11 +277,17 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       await api.post(`/systems/costs/${projectId}`, {
         systemName: costForm.systemName,
         model: costForm.model,
-        usersLicenses: costForm.usersLicenses ? Number(costForm.usersLicenses) : undefined,
-        costAnnual: costForm.costAnnual ? Number(costForm.costAnnual) : undefined,
+        usersLicenses: costForm.usersLicenses
+          ? Number(costForm.usersLicenses)
+          : undefined,
+        costAnnual: costForm.costAnnual
+          ? Number(costForm.costAnnual)
+          : undefined,
         implUSD: costForm.implUSD ? Number(costForm.implUSD) : undefined,
         infraUSD: costForm.infraUSD ? Number(costForm.infraUSD) : undefined,
-        supportUSD: costForm.supportUSD ? Number(costForm.supportUSD) : undefined,
+        supportUSD: costForm.supportUSD
+          ? Number(costForm.supportUSD)
+          : undefined,
         otherUSD: costForm.otherUSD ? Number(costForm.otherUSD) : undefined,
       });
       setCostForm(defaultCostForm);
@@ -290,7 +324,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       await api.delete(`/systems/security/${projectId}/${id}`);
       await loadSecurity();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo eliminar el registro de seguridad'));
+      setError(
+        getErrorMessage(error, 'No se pudo eliminar el registro de seguridad')
+      );
     }
   };
 
@@ -300,7 +336,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       await api.delete(`/systems/performance/${projectId}/${id}`);
       await loadPerformance();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo eliminar el registro de desempeño'));
+      setError(
+        getErrorMessage(error, 'No se pudo eliminar el registro de desempeño')
+      );
     }
   };
 
@@ -310,7 +348,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       await api.delete(`/systems/costs/${projectId}/${id}`);
       await loadCosts();
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo eliminar el registro de costos'));
+      setError(
+        getErrorMessage(error, 'No se pudo eliminar el registro de costos')
+      );
     }
   };
 
@@ -319,19 +359,25 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
       <div>
         <h2 className="text-xl font-semibold text-slate-900">Seguridad</h2>
         <p className="text-sm text-slate-500">
-          Monitorea controles, desempeño y costos asociados a los sistemas auditados.
+          Monitorea controles, desempeño y costos asociados a los sistemas
+          auditados.
         </p>
       </div>
 
       {error && (
-        <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>
+        <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </p>
       )}
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <header className="space-y-1">
-          <h3 className="text-lg font-semibold text-slate-900">Postura de seguridad</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Postura de seguridad
+          </h3>
           <p className="text-sm text-slate-500">
-            Evalúa la madurez de controles y vulnerabilidades abiertas por sistema.
+            Evalúa la madurez de controles y vulnerabilidades abiertas por
+            sistema.
           </p>
         </header>
         {canEdit && !editingSecurity && (
@@ -339,7 +385,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             onSubmit={handleCreateSecurity}
             className="grid gap-3 rounded-lg border border-slate-200 p-4"
           >
-            <h4 className="text-base font-medium text-slate-800">Nuevo registro</h4>
+            <h4 className="text-base font-medium text-slate-800">
+              Nuevo registro
+            </h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="flex flex-col text-sm">
                 Sistema
@@ -517,7 +565,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-base font-medium text-slate-800">Editar registro</h4>
+              <h4 className="text-base font-medium text-slate-800">
+                Editar registro
+              </h4>
               <button
                 type="button"
                 className="text-sm text-blue-700 underline"
@@ -547,7 +597,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingSecurity.userLifecycle ?? ''}
                   onChange={(event) =>
                     setEditingSecurity((prev) =>
-                      prev ? { ...prev, userLifecycle: event.target.value } : prev
+                      prev
+                        ? { ...prev, userLifecycle: event.target.value }
+                        : prev
                     )
                   }
                 />
@@ -571,7 +623,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingSecurity.mfa ? 'true' : 'false'}
                   onChange={(event) =>
                     setEditingSecurity((prev) =>
-                      prev ? { ...prev, mfa: event.target.value === 'true' } : prev
+                      prev
+                        ? { ...prev, mfa: event.target.value === 'true' }
+                        : prev
                     )
                   }
                 >
@@ -586,7 +640,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingSecurity.auditLogs ? 'true' : 'false'}
                   onChange={(event) =>
                     setEditingSecurity((prev) =>
-                      prev ? { ...prev, auditLogs: event.target.value === 'true' } : prev
+                      prev
+                        ? { ...prev, auditLogs: event.target.value === 'true' }
+                        : prev
                     )
                   }
                 >
@@ -625,7 +681,12 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingSecurity.tlsInTransit ? 'true' : 'false'}
                   onChange={(event) =>
                     setEditingSecurity((prev) =>
-                      prev ? { ...prev, tlsInTransit: event.target.value === 'true' } : prev
+                      prev
+                        ? {
+                            ...prev,
+                            tlsInTransit: event.target.value === 'true',
+                          }
+                        : prev
                     )
                   }
                 >
@@ -641,7 +702,10 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   onChange={(event) =>
                     setEditingSecurity((prev) =>
                       prev
-                        ? { ...prev, encryptionAtRest: event.target.value === 'true' }
+                        ? {
+                            ...prev,
+                            encryptionAtRest: event.target.value === 'true',
+                          }
                         : prev
                     )
                   }
@@ -695,12 +759,18 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
               className="flex flex-wrap items-start justify-between gap-2 rounded border border-slate-200 bg-slate-50 p-3"
             >
               <div>
-                <p className="text-sm font-medium text-slate-800">{item.systemName}</p>
+                <p className="text-sm font-medium text-slate-800">
+                  {item.systemName}
+                </p>
                 <p className="text-xs text-slate-500">
-                  MFA: {item.mfa ? 'Sí' : 'No'} · Logs: {item.auditLogs ? 'Sí' : 'No'} · TLS: {item.tlsInTransit ? 'Sí' : 'No'}
+                  MFA: {item.mfa ? 'Sí' : 'No'} · Logs:{' '}
+                  {item.auditLogs ? 'Sí' : 'No'} · TLS:{' '}
+                  {item.tlsInTransit ? 'Sí' : 'No'}
                 </p>
                 {item.openVulns && (
-                  <p className="text-xs text-red-500">Vulnerabilidades: {item.openVulns}</p>
+                  <p className="text-xs text-red-500">
+                    Vulnerabilidades: {item.openVulns}
+                  </p>
                 )}
                 {item.notes && (
                   <p className="text-xs text-slate-500">{item.notes}</p>
@@ -727,14 +797,18 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             </div>
           ))}
           {securityItems.length === 0 && (
-            <p className="text-sm text-slate-500">No hay registros de seguridad.</p>
+            <p className="text-sm text-slate-500">
+              No hay registros de seguridad.
+            </p>
           )}
         </div>
       </section>
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <header className="space-y-1">
-          <h3 className="text-lg font-semibold text-slate-900">Performance de sistemas</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Performance de sistemas
+          </h3>
           <p className="text-sm text-slate-500">
             Registra métricas operacionales, incidentes y escalabilidad.
           </p>
@@ -744,7 +818,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             onSubmit={handleCreatePerformance}
             className="grid gap-3 rounded-lg border border-slate-200 p-4"
           >
-            <h4 className="text-base font-medium text-slate-800">Nuevo registro</h4>
+            <h4 className="text-base font-medium text-slate-800">
+              Nuevo registro
+            </h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="flex flex-col text-sm">
                 Sistema
@@ -896,7 +972,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-base font-medium text-slate-800">Editar registro</h4>
+              <h4 className="text-base font-medium text-slate-800">
+                Editar registro
+              </h4>
               <button
                 type="button"
                 className="text-sm text-blue-700 underline"
@@ -928,7 +1006,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingPerformance.peakUsers ?? ''}
                   onChange={(event) =>
                     setEditingPerformance((prev) =>
-                      prev ? { ...prev, peakUsers: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, peakUsers: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -942,7 +1022,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingPerformance.latencyMs ?? ''}
                   onChange={(event) =>
                     setEditingPerformance((prev) =>
-                      prev ? { ...prev, latencyMs: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, latencyMs: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -959,7 +1041,10 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   onChange={(event) =>
                     setEditingPerformance((prev) =>
                       prev
-                        ? { ...prev, availabilityPct: Number(event.target.value) }
+                        ? {
+                            ...prev,
+                            availabilityPct: Number(event.target.value),
+                          }
                         : prev
                     )
                   }
@@ -974,7 +1059,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingPerformance.incidents90d ?? ''}
                   onChange={(event) =>
                     setEditingPerformance((prev) =>
-                      prev ? { ...prev, incidents90d: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, incidents90d: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -986,7 +1073,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingPerformance.topRootCause ?? ''}
                   onChange={(event) =>
                     setEditingPerformance((prev) =>
-                      prev ? { ...prev, topRootCause: event.target.value } : prev
+                      prev
+                        ? { ...prev, topRootCause: event.target.value }
+                        : prev
                     )
                   }
                 />
@@ -998,7 +1087,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingPerformance.capacityInfo ?? ''}
                   onChange={(event) =>
                     setEditingPerformance((prev) =>
-                      prev ? { ...prev, capacityInfo: event.target.value } : prev
+                      prev
+                        ? { ...prev, capacityInfo: event.target.value }
+                        : prev
                     )
                   }
                 />
@@ -1013,7 +1104,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingPerformance.scalability ?? ''}
                   onChange={(event) =>
                     setEditingPerformance((prev) =>
-                      prev ? { ...prev, scalability: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, scalability: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1050,12 +1143,17 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
               className="flex flex-wrap items-start justify-between gap-2 rounded border border-slate-200 bg-slate-50 p-3"
             >
               <div>
-                <p className="text-sm font-medium text-slate-800">{item.systemName}</p>
+                <p className="text-sm font-medium text-slate-800">
+                  {item.systemName}
+                </p>
                 <p className="text-xs text-slate-500">
-                  Disponibilidad: {item.availabilityPct ?? 'N/D'}% · Incidentes: {item.incidents90d ?? 'N/D'}
+                  Disponibilidad: {item.availabilityPct ?? 'N/D'}% · Incidentes:{' '}
+                  {item.incidents90d ?? 'N/D'}
                 </p>
                 {item.topRootCause && (
-                  <p className="text-xs text-slate-500">Causa raíz: {item.topRootCause}</p>
+                  <p className="text-xs text-slate-500">
+                    Causa raíz: {item.topRootCause}
+                  </p>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -1079,16 +1177,21 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             </div>
           ))}
           {performanceItems.length === 0 && (
-            <p className="text-sm text-slate-500">No hay registros de performance.</p>
+            <p className="text-sm text-slate-500">
+              No hay registros de performance.
+            </p>
           )}
         </div>
       </section>
 
       <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <header className="space-y-1">
-          <h3 className="text-lg font-semibold text-slate-900">Costos y licenciamiento</h3>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Costos y licenciamiento
+          </h3>
           <p className="text-sm text-slate-500">
-            Controla el modelo de licenciamiento y el costo total de propiedad estimado.
+            Controla el modelo de licenciamiento y el costo total de propiedad
+            estimado.
           </p>
         </header>
         {canEdit && !editingCost && (
@@ -1096,7 +1199,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             onSubmit={handleCreateCost}
             className="grid gap-3 rounded-lg border border-slate-200 p-4"
           >
-            <h4 className="text-base font-medium text-slate-800">Nuevo registro</h4>
+            <h4 className="text-base font-medium text-slate-800">
+              Nuevo registro
+            </h4>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <label className="flex flex-col text-sm">
                 Sistema
@@ -1234,7 +1339,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             className="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-base font-medium text-slate-800">Editar registro</h4>
+              <h4 className="text-base font-medium text-slate-800">
+                Editar registro
+              </h4>
               <button
                 type="button"
                 className="text-sm text-blue-700 underline"
@@ -1279,7 +1386,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingCost.usersLicenses ?? ''}
                   onChange={(event) =>
                     setEditingCost((prev) =>
-                      prev ? { ...prev, usersLicenses: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, usersLicenses: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1293,7 +1402,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingCost.costAnnual ?? ''}
                   onChange={(event) =>
                     setEditingCost((prev) =>
-                      prev ? { ...prev, costAnnual: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, costAnnual: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1307,7 +1418,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingCost.implUSD ?? ''}
                   onChange={(event) =>
                     setEditingCost((prev) =>
-                      prev ? { ...prev, implUSD: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, implUSD: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1321,7 +1434,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingCost.infraUSD ?? ''}
                   onChange={(event) =>
                     setEditingCost((prev) =>
-                      prev ? { ...prev, infraUSD: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, infraUSD: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1335,7 +1450,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingCost.supportUSD ?? ''}
                   onChange={(event) =>
                     setEditingCost((prev) =>
-                      prev ? { ...prev, supportUSD: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, supportUSD: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1349,7 +1466,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
                   value={editingCost.otherUSD ?? ''}
                   onChange={(event) =>
                     setEditingCost((prev) =>
-                      prev ? { ...prev, otherUSD: Number(event.target.value) } : prev
+                      prev
+                        ? { ...prev, otherUSD: Number(event.target.value) }
+                        : prev
                     )
                   }
                 />
@@ -1373,9 +1492,12 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
               className="flex flex-wrap items-start justify-between gap-2 rounded border border-slate-200 bg-slate-50 p-3"
             >
               <div>
-                <p className="text-sm font-medium text-slate-800">{item.systemName}</p>
+                <p className="text-sm font-medium text-slate-800">
+                  {item.systemName}
+                </p>
                 <p className="text-xs text-slate-500">
-                  Modelo: {item.model} · Usuarios: {item.usersLicenses ?? 'N/D'} · TCO 3y: ${item.tco3y?.toLocaleString('es-CL') ?? 'N/D'}
+                  Modelo: {item.model} · Usuarios: {item.usersLicenses ?? 'N/D'}{' '}
+                  · TCO 3y: ${item.tco3y?.toLocaleString('es-CL') ?? 'N/D'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1399,7 +1521,9 @@ export default function SecurityTab({ projectId }: SecurityTabProps) {
             </div>
           ))}
           {costItems.length === 0 && (
-            <p className="text-sm text-slate-500">No hay registros de costos.</p>
+            <p className="text-sm text-slate-500">
+              No hay registros de costos.
+            </p>
           )}
         </div>
       </section>

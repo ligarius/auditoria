@@ -63,7 +63,7 @@ export default function AdminDashboard() {
 
   const quickActionBase = useMemo(
     () => (lastProjectId ? `/projects/${lastProjectId}` : '/projects'),
-    [lastProjectId],
+    [lastProjectId]
   );
 
   if (role !== 'admin') {

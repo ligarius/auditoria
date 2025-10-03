@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 
-import { computeReceptionTimes } from '../../modules/receptions/reception.metrics';
+import { computeReceptionTimes } from '../../modules/receptions/reception.metrics.js';
 
 describe('computeReceptionTimes', () => {
   it('calcula dwell, unload e idle correctamente', () => {

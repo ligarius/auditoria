@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireRole } from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import { authenticate, requireRole } from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-import { meetingService } from './meeting.service';
+import { meetingService } from './meeting.service.js';
 
 const meetingRouter = Router();
 

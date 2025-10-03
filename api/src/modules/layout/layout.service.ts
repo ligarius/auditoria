@@ -6,8 +6,8 @@ import {
   type File as FileRecord
 } from '@prisma/client';
 
-import { prisma } from '../../core/config/db';
-import { fileService } from '../files/file.service';
+import { prisma } from '../../core/config/db.js';
+import { fileService } from '../files/file.service.js';
 
 interface SimulationRow {
   zoneId: string;
@@ -19,10 +19,10 @@ interface SimulationRow {
 const normalizeMemo = (
   memo: unknown,
   totalPP: number
-): Prisma.InputJsonValue => {
+): Prisma.InputJsonValue | null => {
   const timestamp = new Date().toISOString();
   if (memo === null || memo === undefined) {
-    return { totalPP, savedAt: timestamp } as Prisma.InputJsonValue;
+    return null;
   }
   if (typeof memo === 'string') {
     return {
@@ -196,7 +196,7 @@ export const layoutService = {
             rackType: row.rackType,
             aisles: row.aisles,
             pp: row.pp,
-            memo: memoPayload
+            memo: memoPayload === null ? Prisma.JsonNull : memoPayload
           }
         })
       )

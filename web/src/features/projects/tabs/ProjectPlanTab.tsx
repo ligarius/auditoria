@@ -66,10 +66,17 @@ const buildHierarchy = (tasks: ProjectTask[]): TaskNode[] => {
 
   const sortNodes = (nodes: TaskNode[]) => {
     nodes.sort((a, b) => {
-      if (a.sortOrder !== null && a.sortOrder !== undefined && b.sortOrder !== null && b.sortOrder !== undefined) {
+      if (
+        a.sortOrder !== null &&
+        a.sortOrder !== undefined &&
+        b.sortOrder !== null &&
+        b.sortOrder !== undefined
+      ) {
         return a.sortOrder - b.sortOrder;
       }
-      return parseDate(a.startDate).getTime() - parseDate(b.startDate).getTime();
+      return (
+        parseDate(a.startDate).getTime() - parseDate(b.startDate).getTime()
+      );
     });
     nodes.forEach((node) => sortNodes(node.children));
   };
@@ -124,11 +131,15 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
     if (!projectId) return;
     setLoading(true);
     try {
-      const response = await api.get<ProjectTask[]>(`/project-plan/${projectId}`);
+      const response = await api.get<ProjectTask[]>(
+        `/project-plan/${projectId}`
+      );
       setTasks(response.data ?? []);
       setError(null);
     } catch (error: unknown) {
-      setError(getErrorMessage(error, 'No se pudo cargar el plan del proyecto'));
+      setError(
+        getErrorMessage(error, 'No se pudo cargar el plan del proyecto')
+      );
     } finally {
       setLoading(false);
     }
@@ -205,7 +216,8 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
   const totalDuration = Math.max(
     1,
     Math.round(
-      (timeline.end.getTime() - timeline.start.getTime()) / (1000 * 60 * 60 * 24)
+      (timeline.end.getTime() - timeline.start.getTime()) /
+        (1000 * 60 * 60 * 24)
     ) + 1
   );
 
@@ -216,9 +228,12 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900">Plan del proyecto</h2>
+        <h2 className="text-xl font-semibold text-slate-900">
+          Plan del proyecto
+        </h2>
         <p className="text-sm text-slate-500">
-          Crea hitos, asigna responsables y visualiza la carta Gantt del proyecto.
+          Crea hitos, asigna responsables y visualiza la carta Gantt del
+          proyecto.
         </p>
       </div>
 
@@ -282,7 +297,10 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
                 className="mt-1 rounded border px-3 py-2"
                 value={form.progress}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, progress: Number(event.target.value) }))
+                  setForm((prev) => ({
+                    ...prev,
+                    progress: Number(event.target.value),
+                  }))
                 }
               />
             </label>
@@ -293,7 +311,10 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
                 className="mt-1 rounded border px-3 py-2"
                 value={form.startDate}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, startDate: event.target.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    startDate: event.target.value,
+                  }))
                 }
                 required
               />
@@ -333,7 +354,10 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
                 className="mt-1 rounded border px-3 py-2"
                 value={form.description}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, description: event.target.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
                 }
                 rows={2}
               />
@@ -461,7 +485,9 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
                 value={editing.parentId ?? ''}
                 onChange={(event) =>
                   setEditing((prev) =>
-                    prev ? { ...prev, parentId: event.target.value || null } : prev
+                    prev
+                      ? { ...prev, parentId: event.target.value || null }
+                      : prev
                   )
                 }
               >
@@ -509,12 +535,14 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
             <div className="space-y-3">
               {flatTasks.map((task) => {
                 const startOffset =
-                  ((parseDate(task.startDate).getTime() - timeline.start.getTime()) /
-                    (1000 * 60 * 60 * 24)) /
+                  (parseDate(task.startDate).getTime() -
+                    timeline.start.getTime()) /
+                  (1000 * 60 * 60 * 24) /
                   totalDuration;
                 const duration =
-                  ((parseDate(task.endDate).getTime() - parseDate(task.startDate).getTime()) /
-                    (1000 * 60 * 60 * 24)) /
+                  (parseDate(task.endDate).getTime() -
+                    parseDate(task.startDate).getTime()) /
+                  (1000 * 60 * 60 * 24) /
                   totalDuration;
                 const widthPercent = Math.max(duration * 100, 2);
                 const leftPercent = Math.max(startOffset * 100, 0);
@@ -540,7 +568,8 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
                         </span>
                       )}
                       <span className="text-xs text-slate-400">
-                        {formatDate(task.startDate)} → {formatDate(task.endDate)}
+                        {formatDate(task.startDate)} →{' '}
+                        {formatDate(task.endDate)}
                       </span>
                     </div>
                     <div className="relative h-3 rounded bg-slate-100">
@@ -552,22 +581,24 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
                           minWidth: '2%',
                         }}
                       />
-                      {task.progress !== null && task.progress !== undefined && (
-                        <div
-                          className="absolute h-3 rounded bg-black/20"
-                          style={{
-                            width: `${progressWidth}%`,
-                            left: `${leftPercent}%`,
-                          }}
-                        />
-                      )}
+                      {task.progress !== null &&
+                        task.progress !== undefined && (
+                          <div
+                            className="absolute h-3 rounded bg-black/20"
+                            style={{
+                              width: `${progressWidth}%`,
+                              left: `${leftPercent}%`,
+                            }}
+                          />
+                        )}
                     </div>
                   </div>
                 );
               })}
               {flatTasks.length === 0 && (
                 <p className="text-sm text-slate-500">
-                  Aún no hay tareas registradas. Crea hitos para visualizar el plan.
+                  Aún no hay tareas registradas. Crea hitos para visualizar el
+                  plan.
                 </p>
               )}
             </div>
@@ -576,17 +607,31 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-slate-900">Detalle de tareas</h3>
+        <h3 className="text-lg font-semibold text-slate-900">
+          Detalle de tareas
+        </h3>
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-3 py-2 text-left font-medium text-slate-600">Tarea</th>
-                <th className="px-3 py-2 text-left font-medium text-slate-600">Responsable</th>
-                <th className="px-3 py-2 text-left font-medium text-slate-600">Estado</th>
-                <th className="px-3 py-2 text-left font-medium text-slate-600">Inicio</th>
-                <th className="px-3 py-2 text-left font-medium text-slate-600">Término</th>
-                <th className="px-3 py-2 text-left font-medium text-slate-600">Acciones</th>
+                <th className="px-3 py-2 text-left font-medium text-slate-600">
+                  Tarea
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-slate-600">
+                  Responsable
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-slate-600">
+                  Estado
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-slate-600">
+                  Inicio
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-slate-600">
+                  Término
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-slate-600">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -600,7 +645,9 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
                       {task.name}
                     </span>
                     {task.description && (
-                      <p className="text-xs text-slate-500">{task.description}</p>
+                      <p className="text-xs text-slate-500">
+                        {task.description}
+                      </p>
                     )}
                   </td>
                   <td className="px-3 py-2 text-slate-600">
@@ -635,14 +682,20 @@ export default function ProjectPlanTab({ projectId }: ProjectPlanTabProps) {
               ))}
               {flatTasks.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-center text-slate-500">
+                  <td
+                    colSpan={6}
+                    className="px-3 py-4 text-center text-slate-500"
+                  >
                     No hay tareas registradas.
                   </td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-center text-slate-500">
+                  <td
+                    colSpan={6}
+                    className="px-3 py-4 text-center text-slate-500"
+                  >
                     Cargando plan…
                   </td>
                 </tr>

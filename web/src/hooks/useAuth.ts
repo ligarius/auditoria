@@ -11,5 +11,8 @@ export function useAuth() {
     window.location.replace('/login');
   }, []);
 
-  return useMemo(() => ({ isAuth: !!token, role, logout }), [logout, role, token]);
+  return useMemo(
+    () => ({ isAuth: !!token, role, logout }),
+    [logout, role, token]
+  );
 }

@@ -1,8 +1,8 @@
 import { ChecklistStatus } from '@prisma/client';
 
-import { prisma } from '../../core/config/db';
-import { HttpError } from '../../core/errors/http-error';
-import { auditService } from '../audit/audit.service';
+import { prisma } from '../../core/config/db.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import { auditService } from '../audit/audit.service.js';
 
 export interface ChecklistItemInput {
   id?: string;
@@ -140,7 +140,7 @@ export const checklistService = {
   async updateItem(
     checklistId: string,
     itemId: string,
-    data: ChecklistItemInput,
+    data: Partial<ChecklistItemInput>,
     userId: string
   ) {
     const checklist = await prisma.checklist.findUnique({

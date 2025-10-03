@@ -4,25 +4,25 @@ import 'express-async-errors';
 import cors from 'cors';
 import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
-import pinoHttp from 'pino-http';
-import pino from 'pino';
+import { pinoHttp } from 'pino-http';
+import { pino } from 'pino';
 
-import { appRouter } from './app';
-import { env } from './core/config/env';
-import { metricsRegistry } from './core/metrics/registry';
-import { globalRateLimiter } from './core/middleware/rate-limit';
-import { errorHandler } from './core/errors/error-handler';
-import { logger } from './core/config/logger';
-import { findingRouter } from './modules/findings/finding.router';
-import { riskRouter } from './modules/risks/risk.router';
-import { formsRouter } from './modules/forms/forms.router';
-import workflowRouter from './modules/workflow/workflow.router';
-import reportRouter from './modules/export/report.router';
-import { initializeQueueWorkers } from './services/queue';
-import { startApprovalSlaMonitor } from './services/approval-sla';
-import surveysRouter from './routes/surveys';
-import { zodErrorHandler } from './common/validation/zod-error.middleware';
-import { startKpiSnapshotCron } from './modules/kpis/kpi-snapshot.job';
+import { appRouter } from './app.js';
+import { env } from './core/config/env.js';
+import { metricsRegistry } from './core/metrics/registry.js';
+import { globalRateLimiter } from './core/middleware/rate-limit.js';
+import { errorHandler } from './core/errors/error-handler.js';
+import { logger } from './core/config/logger.js';
+import { findingRouter } from './modules/findings/finding.router.js';
+import { riskRouter } from './modules/risks/risk.router.js';
+import { formsRouter } from './modules/forms/forms.router.js';
+import workflowRouter from './modules/workflow/workflow.router.js';
+import reportRouter from './modules/export/report.router.js';
+import { initializeQueueWorkers } from './services/queue.js';
+import { startApprovalSlaMonitor } from './services/approval-sla.js';
+import surveysRouter from './routes/surveys.js';
+import { zodErrorHandler } from './common/validation/zod-error.middleware.js';
+import { startKpiSnapshotCron } from './modules/kpis/kpi-snapshot.job.js';
 
 const app = express();
 
@@ -39,7 +39,7 @@ const allowedOrigins = env.clientUrl
   : env.corsAllowlist;
 
 const sanitizeHeaders = (
-  headers: Record<string, string | string[]>
+  headers: Record<string, string | string[] | undefined>
 ): Record<string, string> => {
   return Object.entries(headers).reduce<Record<string, string>>(
     (acc, [key, value]) => {
@@ -52,7 +52,7 @@ const sanitizeHeaders = (
         acc[key] = '<redacted>';
         return acc;
       }
-      acc[key] = Array.isArray(value) ? value.join(', ') : value;
+      acc[key] = Array.isArray(value) ? value.join(', ') : (value ?? '');
       return acc;
     },
     {}
@@ -84,38 +84,37 @@ app.use(
     logger,
     autoLogging: env.nodeEnv !== 'test',
     serializers: {
-      req(request) {
+      req(request: Parameters<typeof pino.stdSerializers.req>[0]) {
         const serialized = pino.stdSerializers.req(request);
         if (serialized && serialized.headers) {
-          const headers = (serialized.headers ?? {}) as Record<
+          const headers = serialized.headers as Record<
             string,
-            string | string[]
+            string | string[] | undefined
           >;
           const cleaned = sanitizeHeaders(headers);
+          const setCookie = headers['set-cookie'];
+          cleaned['set-cookie'] = Array.isArray(setCookie)
+            ? setCookie.join(', ')
+            : (setCookie ?? '');
           serialized.headers = cleaned;
-          if (Array.isArray(headers['set-cookie'])) {
-            serialized.headers['set-cookie'] = headers['set-cookie'].join(', ');
-          }
         }
         return serialized;
       },
-      res(response) {
+      res(response: Parameters<typeof pino.stdSerializers.res>[0]) {
         const serialized = pino.stdSerializers.res(response);
         if (serialized && serialized.headers) {
           const headers = serialized.headers as Record<
             string,
-            string | string[]
+            string | string[] | undefined
           >;
           const cleaned = sanitizeHeaders(headers);
-          serialized.headers = cleaned;
           const setCookie = headers['set-cookie'];
-          if (Array.isArray(setCookie)) {
-            serialized.headers['set-cookie'] = setCookie
-              .map(() => '<redacted>')
-              .join(', ');
-          } else if (typeof setCookie === 'string') {
-            serialized.headers['set-cookie'] = '<redacted>';
-          }
+          cleaned['set-cookie'] = Array.isArray(setCookie)
+            ? setCookie.map(() => '<redacted>').join(', ')
+            : setCookie
+              ? '<redacted>'
+              : '';
+          serialized.headers = cleaned;
         }
         return serialized;
       }

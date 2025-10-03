@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { authenticate, requireRole } from '../../core/middleware/auth';
+import { authenticate, requireRole } from '../../core/middleware/auth.js';
 
-import { userService } from './user.service';
+import { userService } from './user.service.js';
 
 const userRouter = Router();
 

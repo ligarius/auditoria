@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireRole } from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
-import { generateProjectReportPdf } from '../export/report.service';
+import { authenticate, requireRole } from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+import { generateProjectReportPdf } from '../export/report.service.js';
 
-import { projectService } from './project.service';
-import { projectSurveyService } from './project-survey.service';
+import { projectService } from './project.service.js';
+import { projectSurveyService } from './project-survey.service.js';
 
 const projectRouter = Router();
 

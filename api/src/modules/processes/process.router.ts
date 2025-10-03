@@ -4,11 +4,14 @@ import { randomUUID } from 'crypto';
 import { Router } from 'express';
 import multer from 'multer';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
-import { fileService } from '../files/file.service';
+import {
+  authenticate,
+  requireProjectRole
+} from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+import { fileService } from '../files/file.service.js';
 
-import { processService } from './process.service';
+import { processService } from './process.service.js';
 
 const upload = multer({
   dest: path.join(process.cwd(), 'tmp'),

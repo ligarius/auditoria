@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import { prisma } from '../../core/config/db.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 import {
   authenticate,
   requireProjectMembership,
   requireRole
-} from '../../core/middleware/auth';
+} from '../../core/middleware/auth.js';
 
-import { findingService } from './finding.service';
+import { findingService } from './finding.service.js';
 
 const findingRouter = Router();
 

@@ -193,9 +193,7 @@ export default function HseTab({ projectId }: HseTabProps) {
   const loadIncidents = useCallback(async () => {
     setError(null);
     try {
-      const response = await api.get<Incident[]>(
-        `/hse/incidents/${projectId}`
-      );
+      const response = await api.get<Incident[]>(`/hse/incidents/${projectId}`);
       setIncidents(Array.isArray(response.data) ? response.data : []);
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'No se pudieron cargar los incidentes'));
@@ -300,7 +298,10 @@ export default function HseTab({ projectId }: HseTabProps) {
         </div>
 
         {canEdit ? (
-          <form className="mb-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmitCheck}>
+          <form
+            className="mb-6 grid gap-4 md:grid-cols-2"
+            onSubmit={handleSubmitCheck}
+          >
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
                 Tipo de registro
@@ -374,7 +375,9 @@ export default function HseTab({ projectId }: HseTabProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Ubicación</label>
+              <label className="text-sm font-medium text-slate-700">
+                Ubicación
+              </label>
               <input
                 type="text"
                 className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
@@ -466,7 +469,8 @@ export default function HseTab({ projectId }: HseTabProps) {
                       {check.title}
                     </p>
                     <p className="text-slate-500">
-                      {checkTypeLabels[check.type]} · {formatDate(check.performedAt)}
+                      {checkTypeLabels[check.type]} ·{' '}
+                      {formatDate(check.performedAt)}
                     </p>
                   </div>
                   {check.createdBy?.name ? (
@@ -534,7 +538,10 @@ export default function HseTab({ projectId }: HseTabProps) {
         </div>
 
         {canEdit ? (
-          <form className="mb-6 grid gap-4 md:grid-cols-2" onSubmit={handleSubmitPpe}>
+          <form
+            className="mb-6 grid gap-4 md:grid-cols-2"
+            onSubmit={handleSubmitPpe}
+          >
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
                 Colaborador

@@ -1,9 +1,9 @@
 import { Router } from 'express';
 
-import { authenticate } from '../../core/middleware/auth';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import { authenticate } from '../../core/middleware/auth.js';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 
-import { reportService } from './report.service';
+import { reportService } from './report.service.js';
 
 const reportRouter = Router();
 

@@ -1,9 +1,9 @@
 import { Queue, Worker, type JobsOptions } from 'bullmq';
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 
-import { env } from '../core/config/env';
-import { prisma } from '../core/config/db';
-import { logger } from '../core/config/logger';
+import { env } from '../core/config/env.js';
+import { prisma } from '../core/config/db.js';
+import { logger } from '../core/config/logger.js';
 
 interface SurveyInviteJobData {
   surveyLinkId: string;
@@ -26,11 +26,11 @@ type QueueInitialization = {
 };
 
 const createQueueInfrastructure = (): QueueInitialization => {
-  const connection = new IORedis(env.redisUrl, {
+  const connection = new Redis(env.redisUrl, {
     maxRetriesPerRequest: null
   });
 
-  connection.on('error', (error) => {
+  connection.on('error', (error: Error) => {
     logger.error({ err: error }, 'Error en la conexión a Redis para BullMQ');
   });
 

@@ -1,4 +1,11 @@
-import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ChangeEvent,
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import api from '../../lib/api';
 import type { LocationItem, SkuItem, ZoneSummary } from './types';
@@ -133,7 +140,13 @@ const formatNumber = (value: number | null | undefined) => {
   return Number(value).toLocaleString('es-ES', { maximumFractionDigits: 2 });
 };
 
-const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }: BlindCountSectionProps) => {
+const BlindCountSection = ({
+  projectId,
+  skus,
+  locations,
+  zones,
+  loadingMaster,
+}: BlindCountSectionProps) => {
   const [counts, setCounts] = useState<InventoryCountSummary[]>([]);
   const [countsLoading, setCountsLoading] = useState(false);
   const [countsError, setCountsError] = useState<string | null>(null);
@@ -147,14 +160,27 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
   const [creatingCount, setCreatingCount] = useState(false);
   const [updatingTolerance, setUpdatingTolerance] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [taskForm, setTaskForm] = useState({ zoneId: '', assignedToId: '', blind: true });
+  const [taskForm, setTaskForm] = useState({
+    zoneId: '',
+    assignedToId: '',
+    blind: true,
+  });
   const [addingTask, setAddingTask] = useState(false);
   const [captureTaskId, setCaptureTaskId] = useState<string | null>(null);
-  const [captureForm, setCaptureForm] = useState({ locationCode: '', skuCode: '', qty: '', deviceId: '' });
+  const [captureForm, setCaptureForm] = useState({
+    locationCode: '',
+    skuCode: '',
+    qty: '',
+    deviceId: '',
+  });
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
-  const [recountDrafts, setRecountDrafts] = useState<Record<string, string>>({});
-  const [recountSaving, setRecountSaving] = useState<Record<string, boolean>>({});
+  const [recountDrafts, setRecountDrafts] = useState<Record<string, string>>(
+    {}
+  );
+  const [recountSaving, setRecountSaving] = useState<Record<string, boolean>>(
+    {}
+  );
   const [reasonDrafts, setReasonDrafts] = useState<Record<string, string>>({});
   const [reasonSaving, setReasonSaving] = useState<Record<string, boolean>>({});
   const [downloading, setDownloading] = useState(false);
@@ -187,7 +213,9 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
     setCountsLoading(true);
     setCountsError(null);
     try {
-      const response = await api.get<InventoryCountSummary[]>(`/inventory/counts/${projectId}`);
+      const response = await api.get<InventoryCountSummary[]>(
+        `/inventory/counts/${projectId}`
+      );
       const data = Array.isArray(response.data) ? response.data : [];
       setCounts(data);
       setSelectedCountId((previous) => previous ?? data[0]?.id ?? null);
@@ -204,12 +232,24 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
     try {
       const response = await api.get(`/projects/${projectId}`);
       const data = response.data as {
-        memberships?: { user?: { id: string; name?: string | null; email?: string | null } }[];
+        memberships?: {
+          user?: { id: string; name?: string | null; email?: string | null };
+        }[];
       };
-      const memberships = Array.isArray(data?.memberships) ? data.memberships : [];
+      const memberships = Array.isArray(data?.memberships)
+        ? data.memberships
+        : [];
       const parsed = memberships
         .map((membership) => membership.user)
-        .filter((user): user is { id: string; name?: string | null; email?: string | null } => Boolean(user?.id))
+        .filter(
+          (
+            user
+          ): user is {
+            id: string;
+            name?: string | null;
+            email?: string | null;
+          } => Boolean(user?.id)
+        )
         .map((user) => ({
           id: user.id,
           name: user.name ?? user.email ?? 'Sin nombre',
@@ -218,37 +258,38 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
       setMembers(parsed);
     } catch (error) {
       console.error('No se pudieron obtener los miembros del proyecto', error);
-      setMembersError('No se pudieron obtener los miembros para asignar tareas.');
+      setMembersError(
+        'No se pudieron obtener los miembros para asignar tareas.'
+      );
     }
   }, [projectId]);
 
-  const fetchDetail = useCallback(
-    async (countId: string) => {
-      setDetailLoading(true);
-      setDetailError(null);
-      try {
-        const response = await api.get<InventoryCountDetail>(`/inventory/counts/${countId}/detail`);
-        if (response.data) {
-          setDetail(response.data);
-          setCaptureTaskId((prev) => {
-            if (prev && response.data.tasks.some((task) => task.id === prev)) {
-              return prev;
-            }
-            return response.data.tasks[0]?.id ?? null;
-          });
-        } else {
-          setDetail(null);
-        }
-      } catch (error) {
-        console.error('No se pudo obtener el detalle del conteo', error);
-        setDetailError('No se pudo obtener el detalle del conteo seleccionado.');
+  const fetchDetail = useCallback(async (countId: string) => {
+    setDetailLoading(true);
+    setDetailError(null);
+    try {
+      const response = await api.get<InventoryCountDetail>(
+        `/inventory/counts/${countId}/detail`
+      );
+      if (response.data) {
+        setDetail(response.data);
+        setCaptureTaskId((prev) => {
+          if (prev && response.data.tasks.some((task) => task.id === prev)) {
+            return prev;
+          }
+          return response.data.tasks[0]?.id ?? null;
+        });
+      } else {
         setDetail(null);
-      } finally {
-        setDetailLoading(false);
       }
-    },
-    [],
-  );
+    } catch (error) {
+      console.error('No se pudo obtener el detalle del conteo', error);
+      setDetailError('No se pudo obtener el detalle del conteo seleccionado.');
+      setDetail(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchCounts();
@@ -281,9 +322,12 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
 
     setCreatingCount(true);
     try {
-      const response = await api.post<InventoryCountSummary>(`/inventory/counts/${projectId}`, {
-        tolerancePct: toleranceValue ?? null,
-      });
+      const response = await api.post<InventoryCountSummary>(
+        `/inventory/counts/${projectId}`,
+        {
+          tolerancePct: toleranceValue ?? null,
+        }
+      );
       setActionMessage('Conteo planificado correctamente.');
       setCountForm({ tolerancePct: '' });
       await fetchCounts();
@@ -315,7 +359,9 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
 
     setUpdatingTolerance(true);
     try {
-      await api.patch(`/inventory/counts/${detail.id}`, { tolerancePct: parsed });
+      await api.patch(`/inventory/counts/${detail.id}`, {
+        tolerancePct: parsed,
+      });
       setActionMessage('Tolerancia actualizada.');
       setCountForm({ tolerancePct: '' });
       await fetchDetail(detail.id);
@@ -347,7 +393,9 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
     resetMessages();
     setClosing(true);
     try {
-      const response = await api.post<InventoryCountDetail>(`/inventory/counts/${detail.id}/close`);
+      const response = await api.post<InventoryCountDetail>(
+        `/inventory/counts/${detail.id}/close`
+      );
       if (response.data) {
         setDetail(response.data);
       }
@@ -355,17 +403,23 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
       await fetchCounts();
     } catch (error) {
       console.error('No se pudo cerrar el conteo', error);
-      setActionError('No se pudo cerrar el conteo. Verifica que esté en curso.');
+      setActionError(
+        'No se pudo cerrar el conteo. Verifica que esté en curso.'
+      );
     } finally {
       setClosing(false);
     }
   };
 
-  const handleTaskFormChange = (event: ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    const { name, value, type, checked } = event.target;
+  const handleTaskFormChange = (
+    event: ChangeEvent<HTMLSelectElement | HTMLInputElement>
+  ) => {
+    const { name, value, type } = event.target;
+    const nextValue =
+      type === 'checkbox' ? (event.target as HTMLInputElement).checked : value;
     setTaskForm((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: nextValue,
     }));
   };
 
@@ -437,19 +491,24 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
 
     setRecording(true);
     try {
-      await api.post(`/inventory/counts/${detail.id}/tasks/${captureTaskId}/scans`, {
-        locationId: location.id,
-        skuId,
-        qty: qtyValue,
-        deviceId: captureForm.deviceId.trim() || undefined,
-      });
+      await api.post(
+        `/inventory/counts/${detail.id}/tasks/${captureTaskId}/scans`,
+        {
+          locationId: location.id,
+          skuId,
+          qty: qtyValue,
+          deviceId: captureForm.deviceId.trim() || undefined,
+        }
+      );
       setCaptureForm({ locationCode: '', skuCode: '', qty: '', deviceId: '' });
       setActionMessage('Lectura registrada.');
       await fetchDetail(detail.id);
       await fetchCounts();
     } catch (error) {
       console.error('No se pudo registrar la lectura', error);
-      setCaptureError('No se pudo registrar la lectura. Verifica el estado del conteo.');
+      setCaptureError(
+        'No se pudo registrar la lectura. Verifica el estado del conteo.'
+      );
     } finally {
       setRecording(false);
     }
@@ -461,11 +520,14 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
 
   const handleSaveRecount = async (scanId: string) => {
     if (!detail || !captureTaskId) return;
-    const targetTask = detail.tasks.find((task) => task.scans.some((scan) => scan.id === scanId));
+    const targetTask = detail.tasks.find((task) =>
+      task.scans.some((scan) => scan.id === scanId)
+    );
     if (!targetTask) return;
 
     const draft = recountDrafts[scanId];
-    const parsed = draft !== undefined ? Number.parseFloat(draft.replace(',', '.')) : NaN;
+    const parsed =
+      draft !== undefined ? Number.parseFloat(draft.replace(',', '.')) : NaN;
     if (!Number.isFinite(parsed) || parsed < 0) {
       setActionError('El reconteo debe ser un número válido.');
       return;
@@ -473,9 +535,12 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
 
     setRecountSaving((prev) => ({ ...prev, [scanId]: true }));
     try {
-      await api.post(`/inventory/counts/${detail.id}/tasks/${targetTask.id}/scans/${scanId}/recount`, {
-        qty2: parsed,
-      });
+      await api.post(
+        `/inventory/counts/${detail.id}/tasks/${targetTask.id}/scans/${scanId}/recount`,
+        {
+          qty2: parsed,
+        }
+      );
       setActionMessage('Reconteo actualizado.');
       setRecountDrafts((prev) => ({ ...prev, [scanId]: '' }));
       await fetchDetail(detail.id);
@@ -497,9 +562,12 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
     const reason = reasonDrafts[varianceId]?.trim() ?? '';
     setReasonSaving((prev) => ({ ...prev, [varianceId]: true }));
     try {
-      await api.patch(`/inventory/counts/${detail.id}/variances/${varianceId}`, {
-        reason: reason.length > 0 ? reason : null,
-      });
+      await api.patch(
+        `/inventory/counts/${detail.id}/variances/${varianceId}`,
+        {
+          reason: reason.length > 0 ? reason : null,
+        }
+      );
       setActionMessage('Causa actualizada.');
       await fetchDetail(detail.id);
     } catch (error) {
@@ -514,10 +582,15 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
     if (!detail) return;
     setDownloading(true);
     try {
-      const response = await api.get(`/inventory/counts/${detail.id}/variances/export`, {
-        responseType: 'blob',
+      const response = await api.get(
+        `/inventory/counts/${detail.id}/variances/export`,
+        {
+          responseType: 'blob',
+        }
+      );
+      const blob = new Blob([response.data], {
+        type: 'text/csv;charset=utf-8',
       });
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -532,11 +605,16 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
     }
   };
 
-  const captureTask = detail?.tasks.find((task) => task.id === captureTaskId) ?? null;
+  const captureTask =
+    detail?.tasks.find((task) => task.id === captureTaskId) ?? null;
 
   const zoneOptions = useMemo(
-    () => zones.map((zone) => ({ value: zone.zoneId, label: `${zone.zoneCode} · ${zone.zoneName}` })),
-    [zones],
+    () =>
+      zones.map((zone) => ({
+        value: zone.zoneId,
+        label: `${zone.zoneCode} · ${zone.zoneName}`,
+      })),
+    [zones]
   );
 
   return (
@@ -544,20 +622,31 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
       <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
         <div className="space-y-6">
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900">Planificar conteo</h3>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Planificar conteo
+            </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Define la tolerancia máxima permitida para identificar variaciones fuera de rango.
+              Define la tolerancia máxima permitida para identificar variaciones
+              fuera de rango.
             </p>
             <form className="mt-4 space-y-3" onSubmit={handleCreateCount}>
               <div>
-                <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="tolerancePct">
+                <label
+                  className="text-xs font-semibold uppercase text-slate-500"
+                  htmlFor="tolerancePct"
+                >
                   Tolerancia %
                 </label>
                 <input
                   id="tolerancePct"
                   name="tolerancePct"
                   value={countForm.tolerancePct}
-                  onChange={(event) => setCountForm((prev) => ({ ...prev, tolerancePct: event.target.value }))}
+                  onChange={(event) =>
+                    setCountForm((prev) => ({
+                      ...prev,
+                      tolerancePct: event.target.value,
+                    }))
+                  }
                   placeholder="Ej. 5"
                   className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
@@ -574,7 +663,9 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">Conteos programados</h3>
+              <h3 className="text-sm font-semibold text-slate-900">
+                Conteos programados
+              </h3>
               <button
                 type="button"
                 onClick={fetchCounts}
@@ -589,7 +680,9 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
               ) : countsError ? (
                 <p className="text-sm text-rose-600">{countsError}</p>
               ) : counts.length === 0 ? (
-                <p className="text-sm text-slate-500">Aún no hay conteos planificados.</p>
+                <p className="text-sm text-slate-500">
+                  Aún no hay conteos planificados.
+                </p>
               ) : (
                 counts.map((count) => {
                   const isActive = count.id === selectedCountId;
@@ -608,9 +701,15 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold">{statusLabels[count.status]}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[count.status]}`}>
-                          {count.tolerancePct !== null ? `${count.tolerancePct}%` : 'Sin tolerancia'}
+                        <span className="font-semibold">
+                          {statusLabels[count.status]}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[count.status]}`}
+                        >
+                          {count.tolerancePct !== null
+                            ? `${count.tolerancePct}%`
+                            : 'Sin tolerancia'}
                         </span>
                       </div>
                       <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
@@ -661,7 +760,9 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase text-slate-500">Estado</p>
-                    <p className="text-lg font-semibold text-slate-900">{statusLabels[detail.status]}</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {statusLabels[detail.status]}
+                    </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {detail.status === 'planned' && (
@@ -680,7 +781,11 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                         className="inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
                         disabled={closing}
                       >
-                        {closing ? 'Cerrando…' : detail.status === 'closed' ? 'Recalcular variaciones' : 'Cerrar conteo'}
+                        {closing
+                          ? 'Cerrando…'
+                          : detail.status === 'closed'
+                            ? 'Recalcular variaciones'
+                            : 'Cerrar conteo'}
                       </button>
                     )}
                     <button
@@ -696,35 +801,58 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
 
                 <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <dt className="text-xs uppercase text-slate-500">Planificado</dt>
-                    <dd className="text-sm text-slate-900">{formatDateTime(detail.plannedAt)}</dd>
+                    <dt className="text-xs uppercase text-slate-500">
+                      Planificado
+                    </dt>
+                    <dd className="text-sm text-slate-900">
+                      {formatDateTime(detail.plannedAt)}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-xs uppercase text-slate-500">Inicio</dt>
-                    <dd className="text-sm text-slate-900">{formatDateTime(detail.startedAt)}</dd>
+                    <dd className="text-sm text-slate-900">
+                      {formatDateTime(detail.startedAt)}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-xs uppercase text-slate-500">Cierre</dt>
-                    <dd className="text-sm text-slate-900">{formatDateTime(detail.closedAt)}</dd>
+                    <dd className="text-sm text-slate-900">
+                      {formatDateTime(detail.closedAt)}
+                    </dd>
                   </div>
                   <div>
-                    <dt className="text-xs uppercase text-slate-500">Tolerancia</dt>
+                    <dt className="text-xs uppercase text-slate-500">
+                      Tolerancia
+                    </dt>
                     <dd className="text-sm text-slate-900">
-                      {detail.tolerancePct !== null ? `${detail.tolerancePct}%` : 'Sin tolerancia'}
+                      {detail.tolerancePct !== null
+                        ? `${detail.tolerancePct}%`
+                        : 'Sin tolerancia'}
                     </dd>
                   </div>
                 </dl>
 
-                <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={handleUpdateTolerance}>
+                <form
+                  className="mt-4 flex flex-wrap items-end gap-3"
+                  onSubmit={handleUpdateTolerance}
+                >
                   <div>
-                    <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="toleranceUpdate">
+                    <label
+                      className="text-xs font-semibold uppercase text-slate-500"
+                      htmlFor="toleranceUpdate"
+                    >
                       Actualizar tolerancia
                     </label>
                     <input
                       id="toleranceUpdate"
                       name="tolerancePct"
                       value={countForm.tolerancePct}
-                      onChange={(event) => setCountForm((prev) => ({ ...prev, tolerancePct: event.target.value }))}
+                      onChange={(event) =>
+                        setCountForm((prev) => ({
+                          ...prev,
+                          tolerancePct: event.target.value,
+                        }))
+                      }
                       placeholder="Ej. 5"
                       className="mt-1 w-32 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
@@ -742,7 +870,9 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
               <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-slate-900">Tareas asignadas</h3>
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      Tareas asignadas
+                    </h3>
                     <p className="mt-1 text-xs text-slate-500">
                       Controla las zonas asignadas y el estado de las lecturas.
                     </p>
@@ -770,23 +900,45 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                         <tbody className="divide-y divide-slate-200">
                           {detail.tasks.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="px-3 py-4 text-center text-sm text-slate-500">
+                              <td
+                                colSpan={5}
+                                className="px-3 py-4 text-center text-sm text-slate-500"
+                              >
                                 Aún no hay tareas creadas.
                               </td>
                             </tr>
                           ) : (
                             detail.tasks.map((task) => (
-                              <tr key={task.id} className={task.id === captureTaskId ? 'bg-indigo-50/60' : undefined}>
+                              <tr
+                                key={task.id}
+                                className={
+                                  task.id === captureTaskId
+                                    ? 'bg-indigo-50/60'
+                                    : undefined
+                                }
+                              >
                                 <td className="px-3 py-2">
-                                  <div className="font-medium text-slate-900">{task.zone.code}</div>
-                                  <div className="text-xs text-slate-500">{task.zone.name}</div>
+                                  <div className="font-medium text-slate-900">
+                                    {task.zone.code}
+                                  </div>
+                                  <div className="text-xs text-slate-500">
+                                    {task.zone.name}
+                                  </div>
                                 </td>
                                 <td className="px-3 py-2 text-slate-700">
-                                  {task.assignedTo ? task.assignedTo.name : 'Sin asignar'}
+                                  {task.assignedTo
+                                    ? task.assignedTo.name
+                                    : 'Sin asignar'}
                                 </td>
-                                <td className="px-3 py-2 text-slate-700">{task.blind ? 'Sí' : 'No'}</td>
-                                <td className="px-3 py-2 text-right text-slate-700">{task.scanCount}</td>
-                                <td className="px-3 py-2 text-right text-slate-700">{task.recountCount}</td>
+                                <td className="px-3 py-2 text-slate-700">
+                                  {task.blind ? 'Sí' : 'No'}
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-700">
+                                  {task.scanCount}
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-700">
+                                  {task.recountCount}
+                                </td>
                               </tr>
                             ))
                           )}
@@ -796,10 +948,15 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                   </div>
 
                   <div className="w-full max-w-xs rounded-md border border-slate-200 bg-slate-50 p-4">
-                    <h4 className="text-sm font-semibold text-slate-900">Nueva tarea</h4>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Nueva tarea
+                    </h4>
                     <form className="mt-3 space-y-3" onSubmit={handleAddTask}>
                       <div>
-                        <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="zoneId">
+                        <label
+                          className="text-xs font-semibold uppercase text-slate-500"
+                          htmlFor="zoneId"
+                        >
                           Zona
                         </label>
                         <select
@@ -819,7 +976,10 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="assignedToId">
+                        <label
+                          className="text-xs font-semibold uppercase text-slate-500"
+                          htmlFor="assignedToId"
+                        >
                           Asignado a
                         </label>
                         <select
@@ -836,7 +996,11 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                             </option>
                           ))}
                         </select>
-                        {membersError && <p className="mt-1 text-xs text-rose-600">{membersError}</p>}
+                        {membersError && (
+                          <p className="mt-1 text-xs text-rose-600">
+                            {membersError}
+                          </p>
+                        )}
                       </div>
                       <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
                         <input
@@ -860,19 +1024,30 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
               </section>
 
               <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900">Captura de lecturas</h3>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Captura de lecturas
+                </h3>
                 <p className="mt-1 text-xs text-slate-500">
-                  Selecciona la tarea y registra lecturas por ubicación y SKU con la cantidad observada.
+                  Selecciona la tarea y registra lecturas por ubicación y SKU
+                  con la cantidad observada.
                 </p>
-                <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={handleCaptureSubmit}>
+                <form
+                  className="mt-4 grid gap-3 md:grid-cols-2"
+                  onSubmit={handleCaptureSubmit}
+                >
                   <div className="md:col-span-2">
-                    <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="captureTask">
+                    <label
+                      className="text-xs font-semibold uppercase text-slate-500"
+                      htmlFor="captureTask"
+                    >
                       Tarea
                     </label>
                     <select
                       id="captureTask"
                       value={captureTaskId ?? ''}
-                      onChange={(event) => setCaptureTaskId(event.target.value || null)}
+                      onChange={(event) =>
+                        setCaptureTaskId(event.target.value || null)
+                      }
                       className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
                       <option value="">Selecciona una tarea</option>
@@ -884,7 +1059,10 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="locationCode">
+                    <label
+                      className="text-xs font-semibold uppercase text-slate-500"
+                      htmlFor="locationCode"
+                    >
                       Ubicación (código)
                     </label>
                     <input
@@ -898,7 +1076,10 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="skuCode">
+                    <label
+                      className="text-xs font-semibold uppercase text-slate-500"
+                      htmlFor="skuCode"
+                    >
                       SKU (opcional)
                     </label>
                     <input
@@ -912,7 +1093,10 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="qty">
+                    <label
+                      className="text-xs font-semibold uppercase text-slate-500"
+                      htmlFor="qty"
+                    >
                       Cantidad
                     </label>
                     <input
@@ -925,7 +1109,10 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase text-slate-500" htmlFor="deviceId">
+                    <label
+                      className="text-xs font-semibold uppercase text-slate-500"
+                      htmlFor="deviceId"
+                    >
                       Dispositivo (opcional)
                     </label>
                     <input
@@ -977,23 +1164,41 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                         captureTask.scans.map((scan) => (
                           <tr key={scan.id}>
                             <td className="px-3 py-2">
-                              <div className="font-medium text-slate-900">{scan.location.codeZRNP}</div>
+                              <div className="font-medium text-slate-900">
+                                {scan.location.codeZRNP}
+                              </div>
                               <div className="text-xs text-slate-500">
-                                Esperado: {formatNumber(scan.location.expectedQty)}
+                                Esperado:{' '}
+                                {formatNumber(scan.location.expectedQty)}
                               </div>
                             </td>
                             <td className="px-3 py-2 text-slate-700">
-                              {scan.sku ? `${scan.sku.code} · ${scan.sku.name}` : 'Sin SKU'}
+                              {scan.sku
+                                ? `${scan.sku.code} · ${scan.sku.name}`
+                                : 'Sin SKU'}
                             </td>
-                            <td className="px-3 py-2 text-right text-slate-700">{formatNumber(scan.qty)}</td>
-                            <td className="px-3 py-2 text-right text-slate-900 font-semibold">{formatNumber(scan.finalQty)}</td>
+                            <td className="px-3 py-2 text-right text-slate-700">
+                              {formatNumber(scan.qty)}
+                            </td>
+                            <td className="px-3 py-2 text-right text-slate-900 font-semibold">
+                              {formatNumber(scan.finalQty)}
+                            </td>
                             <td className="px-3 py-2">
                               <div className="flex items-center gap-2">
                                 <input
                                   type="text"
                                   value={recountDrafts[scan.id] ?? ''}
-                                  onChange={(event) => handleRecountChange(scan.id, event.target.value)}
-                                  placeholder={scan.recountQty !== null ? scan.recountQty.toString() : '—'}
+                                  onChange={(event) =>
+                                    handleRecountChange(
+                                      scan.id,
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder={
+                                    scan.recountQty !== null
+                                      ? scan.recountQty.toString()
+                                      : '—'
+                                  }
                                   className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 />
                                 <button
@@ -1002,20 +1207,30 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                                   className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100"
                                   disabled={recountSaving[scan.id]}
                                 >
-                                  {recountSaving[scan.id] ? 'Guardando…' : 'Guardar'}
+                                  {recountSaving[scan.id]
+                                    ? 'Guardando…'
+                                    : 'Guardar'}
                                 </button>
                               </div>
                             </td>
                             <td className="px-3 py-2 text-slate-500">
                               {formatDateTime(scan.capturedAt)}
-                              {scan.deviceId && <div className="text-xs">Equipo: {scan.deviceId}</div>}
+                              {scan.deviceId && (
+                                <div className="text-xs">
+                                  Equipo: {scan.deviceId}
+                                </div>
+                              )}
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={6} className="px-3 py-4 text-center text-sm text-slate-500">
-                            Selecciona una tarea con lecturas para visualizar el detalle.
+                          <td
+                            colSpan={6}
+                            className="px-3 py-4 text-center text-sm text-slate-500"
+                          >
+                            Selecciona una tarea con lecturas para visualizar el
+                            detalle.
                           </td>
                         </tr>
                       )}
@@ -1027,9 +1242,12 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
               <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-slate-900">Variaciones detectadas</h3>
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      Variaciones detectadas
+                    </h3>
                     <p className="mt-1 text-xs text-slate-500">
-                      Identifica las ubicaciones fuera de tolerancia y registra la causa de la variación.
+                      Identifica las ubicaciones fuera de tolerancia y registra
+                      la causa de la variación.
                     </p>
                     <div className="mt-4 overflow-x-auto">
                       <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -1061,7 +1279,10 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                         <tbody className="divide-y divide-slate-200">
                           {detail.variances.length === 0 ? (
                             <tr>
-                              <td colSpan={7} className="px-3 py-4 text-center text-sm text-slate-500">
+                              <td
+                                colSpan={7}
+                                className="px-3 py-4 text-center text-sm text-slate-500"
+                              >
                                 No hay variaciones registradas para este conteo.
                               </td>
                             </tr>
@@ -1069,32 +1290,59 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                             detail.variances.map((variance) => (
                               <tr key={variance.id}>
                                 <td className="px-3 py-2">
-                                  <div className="font-medium text-slate-900">{variance.location.codeZRNP}</div>
-                                  <div className="text-xs text-slate-500">Zona {variance.location.zone.code}</div>
+                                  <div className="font-medium text-slate-900">
+                                    {variance.location.codeZRNP}
+                                  </div>
+                                  <div className="text-xs text-slate-500">
+                                    Zona {variance.location.zone.code}
+                                  </div>
                                 </td>
                                 <td className="px-3 py-2 text-slate-700">
-                                  {variance.sku ? `${variance.sku.code} · ${variance.sku.name}` : 'Sin SKU'}
+                                  {variance.sku
+                                    ? `${variance.sku.code} · ${variance.sku.name}`
+                                    : 'Sin SKU'}
                                 </td>
-                                <td className="px-3 py-2 text-right text-slate-700">{formatNumber(variance.expectedQty)}</td>
-                                <td className="px-3 py-2 text-right text-slate-900 font-semibold">{formatNumber(variance.foundQty)}</td>
-                                <td className="px-3 py-2 text-right text-slate-700">{formatNumber(variance.difference)}</td>
-                                <td className="px-3 py-2 text-right text-slate-700">{formatNumber(variance.percentage)}%</td>
+                                <td className="px-3 py-2 text-right text-slate-700">
+                                  {formatNumber(variance.expectedQty)}
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-900 font-semibold">
+                                  {formatNumber(variance.foundQty)}
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-700">
+                                  {formatNumber(variance.difference)}
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-700">
+                                  {formatNumber(variance.percentage)}%
+                                </td>
                                 <td className="px-3 py-2">
                                   <div className="flex items-center gap-2">
                                     <input
                                       type="text"
-                                      value={reasonDrafts[variance.id] ?? variance.reason ?? ''}
-                                      onChange={(event) => handleReasonChange(variance.id, event.target.value)}
+                                      value={
+                                        reasonDrafts[variance.id] ??
+                                        variance.reason ??
+                                        ''
+                                      }
+                                      onChange={(event) =>
+                                        handleReasonChange(
+                                          variance.id,
+                                          event.target.value
+                                        )
+                                      }
                                       placeholder="Describe la causa"
                                       className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     />
                                     <button
                                       type="button"
-                                      onClick={() => handleSaveReason(variance.id)}
+                                      onClick={() =>
+                                        handleSaveReason(variance.id)
+                                      }
                                       className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100"
                                       disabled={reasonSaving[variance.id]}
                                     >
-                                      {reasonSaving[variance.id] ? 'Guardando…' : 'Guardar'}
+                                      {reasonSaving[variance.id]
+                                        ? 'Guardando…'
+                                        : 'Guardar'}
                                     </button>
                                   </div>
                                 </td>
@@ -1108,18 +1356,24 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
 
                   <div className="w-full max-w-xs space-y-4">
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-                      <h4 className="text-sm font-semibold text-slate-900">Resumen por zona</h4>
+                      <h4 className="text-sm font-semibold text-slate-900">
+                        Resumen por zona
+                      </h4>
                       <ul className="mt-3 space-y-2 text-xs text-slate-600">
                         {detail.zoneSummary.length === 0 ? (
                           <li>Sin variaciones registradas.</li>
                         ) : (
                           detail.zoneSummary.map((zone) => (
-                            <li key={zone.zoneId} className="flex items-center justify-between">
+                            <li
+                              key={zone.zoneId}
+                              className="flex items-center justify-between"
+                            >
                               <span>
                                 {zone.zoneCode} · {zone.zoneName}
                               </span>
                               <span>
-                                {formatNumber(zone.differenceTotal)} ({zone.varianceCount})
+                                {formatNumber(zone.differenceTotal)} (
+                                {zone.varianceCount})
                               </span>
                             </li>
                           ))
@@ -1127,16 +1381,22 @@ const BlindCountSection = ({ projectId, skus, locations, zones, loadingMaster }:
                       </ul>
                     </div>
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-                      <h4 className="text-sm font-semibold text-slate-900">Resumen por SKU</h4>
+                      <h4 className="text-sm font-semibold text-slate-900">
+                        Resumen por SKU
+                      </h4>
                       <ul className="mt-3 space-y-2 text-xs text-slate-600">
                         {detail.skuSummary.length === 0 ? (
                           <li>Sin variaciones registradas.</li>
                         ) : (
                           detail.skuSummary.map((sku) => (
-                            <li key={sku.skuId ?? 'none'} className="flex items-center justify-between">
+                            <li
+                              key={sku.skuId ?? 'none'}
+                              className="flex items-center justify-between"
+                            >
                               <span>{sku.skuCode}</span>
                               <span>
-                                {formatNumber(sku.differenceTotal)} ({sku.varianceCount})
+                                {formatNumber(sku.differenceTotal)} (
+                                {sku.varianceCount})
                               </span>
                             </li>
                           ))

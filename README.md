@@ -1,334 +1,283 @@
 # Auditoría
 
-Suite full-stack para gestionar auditorías multi-proyecto con módulos especializados, RBAC por proyecto y exportables ejecutivos.
+Suite full-stack para gestionar auditorías operacionales multiempresa. El proyecto combina una API Node.js con un frontend React para centralizar el ciclo completo: preparación de checklists, aplicación de encuestas y entrevistas, seguimiento de hallazgos y generación de entregables ejecutivos.
 
-## Índice
+## Tabla de contenidos
 
 1. [Visión general](#visión-general)
-2. [Arquitectura](#arquitectura)
-3. [Stack tecnológico](#stack-tecnológico)
-4. [Estructura del repositorio](#estructura-del-repositorio)
-5. [Requisitos](#requisitos)
-6. [Primeros pasos](#primeros-pasos)
-7. [Arranque rápido estable](#arranque-rápido-estable)
+2. [Características principales](#características-principales)
+3. [Arquitectura](#arquitectura)
+4. [Stack tecnológico](#stack-tecnológico)
+5. [Estructura del repositorio](#estructura-del-repositorio)
+6. [Requisitos previos](#requisitos-previos)
+7. [Configuración local con Docker](#configuración-local-con-docker)
 8. [Configuración sin Docker](#configuración-sin-docker)
 9. [Variables de entorno](#variables-de-entorno)
-10. [Módulos clave](#módulos-clave)
-11. [Gestión de proyectos y empresas](#gestión-de-proyectos-y-empresas)
-12. [Scripts útiles](#scripts-útiles)
-13. [Semilla de datos](#semilla-de-datos)
-14. [OpenAPI y clientes](#openapi-y-clientes)
-15. [Tests y calidad](#tests-y-calidad)
-16. [Despliegue](#despliegue)
-17. [Resolución de problemas](#resolución-de-problemas)
-18. [FAQ](#faq)
-19. [Contribuir](#contribuir)
-20. [Licencia](#licencia)
+10. [Base de datos, migraciones y semillas](#base-de-datos-migraciones-y-semillas)
+11. [Scripts útiles](#scripts-útiles)
+12. [Testing y calidad](#testing-y-calidad)
+13. [Flujo de desarrollo sugerido](#flujo-de-desarrollo-sugerido)
+14. [Despliegue](#despliegue)
+15. [Resolución de problemas](#resolución-de-problemas)
+16. [FAQ](#faq)
+17. [Contribuir](#contribuir)
+18. [Licencia](#licencia)
 
 ## Visión general
 
-Auditoría centraliza el proceso completo de auditorías operacionales, desde la recopilación de información previa al kickoff hasta el seguimiento de hallazgos y planes de acción. La plataforma permite operar múltiples proyectos en paralelo, con permisos granulares por rol y por empresa, además de generar reportes ejecutivos en Excel y PDF.
+Auditoría concentra información previa al kickoff, ejecución de auditorías y seguimiento posterior. Cada proyecto pertenece a una empresa, soporta múltiples módulos activables y mantiene un historial de acciones para garantizar trazabilidad.
 
-### Casos de uso destacados
+El backend expone un API REST con autenticación JWT, permisos basados en memberships por empresa y proyecto, y generación de reportes en Excel/PDF. El frontend consume los endpoints y organiza la experiencia en tabs por módulo para facilitar el trabajo de los equipos de auditoría.
 
-- Levantar auditorías simultáneas para distintas empresas o unidades de negocio.
-- Gestionar checklists, encuestas, entrevistas, procesos y KPIs desde un único lugar.
-- Controlar accesos por proyecto mediante RBAC y auditoría de eventos críticos.
-- Exportar información resumida o detalle para compartir con stakeholders externos.
+## Características principales
+
+- Gestión simultánea de auditorías para varias empresas o unidades de negocio.
+- Checklists, encuestas, entrevistas, procesos y sistemas centralizados.
+- Definición de features por proyecto para habilitar módulos específicos (Recepción, Picking, etc.).
+- Control de acceso mediante roles por empresa/proyecto y auditoría de eventos críticos.
+- Exportables ejecutivos en PDF y Excel comprimido, con plantillas personalizables.
+- Tableros de KPIs y matriz de riesgos para visualizar el estado general.
+- Integración con colas de trabajo (BullMQ + Redis) para tareas largas como generación de reportes.
 
 ## Arquitectura
 
 ```
-/api (Node.js + Express + Prisma)
-/web (React + Vite + Tailwind)
-/docker-compose.yml (orquestación de servicios)
+root
+├── api/              Backend Express + Prisma
+│   ├── src/          Casos de uso, rutas y controladores
+│   ├── prisma/       Esquema, migraciones y seeds
+│   └── openapi.yaml  Definición del contrato REST
+├── web/              Frontend React (Vite + Tailwind + shadcn/ui)
+├── scripts/          Utilidades para Docker y espera de servicios
+├── docker-compose.yml
+└── docs/             Notas adicionales de implementación
 ```
 
-- **API**: Servidor Express con Prisma apuntando a PostgreSQL. Implementa autenticación JWT, control de acceso por memberships, eventos de auditoría y exportaciones en Excel/PDF.
-- **Web**: Cliente React (Vite + TypeScript + Tailwind/shadcn) que consume la API y organiza la navegación en tabs por módulo.
-- **Infra**: Docker Compose levanta Postgres, API y Web, encargándose de correr `prisma migrate deploy` al iniciar.
+- **API**: Servidor Express con Pino para logs, Prisma como ORM y PostgreSQL como base de datos. Maneja autenticación JWT, RBAC por proyecto y exportables generados con ExcelJS/PDFKit.
+- **Web**: SPA en React/TypeScript. Usa React Query para datos, Tailwind CSS para estilos y componentes accesibles con shadcn/ui y Radix.
+- **Infra**: Docker Compose facilita levantar Postgres, API y Web. Los scripts aplican migraciones (`prisma migrate deploy`) antes de exponer la API.
 
 ## Stack tecnológico
 
-| Capa | Tecnología | Descripción |
+| Capa | Tecnologías clave | Detalles |
 | --- | --- | --- |
-| Backend | Node.js 18, Express, Prisma, Zod | API REST, capa de persistencia y validaciones |
-| Base de datos | PostgreSQL 15 | Almacenamiento relacional con migraciones gestionadas por Prisma |
-| Frontend | React 18, Vite, TypeScript, Tailwind CSS, shadcn/ui | SPA modular enfocada en productividad |
-| DevOps | Docker, Docker Compose | Orquestación local y base para despliegues |
-| Testing | Jest/Vitest, Testing Library | Pruebas unitarias y de componentes |
+| Backend | Node.js 18, Express, Prisma, Zod, Pino | API REST, validaciones y observabilidad |
+| Frontend | React 18, Vite, TypeScript, Tailwind, shadcn/ui | SPA modular con tabs por módulo de auditoría |
+| Base de datos | PostgreSQL 15 | Migraciones gestionadas por Prisma |
+| Jobs & archivos | BullMQ, Redis, ExcelJS, PDFKit, Puppeteer | Procesamiento de reportes y exportables |
+| Testing | Jest, Supertest, Vitest, Testing Library | Suites unitarias y de componentes |
+| DevOps | Docker, Docker Compose, scripts bash | Orquestación local y automatización de tareas |
 
 ## Estructura del repositorio
 
 ```
 /
-├── api/               # Código fuente del backend
-│   ├── prisma/        # Esquema, migraciones y seeds
-│   ├── src/           # Aplicación Express y casos de uso
-│   └── package.json   # Scripts y dependencias
-├── web/               # Aplicación React
-│   ├── src/           # Componentes, páginas y hooks
-│   ├── public/        # Activos estáticos
+├── api/
+│   ├── prisma/
+│   ├── src/
+│   ├── docker-entrypoint.sh
 │   └── package.json
-├── docker-compose.yml # Servicios y redes locales
+├── web/
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── docs/
+│   └── razones_fallas_encuestas.md
+├── scripts/
+│   ├── accept.sh
+│   ├── compose.sh
+│   └── wait-on.sh
+├── docker-compose.yml
+├── CODE_OF_CONDUCT.md
 └── README.md
 ```
 
-## Requisitos
+Consulta el directorio `docs/` para notas puntuales (por ejemplo, análisis de fallas de encuestas).
 
-- Node.js 18+
-- npm 9+ (o pnpm/yarn equivalentes)
-- Docker y Docker Compose (opcional pero recomendado)
-- PostgreSQL local (solo si decides no usar Docker)
+## Requisitos previos
 
-## Setup rápido
+- Node.js 18 o superior.
+- npm 9+ (puedes usar pnpm/yarn si ajustas los comandos).
+- Docker + Docker Compose (recomendado para un entorno consistente).
+- PostgreSQL 15 si decides ejecutar los servicios fuera de Docker.
+- Redis opcional cuando habilites colas BullMQ fuera de Docker.
 
-1. Copia el archivo `.env.development` a `.env` para reutilizar las variables por defecto.
-2. Levanta la base de datos con `docker compose up -d db`.
-3. Arranca API y frontend con `docker compose up -d api web` y comprueba `http://localhost:4000/health`.
+## Configuración local con Docker
 
-## Primeros pasos
-
-1. Clona el repositorio.
-2. Copia el archivo de variables de entorno (puedes usar `.env.local` para desarrollo o `.env` si prefieres mantener la convención por defecto de Docker Compose):
+1. Duplica el archivo de variables por defecto:
    ```bash
-   cp .env.development .env.local
-   # o bien
-   # cp .env.development .env
+   cp .env.development .env
    ```
-3. Levanta los servicios con Docker utilizando el wrapper que valida el archivo de entorno:
+2. Instala dependencias para backend y frontend (necesario para usar `lint`, `test`, etc.).
+   ```bash
+   npm install --prefix api
+   npm install --prefix web
+   ```
+3. Levanta toda la pila usando el wrapper que valida la presencia del archivo `.env`:
    ```bash
    ./scripts/compose.sh up -d --build
    ```
-4. (Opcional) Carga la semilla de datos inicial:
+4. Ejecuta el smoke test automatizado que espera la salud de la API, corre migraciones/seeds y compila el frontend:
    ```bash
-   ./scripts/compose.sh exec api npm run seed
+   ./scripts/accept.sh
    ```
-5. Accede a la web en `http://localhost:5173` y valida la salud de la API con:
-   ```bash
-   curl http://localhost:4000/health
-   ```
+5. Accede a la web en `http://localhost:5173` y verifica la API en `http://localhost:4000/health`.
 
-La API esperará a que la base de datos esté disponible y aplicará `prisma migrate deploy` automáticamente en cada arranque del contenedor.
+### Reinicio limpio
 
-## Arranque rápido estable
-
-Ejecuta los siguientes comandos en una terminal limpia para dejar la pila estable y lista para revisar:
+Cuando necesites limpiar el estado (por ejemplo, repetir seeds):
 
 ```bash
-cp .env.development .env
-npm install --prefix api
-npm install --prefix web
-./scripts/compose.sh up -d --build
-./scripts/accept.sh
-```
-
-El script `./scripts/accept.sh` usa Docker Compose por defecto para ejecutar migraciones y semillas (define `ACCEPT_USE_DOCKER=0` si prefieres correrlas contra servicios locales), espera a que `http://localhost:4000/health` responda correctamente y compila el frontend tras validar la salud de la API.
-
-### Builds detrás de un proxy corporativo
-
-Si tu red requiere salir a internet mediante un proxy HTTP/HTTPS, declara las variables en tu `.env.local` (o expórtalas antes de correr `./scripts/compose.sh`):
-
-```bash
-NPM_CONFIG_PROXY=http://usuario:password@proxy:8080
-NPM_CONFIG_HTTPS_PROXY=http://usuario:password@proxy:8080
-# Opcional: fija un registro propio
-# NPM_CONFIG_REGISTRY=https://registry.empresa.com/
-```
-
-El `docker compose build` propagará estos valores al Dockerfile y se ejecutará `npm config set` automáticamente antes de `npm ci`, evitando los `ECONNRESET` causados por proxies corporativos.
-
-### Reinicio limpio de la base de datos
-
-Si necesitas reiniciar el entorno desde cero (p. ej. para reproducir seeds o migraciones), ejecuta los comandos en este orden:
-
-```bash
-ENV_FILE=${ENV_FILE:-.env.local}  # Usa .env si tu entorno ya lo define así
-
-./scripts/compose.sh --env-file "$ENV_FILE" down -v
-./scripts/compose.sh --env-file "$ENV_FILE" up -d db
-./scripts/compose.sh --env-file "$ENV_FILE" up -d api
+./scripts/compose.sh down -v
+./scripts/compose.sh up -d db
+./scripts/compose.sh up -d api
 ./scripts/compose.sh exec api npx prisma migrate deploy
 ./scripts/compose.sh exec api npm run seed
-./scripts/compose.sh --env-file "$ENV_FILE" up -d web
+./scripts/compose.sh up -d web
 ```
 
-> Ajusta la variable `ENV_FILE` si tu archivo de entorno se llama distinto. El script mostrará un mensaje claro si el archivo indicado no existe.
+Ajusta la variable `ENV_FILE` si trabajas con un archivo distinto de `.env`.
+
+### Redes con proxy corporativo
+
+Si tu red obliga a salir mediante proxy, configura estas variables antes de construir las imágenes:
+
+```bash
+export NPM_CONFIG_PROXY=http://usuario:password@proxy:8080
+export NPM_CONFIG_HTTPS_PROXY=http://usuario:password@proxy:8080
+# export NPM_CONFIG_REGISTRY=https://registry.empresa.com/
+```
+
+El Dockerfile propagará los valores y ejecutará `npm config set` para evitar errores `ECONNRESET` durante `npm ci`.
 
 ## Configuración sin Docker
 
-Si prefieres correr los servicios de manera independiente:
+Puedes ejecutar cada servicio directamente en tu máquina:
+
+### Backend
 
 ```bash
-# API
 cd api
 cp .env.example .env
 npm install
 npm run dev
+```
 
-# Web
-cd ../web
+La API queda disponible en `http://localhost:4000`.
+
+### Frontend
+
+```bash
+cd web
 cp .env.example .env
 npm install
 npm run dev
 ```
 
-- API: `http://localhost:4000/api`
-- Frontend: `http://localhost:5173`
+El frontend quedará en `http://localhost:5173`. Recuerda ajustar `VITE_API_URL` para apuntar a tu servidor API.
 
 ## Variables de entorno
 
-El repositorio incluye `.env.development` y `.env.production` para ejecutar `docker compose --env-file`. Personaliza los valores antes de desplegar en un entorno real. Además, cada paquete mantiene su propio `.env.example` para ejecución fuera de Docker.
+- `.env.development` y `.env.production` contienen valores base para ejecutar Docker Compose con `--env-file`.
+- Cada paquete posee su propio `.env.example` con los campos necesarios para ejecución independiente.
 
-| Variable | Descripción | Paquete |
+| Variable | Ubicación | Descripción |
 | --- | --- | --- |
-| `DATABASE_URL` | Cadena de conexión PostgreSQL utilizada por Prisma. | `api` |
-| `JWT_SECRET` | Clave de firma para tokens JWT. | `api` |
-| `PORT` | Puerto expuesto por la API. | `api` |
-| `VITE_API_URL` | URL base que consume el front-end. | `web` |
+| `DATABASE_URL` | API | Cadena de conexión PostgreSQL utilizada por Prisma. |
+| `JWT_SECRET` | API | Llave para firmar tokens JWT. |
+| `PORT` | API | Puerto expuesto por el servidor Express (por defecto 4000). |
+| `REDIS_URL` | API | Endpoint para colas BullMQ (opcional en desarrollo). |
+| `VITE_API_URL` | Web | URL base del backend consumido por el frontend. |
+| `NPM_CONFIG_PROXY`, `NPM_CONFIG_HTTPS_PROXY` | scripts | Configuración opcional para builds detrás de proxy. |
 
-## Módulos clave
+## Base de datos, migraciones y semillas
 
-- Datos Pre-Kickoff (checklists y adjuntos)
-- Encuestas (Likert/preguntas abiertas, respuestas públicas)
-- Entrevistas (adjuntos de audio y notas)
-- Procesos (BPMN/links + sub-módulos dinámicos como Recepción/Picking/Despacho)
-- Sistemas (Inventario, Cobertura, Integraciones, Data, Seguridad, Performance, Costos con TCO 3y)
-- Riesgos (matriz RAG por severidad)
-- Hallazgos & Acciones (RACI, Kanban y seguimiento)
-- POC / Pilotos
-- Decision Log
-- KPIs y dashboard
-- Exportables (Excel ZIP + PDF ejecutivo)
-- Audit trail
-
-## Gestión de proyectos y empresas
-
-- Cada proyecto incluye `settings.enabledFeatures` (JSON) para decidir qué sub-tabs de **Procesos** se renderizan.
-- Endpoint dedicado: `GET /api/projects/:id/features` → `{ enabled: string[] }`.
-- La ruta histórica `/projects/:id/reception` redirige a `/projects/:id/procesos/reception`.
-- Plantillas sugeridas al crear proyectos desde la UI:
-  - **Distribución** → `['reception', 'picking', 'dispatch']`
-  - **Simple** → `[]`
-
-### Endpoints de empresas
-
-> Requieren autenticación con rol `admin`.
-
-- `POST /api/companies` crea nueva empresa (`name`, `taxId`).
-- `GET /api/companies` lista empresas con conteo de proyectos.
-- `PUT /api/companies/:id` actualiza nombre/RUT.
-- `DELETE /api/companies/:id` elimina si no tiene proyectos asociados.
-
-Cada nuevo proyecto requiere `companyId` y asigna automáticamente al creador como propietario (`ownerId`).
+- Prisma gestiona el esquema de datos en `api/prisma/schema.prisma` y genera migraciones en `api/prisma/migrations/`.
+- Durante el arranque con Docker, la API ejecuta `prisma migrate deploy`. Si corres el backend manualmente, ejecuta:
+  ```bash
+  npm run migrate:deploy --prefix api
+  ```
+- La semilla inicial se ejecuta con:
+  ```bash
+  npm run seed --prefix api
+  ```
+  Crea empresas de ejemplo, usuarios demo y un proyecto base con features activados.
 
 ## Scripts útiles
 
-En cada paquete puedes apoyarte en los siguientes comandos:
+| Comando | Ubicación | Descripción |
+| --- | --- | --- |
+| `npm run dev` | `api/` | Servidor Express con recarga en caliente. |
+| `npm run build` | `api/` | Genera bundle CJS en `dist/server.cjs`. |
+| `npm run start` | `api/` | Arranca el bundle compilado. |
+| `npm run lint` | `api/`, `web/` | Ejecuta ESLint sobre el código fuente. |
+| `npm run test` | `api/` | Corre Jest con cobertura. |
+| `npm run test:e2e` | `api/` | Corre pruebas E2E con Jest + Supertest. |
+| `npm run seed` | `api/` | Ejecuta `prisma/seed.ts`. |
+| `npm run dev` | `web/` | Arranca Vite en modo desarrollo. |
+| `npm run build` | `web/` | Construye assets listos para producción. |
+| `npm run preview` | `web/` | Sirve el build generado por Vite. |
+| `npm run test` | `web/` | Ejecuta Vitest y Testing Library. |
+| `./scripts/compose.sh` | raíz | Wrapper de Docker Compose que valida variables de entorno. |
+| `./scripts/accept.sh` | raíz | Orquesta migraciones, seeds, espera salud y compila frontend. |
 
-```bash
-# API
-npm run dev        # Levanta el servidor en modo desarrollo
-npm run lint       # Linting del backend
-npm run test       # Suite de tests de la API
-npm run seed       # Inserta datos demo (requiere DB activa)
+## Testing y calidad
 
-# Web
-npm run dev        # Dev server (Vite)
-npm run lint       # ESLint sobre el front
-npm run test       # Vitest + Testing Library
-```
+- **Backend**: `npm run lint --prefix api`, `npm run test --prefix api` y `npm run test:e2e --prefix api`.
+- **Frontend**: `npm run lint --prefix web` y `npm run test --prefix web`.
+- **Formato**: ambos paquetes incluyen `npm run format` para aplicar Prettier.
 
-Para orquestar contenedores sin sorpresas usa el wrapper `./scripts/compose.sh`, que valida la existencia del archivo `.env` (o `.env.local`) antes de delegar en `docker compose`.
+Integra estos comandos en pipelines CI/CD para garantizar calidad antes de fusionar cambios.
 
-Los nombres de scripts se mantienen consistentes entre paquetes para simplificar la experiencia.
+## Flujo de desarrollo sugerido
 
-## Semilla de datos
-
-La semilla `npm run seed` (o `docker compose exec api npm run seed`) crea:
-
-- Empresas demo **Nutrial** y **DemoCorp**.
-- Usuarios demo de ejemplo (consulta `prisma/seed.ts` y reemplaza credenciales en entornos reales).
-- Proyecto **Nutrial – Auditoría 2025** con `settings.enabledFeatures = ['reception', 'picking', 'dispatch']` y memberships según roles.
-
-## OpenAPI y clientes
-
-- El contrato REST está disponible en `api/openapi.yaml`.
-- Puedes generar clientes con herramientas como `openapi-generator-cli` o `orval`.
-- Para visualizarlo rápidamente:
-  ```bash
-  npx @redocly/cli preview-docs api/openapi.yaml
-  ```
-
-## Tests y calidad
-
-- **Unitarias**: `npm run test` en cada paquete.
-- **Lint**: `npm run lint` para asegurar estilos de código consistentes.
-- **Formato**: aplica Prettier según la configuración de cada proyecto (`npm run format` si está disponible).
-- **Integración** (propuesto): configurar `docker compose run api npm run test:e2e` para validar flujos completos.
-
-### Smoke test con Docker Compose
-
-Para validar una instalación fresca con Docker Compose:
-
-```bash
-docker compose down -v
-cp .env.example .env
-docker compose up -d --build
-
-curl -i http://localhost:4000/health
-TOKEN=$(curl -s -X POST http://localhost:4000/api/auth/login \
-  -H 'content-type: application/json' \
-  -d '{"email":"admin@demo.com","password":"demo123"}' | jq -r '.accessToken')
-echo "TOKEN:${TOKEN:0:25}..."
-curl -i http://localhost:4000/api/projects -H "Authorization: Bearer $TOKEN"
-curl -i http://localhost:4000/api/surveys/does-not-exist -H "Authorization: Bearer $TOKEN"
-```
-
-Revisa los logs para confirmar que los encabezados sensibles aparecen como `Bearer <redacted>` y que no hay errores de compilación (`esbuild`) ni de generación de Prisma.
-
-Se recomienda integrar estos comandos en pipelines CI/CD (GitHub Actions, GitLab CI, etc.).
+1. Crea una rama a partir de `main`.
+2. Levanta el entorno (`./scripts/compose.sh up -d --build`).
+3. Realiza cambios en API o Web según corresponda.
+4. Ejecuta lint y tests de los paquetes tocados.
+5. Actualiza documentación o schemas (OpenAPI en `api/openapi.yaml`) cuando cambien los endpoints.
+6. Genera commits claros y abre un Pull Request describiendo impacto, pasos de prueba y capturas si aplica.
 
 ## Despliegue
 
-1. Crea imágenes con los Dockerfiles presentes en cada paquete (o usa Docker Compose como base).
-2. Ejecuta migraciones con `prisma migrate deploy` antes de iniciar la API.
-3. Configura variables de entorno de producción (`JWT_SECRET`, `DATABASE_URL`, `VITE_API_URL`).
-4. Expone los servicios tras un reverse proxy (Nginx, Traefik) y habilita HTTPS.
-5. Automatiza despliegues con pipelines que ejecuten tests, lint y build antes de publicar.
+1. Construye imágenes usando los Dockerfiles de `api/` y `web/` o reutiliza `docker-compose.yml` como base.
+2. Ejecuta migraciones con `npm run migrate:deploy --prefix api` antes de arrancar la API en producción.
+3. Define variables de entorno seguras (`DATABASE_URL`, `JWT_SECRET`, `VITE_API_URL`, etc.).
+4. Expón los servicios detrás de un reverse proxy (Nginx, Traefik) con HTTPS.
+5. Automatiza pipelines que ejecuten lint, tests y builds antes de publicar.
+6. Monitorea métricas con `prom-client` y logs con Pino.
 
 ## Resolución de problemas
 
-| Síntoma | Posible causa | Solución |
+| Síntoma | Causa probable | Acción sugerida |
 | --- | --- | --- |
-| API no arranca | Base de datos inaccesible | Verifica credenciales y que Postgres esté escuchando |
-| Error `JWT_SECRET missing` | Variable no configurada | Define `JWT_SECRET` en `.env` o secretos del entorno |
-| Redirección a `/login` tras un 401 | Token expirado o refresh inválido | El cliente intenta renovar automáticamente; si persiste, cierra sesión (`Cerrar sesión`) para limpiar tokens y vuelve a ingresar |
-| `./scripts/compose.sh` informa que falta el `.env` | No se generó `.env`/`.env.local` | Duplica `.env.development` y vuelve a ejecutar el comando |
-| Build se detiene en `npm ci` con `ECONNRESET` | Conexión inestable o proxy/firewall | Si estás detrás de un proxy, define `NPM_CONFIG_PROXY`/`NPM_CONFIG_HTTPS_PROXY` en tu `.env.local` (o expórtalas antes de ejecutar `compose.sh`) para que el Dockerfile configure npm automáticamente y reintenta el build. En redes inestables, vuelve a ejecutar el build cuando la conexión sea estable; hasta que `npm ci` pueda descargar todo sin cortes, la capa seguirá fallando. |
-| `/api/projects/:id/surveys` responde 404 | Migraciones incompletas | Ejecuta `./scripts/compose.sh exec api npx prisma migrate deploy` y `npm run seed` |
-| Datos inconsistentes tras pruebas | Semillas anteriores dejaron registros | Sigue la guía de [Reinicio limpio de la base de datos](#reinicio-limpio-de-la-base-de-datos) |
+| La API no arranca | Postgres inaccesible o sin migraciones | Verifica `DATABASE_URL` y ejecuta `prisma migrate deploy`. |
+| Error `JWT_SECRET missing` | Variable ausente | Define `JWT_SECRET` en `.env` o en secretos del entorno. |
+| Login redirige al inicio de sesión constantemente | Token expirado o refresh inválido | Cierra sesión para limpiar tokens y vuelve a iniciar. |
+| `compose.sh` reclama archivo `.env` | No se generó `.env`/`.env.local` | Duplica `.env.development` antes de levantar servicios. |
+| Builds fallan con `ECONNRESET` | Proxy o conexión inestable | Configura variables de proxy o reintenta cuando la red sea estable. |
+| Endpoint `/api/projects/:id/surveys` responde 404 | Migraciones incompletas | Ejecuta `prisma migrate deploy` y `npm run seed`. |
+| Datos inconsistentes tras pruebas | Seeds previos dejaron registros | Ejecuta el [reinicio limpio](#reinicio-limpio). |
 
 ## FAQ
 
-**¿Puedo usar otra base de datos?**
-Actualmente solo se soporta PostgreSQL. Cambiarla implicaría ajustar el proveedor de Prisma y revisar migraciones.
+**¿Puedo usar otra base de datos?**  Actualmente solo se soporta PostgreSQL. Cambiar de proveedor implica ajustar Prisma y revisar migraciones.
 
-**¿Existe modo de solo lectura?**
-Puedes crear roles personalizados sin permisos de escritura y asignarlos mediante memberships.
+**¿Existe modo de solo lectura?**  Crea roles personalizados sin permisos de escritura y asígnalos mediante memberships.
 
-**¿Cómo personalizo los exportables?**
-Los templates se encuentran en la capa API; puedes duplicar y ajustar los generadores de Excel/PDF según tus necesidades.
+**¿Cómo personalizo los exportables?**  Duplica y ajusta los generadores en la API (ver carpeta `api/src/modules/export`). Puedes modificar plantillas de Excel/PDF o agregar nuevas salidas.
+
+**¿Dónde encuentro documentación adicional?**  Revisa `docs/` para notas específicas y `api/openapi.yaml` para el contrato REST.
 
 ## Contribuir
 
-1. Haz un fork y crea una rama descriptiva.
-2. Realiza tus cambios siguiendo los lineamientos de estilo.
-3. Ejecuta lint y tests antes de abrir un PR.
-4. Describe claramente el impacto, screenshots (si aplica) y pasos de prueba.
+1. Haz fork del repositorio y crea una rama descriptiva.
+2. Sigue las convenciones de estilo existentes y actualiza tests/documentación relacionados.
+3. Ejecuta lint y tests antes de abrir el PR.
+4. Describe claramente el impacto, incluye capturas si afectan al frontend e indica pasos de validación.
 
-Se aceptan issues con propuestas de mejora, bugs o solicitudes de documentación adicional.
+Se aceptan issues para proponer mejoras, reportar bugs o sugerir documentación adicional.
 
 ## Licencia
 
-Actualmente el proyecto no define una licencia pública. Si deseas utilizar el código en entornos comerciales, contacta al mantenedor para acordar los términos.
+El proyecto no cuenta con una licencia pública definida. Contacta a la mantención si deseas usar el código en un contexto comercial.

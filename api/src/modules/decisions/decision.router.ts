@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth.js';
-import { decisionService } from './decision.service.js';
+import { authenticate, requireProjectRole } from '../../core/middleware/auth';
+
+import { decisionService } from './decision.service';
 
 const decisionRouter = Router();
 
@@ -15,7 +16,7 @@ const decisionSchema = z.object({
   approverA: z.string().min(1, 'Aprobador requerido'),
   date: z.coerce.date().optional(),
   committeeId: z.string().min(1).optional(),
-  meetingId: z.string().min(1).optional(),
+  meetingId: z.string().min(1).optional()
 });
 
 decisionRouter.get(
@@ -24,7 +25,7 @@ decisionRouter.get(
   async (req, res) => {
     const decisions = await decisionService.list(req.params.projectId);
     res.json(decisions);
-  },
+  }
 );
 
 decisionRouter.post(
@@ -38,12 +39,12 @@ decisionRouter.post(
         ...payload,
         committeeId: payload.committeeId || undefined,
         meetingId: payload.meetingId || undefined,
-        date: (payload.date ?? new Date()).toISOString(),
+        date: (payload.date ?? new Date()).toISOString()
       },
-      req.user!.id,
+      req.user!.id
     );
     res.status(201).json(decision);
-  },
+  }
 );
 
 decisionRouter.put(
@@ -57,12 +58,12 @@ decisionRouter.put(
         ...payload,
         committeeId: payload.committeeId || undefined,
         meetingId: payload.meetingId || undefined,
-        date: payload.date ? payload.date.toISOString() : undefined,
+        date: payload.date ? payload.date.toISOString() : undefined
       },
-      req.user!.id,
+      req.user!.id
     );
     res.json(decision);
-  },
+  }
 );
 
 decisionRouter.delete(
@@ -71,7 +72,7 @@ decisionRouter.delete(
   async (req, res) => {
     await decisionService.remove(req.params.decisionId, req.user!.id);
     res.status(204).send();
-  },
+  }
 );
 
 export { decisionRouter };

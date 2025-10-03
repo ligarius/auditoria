@@ -1,16 +1,19 @@
-import { Router } from 'express';
-import multer from 'multer';
 import path from 'path';
 import { randomUUID } from 'crypto';
 
-import { authenticate } from '../../core/middleware/auth.js';
-import { fileService } from './file.service.js';
+import { Router } from 'express';
+import multer from 'multer';
+
+import { authenticate } from '../../core/middleware/auth';
+
+import { fileService } from './file.service';
 
 const upload = multer({
   dest: path.join(process.cwd(), 'tmp'),
   storage: multer.diskStorage({
     destination: path.join(process.cwd(), 'tmp'),
-    filename: (_req, file, cb) => cb(null, `${randomUUID()}-${file.originalname}`)
+    filename: (_req, file, cb) =>
+      cb(null, `${randomUUID()}-${file.originalname}`)
   })
 });
 

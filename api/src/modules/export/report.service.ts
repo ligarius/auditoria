@@ -3,18 +3,15 @@ import type { ChartConfiguration } from 'chart.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import dayjs from 'dayjs';
 import puppeteer from 'puppeteer';
-import {
-  ProjectWorkflowState,
-  type ProjectWorkflowState as ProjectWorkflowStateType,
-} from '@prisma/client';
+import { type ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
 
 const chartRenderer = new ChartJSNodeCanvas({
   width: 960,
   height: 420,
-  backgroundColour: '#ffffff',
+  backgroundColour: '#ffffff'
 });
 
 const STATUS_LABELS: Record<ProjectWorkflowStateType, string> = {
@@ -22,7 +19,7 @@ const STATUS_LABELS: Record<ProjectWorkflowStateType, string> = {
   recoleccion_datos: 'Recolección de datos',
   analisis: 'Análisis',
   recomendaciones: 'Recomendaciones',
-  cierre: 'Cierre',
+  cierre: 'Cierre'
 };
 
 const STATUS_COLORS: Record<ProjectWorkflowStateType, string> = {
@@ -30,11 +27,11 @@ const STATUS_COLORS: Record<ProjectWorkflowStateType, string> = {
   recoleccion_datos: '#6366f1',
   analisis: '#2563eb',
   recomendaciones: '#f97316',
-  cierre: '#16a34a',
+  cierre: '#16a34a'
 };
 
 const numberFormatter = new Intl.NumberFormat('es-CL', {
-  maximumFractionDigits: 2,
+  maximumFractionDigits: 2
 });
 
 const formatDate = (value?: string | Date | null) =>
@@ -53,7 +50,7 @@ const renderChart = async (config: ChartConfiguration) => {
 };
 
 const buildRiskBuckets = (
-  risks: Array<{ severity: number | null; rag: string | null }>,
+  risks: Array<{ severity: number | null; rag: string | null }>
 ) => {
   const buckets = { alto: 0, medio: 0, bajo: 0 };
   for (const risk of risks) {
@@ -80,9 +77,7 @@ const buildRiskBuckets = (
   return buckets;
 };
 
-const buildFindingBuckets = (
-  findings: Array<{ status: string | null }>,
-) => {
+const buildFindingBuckets = (findings: Array<{ status: string | null }>) => {
   const buckets = { abiertos: 0, enProgreso: 0, cerrados: 0 };
   for (const finding of findings) {
     const status = (finding.status ?? '').toLowerCase();
@@ -103,14 +98,22 @@ export async function generateProjectReportPdf(projectId: string) {
     include: {
       company: { select: { name: true } },
       tasks: {
-        select: { id: true, name: true, progress: true, startDate: true, endDate: true },
-        orderBy: { startDate: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          progress: true,
+          startDate: true,
+          endDate: true
+        },
+        orderBy: { startDate: 'asc' }
       },
       kpis: {
         select: { id: true, name: true, value: true, unit: true, date: true },
-        orderBy: { date: 'desc' },
+        orderBy: { date: 'desc' }
       },
-      risks: { select: { id: true, severity: true, rag: true, description: true } },
+      risks: {
+        select: { id: true, severity: true, rag: true, description: true }
+      },
       findings: {
         select: {
           id: true,
@@ -118,11 +121,11 @@ export async function generateProjectReportPdf(projectId: string) {
           status: true,
           impact: true,
           recommendation: true,
-          targetDate: true,
-        },
+          targetDate: true
+        }
       },
-      surveys: { select: { id: true } },
-    },
+      surveys: { select: { id: true } }
+    }
   });
 
   if (!project) {
@@ -134,11 +137,15 @@ export async function generateProjectReportPdf(projectId: string) {
   const statusColor = STATUS_COLORS[status] ?? '#0ea5e9';
 
   const taskCount = project.tasks.length;
-  const completedTasks = project.tasks.filter((task) => (task.progress ?? 0) >= 100).length;
+  const completedTasks = project.tasks.filter(
+    (task) => (task.progress ?? 0) >= 100
+  ).length;
   const averageProgress = taskCount
     ? Math.round(
-        project.tasks.reduce((acc, task) => acc + Math.max(0, task.progress ?? 0), 0) /
-          taskCount,
+        project.tasks.reduce(
+          (acc, task) => acc + Math.max(0, task.progress ?? 0),
+          0
+        ) / taskCount
       )
     : 0;
 
@@ -151,7 +158,9 @@ export async function generateProjectReportPdf(projectId: string) {
     return aTime - bTime;
   });
   const timelineLabels = tasksByStart.length
-    ? tasksByStart.map((task, index) => `${index + 1}. ${escapeHtml(task.name)}`)
+    ? tasksByStart.map(
+        (task, index) => `${index + 1}. ${escapeHtml(task.name)}`
+      )
     : ['Sin tareas registradas'];
   const timelineData = tasksByStart.length
     ? tasksByStart.map((task) => Math.min(100, Math.max(0, task.progress ?? 0)))
@@ -169,9 +178,9 @@ export async function generateProjectReportPdf(projectId: string) {
           borderWidth: 3,
           fill: true,
           backgroundColor: 'rgba(37, 99, 235, 0.15)',
-          tension: 0.35,
-        },
-      ],
+          tension: 0.35
+        }
+      ]
     },
     options: {
       plugins: { legend: { display: false } },
@@ -181,11 +190,11 @@ export async function generateProjectReportPdf(projectId: string) {
           max: 100,
           ticks: {
             stepSize: 20,
-            callback: (value) => `${value}%`,
-          },
-        },
-      },
-    },
+            callback: (value) => `${value}%`
+          }
+        }
+      }
+    }
   };
 
   const findingsChartConfig: ChartConfiguration<'bar'> = {
@@ -195,21 +204,25 @@ export async function generateProjectReportPdf(projectId: string) {
       datasets: [
         {
           label: 'Hallazgos',
-          data: [findingBuckets.abiertos, findingBuckets.enProgreso, findingBuckets.cerrados],
+          data: [
+            findingBuckets.abiertos,
+            findingBuckets.enProgreso,
+            findingBuckets.cerrados
+          ],
           backgroundColor: ['#f97316', '#0ea5e9', '#16a34a'],
-          borderRadius: 6,
-        },
-      ],
+          borderRadius: 6
+        }
+      ]
     },
     options: {
       plugins: { legend: { display: false } },
       scales: {
         y: {
           beginAtZero: true,
-          ticks: { stepSize: 1 },
-        },
-      },
-    },
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
   };
 
   const risksChartConfig: ChartConfiguration<'doughnut'> = {
@@ -219,28 +232,32 @@ export async function generateProjectReportPdf(projectId: string) {
       datasets: [
         {
           data: [riskBuckets.alto, riskBuckets.medio, riskBuckets.bajo],
-          backgroundColor: ['#dc2626', '#facc15', '#16a34a'],
-        },
-      ],
+          backgroundColor: ['#dc2626', '#facc15', '#16a34a']
+        }
+      ]
     },
     options: {
       plugins: {
-        legend: { position: 'bottom' },
+        legend: { position: 'bottom' }
       },
-      cutout: '55%',
-    },
+      cutout: '55%'
+    }
   };
 
   const [timelineChart, findingsChart, risksChart] = await Promise.all([
     renderChart(timelineChartConfig),
     renderChart(findingsChartConfig),
-    renderChart(risksChartConfig),
+    renderChart(risksChartConfig)
   ]);
 
   const kpiRows = project.kpis.slice(0, 8);
   const findingsSorted = [...project.findings].sort((a, b) => {
-    const aTime = a.targetDate ? new Date(a.targetDate).getTime() : Number.POSITIVE_INFINITY;
-    const bTime = b.targetDate ? new Date(b.targetDate).getTime() : Number.POSITIVE_INFINITY;
+    const aTime = a.targetDate
+      ? new Date(a.targetDate).getTime()
+      : Number.POSITIVE_INFINITY;
+    const bTime = b.targetDate
+      ? new Date(b.targetDate).getTime()
+      : Number.POSITIVE_INFINITY;
     if (aTime === bTime) {
       return a.title.localeCompare(b.title, 'es');
     }
@@ -500,7 +517,7 @@ export async function generateProjectReportPdf(projectId: string) {
                   <td>${escapeHtml(kpi.name)}</td>
                   <td>${numberFormatter.format(kpi.value)}${kpi.unit ? ` ${escapeHtml(kpi.unit)}` : ''}</td>
                   <td>${formatDate(kpi.date)}</td>
-                </tr>`,
+                </tr>`
                     )
                     .join('')
                 : '<tr><td colspan="3">Sin KPIs registrados para este periodo.</td></tr>'
@@ -541,7 +558,7 @@ export async function generateProjectReportPdf(projectId: string) {
               <p class="muted">Estado: ${escapeHtml(finding.status ?? 'Pendiente')}</p>
               ${finding.impact ? `<p>${escapeHtml(finding.impact)}</p>` : ''}
               ${finding.recommendation ? `<p class="muted">Recomendación: ${escapeHtml(finding.recommendation)}</p>` : ''}
-            </li>`,
+            </li>`
                   )
                   .join('')
               : '<li>No se han registrado hallazgos para este periodo.</li>'
@@ -588,7 +605,7 @@ export async function generateProjectReportPdf(projectId: string) {
             <li>
               <h4>${escapeHtml(task.name)}</h4>
               <p class="muted">${formatDate(task.startDate)} → ${formatDate(task.endDate)} · ${Math.round(Math.max(0, task.progress ?? 0))}%</p>
-            </li>`,
+            </li>`
                   )
                   .join('')
               : '<li>No hay planificaciones registradas.</li>'
@@ -603,7 +620,7 @@ export async function generateProjectReportPdf(projectId: string) {
   try {
     browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -611,7 +628,7 @@ export async function generateProjectReportPdf(projectId: string) {
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '16mm', bottom: '18mm', left: '14mm', right: '14mm' },
+      margin: { top: '16mm', bottom: '18mm', left: '14mm', right: '14mm' }
     });
     return pdf;
   } finally {

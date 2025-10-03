@@ -3,16 +3,17 @@ import type { Request } from 'express';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
 import {
   authenticate,
   requireProjectMembership,
   requireRole,
   type AuthenticatedRequest
-} from '../../core/middleware/auth.js';
-import { verifyAccessToken } from '../../core/utils/jwt.js';
-import { formsService } from './forms.service.js';
+} from '../../core/middleware/auth';
+import { verifyAccessToken } from '../../core/utils/jwt';
+
+import { formsService } from './forms.service';
 
 const formsRouter = Router();
 
@@ -23,7 +24,9 @@ const templateSchema = z.object({
 });
 
 const versionSchema = z.object({
-  formJson: z.record(z.any(), { invalid_type_error: 'formJson debe ser un objeto' }),
+  formJson: z.record(z.any(), {
+    invalid_type_error: 'formJson debe ser un objeto'
+  }),
   scoringJson: z.any().optional(),
   skipLogicJson: z.any().optional()
 });
@@ -36,7 +39,9 @@ const linkSchema = z.object({
 });
 
 const submitSchema = z.object({
-  answers: z.record(z.any(), { invalid_type_error: 'answers debe ser un objeto' }),
+  answers: z.record(z.any(), {
+    invalid_type_error: 'answers debe ser un objeto'
+  }),
   respondent: z
     .object({
       email: z.string().email().optional(),
@@ -73,8 +78,14 @@ formsRouter.post(
       req.params.templateId,
       {
         formJson: body.formJson as Prisma.InputJsonValue,
-        scoringJson: body.scoringJson as Prisma.InputJsonValue | null | undefined,
-        skipLogicJson: body.skipLogicJson as Prisma.InputJsonValue | null | undefined
+        scoringJson: body.scoringJson as
+          | Prisma.InputJsonValue
+          | null
+          | undefined,
+        skipLogicJson: body.skipLogicJson as
+          | Prisma.InputJsonValue
+          | null
+          | undefined
       }
     );
     res.status(201).json(version);
@@ -138,12 +149,20 @@ const resolveOptionalUser = async (
       where: { userId: payload.sub },
       select: { projectId: true, role: true }
     });
-    const projects = memberships.reduce<Record<string, string>>((acc, membership) => {
-      acc[membership.projectId] = membership.role;
-      return acc;
-    }, {});
-    return { id: payload.sub, email: payload.email, role: payload.role, projects };
-  } catch (error) {
+    const projects = memberships.reduce<Record<string, string>>(
+      (acc, membership) => {
+        acc[membership.projectId] = membership.role;
+        return acc;
+      },
+      {}
+    );
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      projects
+    };
+  } catch {
     return undefined;
   }
 };
@@ -151,7 +170,11 @@ const resolveOptionalUser = async (
 formsRouter.post('/submit/:token', async (req, res) => {
   const body = submitSchema.parse(req.body);
   const user = await resolveOptionalUser(req);
-  const result = await formsService.submitResponse(req.params.token, body, user);
+  const result = await formsService.submitResponse(
+    req.params.token,
+    body,
+    user
+  );
   res.status(201).json(result);
 });
 

@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
 
 const sanitizeForFilename = (value: string) =>
   value
@@ -19,8 +19,8 @@ export const routeExportService = {
         carrier: { select: { id: true, name: true } },
         stops: { orderBy: { sequence: 'asc' } },
         vehicles: { orderBy: { name: 'asc' } },
-        tariffs: { orderBy: [{ fromClient: 'asc' }, { toClient: 'asc' }] },
-      },
+        tariffs: { orderBy: [{ fromClient: 'asc' }, { toClient: 'asc' }] }
+      }
     });
 
     if (!plan) {
@@ -34,7 +34,7 @@ export const routeExportService = {
     const summarySheet = workbook.addWorksheet('Resumen');
     summarySheet.columns = [
       { header: 'Campo', key: 'field', width: 24 },
-      { header: 'Valor', key: 'value', width: 48 },
+      { header: 'Valor', key: 'value', width: 48 }
     ];
 
     summarySheet.addRows([
@@ -42,7 +42,7 @@ export const routeExportService = {
       { field: 'Escenario', value: plan.scenario },
       { field: 'Estado', value: plan.status },
       { field: 'Transportista', value: plan.carrier?.name ?? 'No asignado' },
-      { field: 'Aprobado', value: plan.approved ? 'Sí' : 'No' },
+      { field: 'Aprobado', value: plan.approved ? 'Sí' : 'No' }
     ]);
 
     const capacitySheet = workbook.addWorksheet('Capacidades');
@@ -50,15 +50,15 @@ export const routeExportService = {
       { header: 'Vehículo', key: 'name', width: 32 },
       { header: 'Capacidad', key: 'capacity', width: 16 },
       { header: 'Costo por km', key: 'costKm', width: 16 },
-      { header: 'Costo fijo', key: 'fixed', width: 16 },
+      { header: 'Costo fijo', key: 'fixed', width: 16 }
     ];
     plan.vehicles.forEach((vehicle) =>
       capacitySheet.addRow({
         name: vehicle.name,
         capacity: vehicle.capacity ?? 0,
         costKm: vehicle.costKm ?? 0,
-        fixed: vehicle.fixed ?? 0,
-      }),
+        fixed: vehicle.fixed ?? 0
+      })
     );
 
     const costsSheet = workbook.addWorksheet('Costos');
@@ -66,43 +66,43 @@ export const routeExportService = {
       { header: 'Origen', key: 'fromClient', width: 28 },
       { header: 'Destino', key: 'toClient', width: 28 },
       { header: 'Distancia (km)', key: 'distanceKm', width: 18 },
-      { header: 'Costo', key: 'cost', width: 16 },
+      { header: 'Costo', key: 'cost', width: 16 }
     ];
     plan.tariffs.forEach((tariff) =>
       costsSheet.addRow({
         fromClient: tariff.fromClient,
         toClient: tariff.toClient,
         distanceKm: tariff.distanceKm ?? 0,
-        cost: tariff.cost,
-      }),
+        cost: tariff.cost
+      })
     );
 
     const windowsSheet = workbook.addWorksheet('Ventanas');
     windowsSheet.columns = [
       { header: 'Cliente', key: 'client', width: 32 },
       { header: 'Inicio', key: 'windowStart', width: 24 },
-      { header: 'Fin', key: 'windowEnd', width: 24 },
+      { header: 'Fin', key: 'windowEnd', width: 24 }
     ];
     plan.stops.forEach((stop) =>
       windowsSheet.addRow({
         client: stop.client,
         windowStart: stop.windowStart ? stop.windowStart.toISOString() : '',
-        windowEnd: stop.windowEnd ? stop.windowEnd.toISOString() : '',
-      }),
+        windowEnd: stop.windowEnd ? stop.windowEnd.toISOString() : ''
+      })
     );
 
     const demandSheet = workbook.addWorksheet('Demandas');
     demandSheet.columns = [
       { header: 'Cliente', key: 'client', width: 32 },
       { header: 'Demanda Volumen', key: 'demandVol', width: 20 },
-      { header: 'Demanda Peso', key: 'demandKg', width: 20 },
+      { header: 'Demanda Peso', key: 'demandKg', width: 20 }
     ];
     plan.stops.forEach((stop) =>
       demandSheet.addRow({
         client: stop.client,
         demandVol: stop.demandVol ?? 0,
-        demandKg: stop.demandKg ?? 0,
-      }),
+        demandKg: stop.demandKg ?? 0
+      })
     );
 
     const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
@@ -114,7 +114,7 @@ export const routeExportService = {
     return {
       buffer,
       filename,
-      projectId: plan.projectId,
+      projectId: plan.projectId
     };
-  },
+  }
 };

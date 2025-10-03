@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { HttpError } from '../errors/http-error.js';
-import { verifyAccessToken } from '../utils/jwt.js';
-import { prisma } from '../config/db.js';
-import { enforceProjectAccess } from '../security/enforce-project-access.js';
-import { ensureScopedAccess } from '../security/enforce-scope.js';
+import { HttpError } from '../errors/http-error';
+import { verifyAccessToken } from '../utils/jwt';
+import { prisma } from '../config/db';
+import { enforceProjectAccess } from '../security/enforce-project-access';
+import { ensureScopedAccess } from '../security/enforce-scope';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -15,7 +15,11 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-export const authenticate = async (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
+export const authenticate = async (
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     throw new HttpError(401, 'No autenticado');
@@ -28,11 +32,19 @@ export const authenticate = async (req: AuthenticatedRequest, _res: Response, ne
       where: { userId: payload.sub },
       select: { projectId: true, role: true }
     });
-    const projectRoles = memberships.reduce<Record<string, string>>((acc, m) => {
-      acc[m.projectId] = m.role;
-      return acc;
-    }, {});
-    req.user = { id: payload.sub, email: payload.email, role: payload.role, projects: projectRoles };
+    const projectRoles = memberships.reduce<Record<string, string>>(
+      (acc, m) => {
+        acc[m.projectId] = m.role;
+        return acc;
+      },
+      {}
+    );
+    req.user = {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      projects: projectRoles
+    };
     await ensureScopedAccess(req);
     next();
   } catch (error) {
@@ -53,7 +65,11 @@ export const requireRole = (...roles: string[]) => {
 };
 
 export const requireProjectMembership = (paramOrBodyKey = 'projectId') => {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
     if (!req.user) {
       return res.status(401).json({ title: 'No autenticado' });
     }

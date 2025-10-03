@@ -1,9 +1,17 @@
 import { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
+import { prisma } from '../../core/config/db';
 
 export const auditService = {
-  async record(entity: string, entityId: string, action: string, userId: string, projectId?: string, oldValue?: unknown, newValue?: unknown) {
+  async record(
+    entity: string,
+    entityId: string,
+    action: string,
+    userId: string,
+    projectId?: string,
+    oldValue?: unknown,
+    newValue?: unknown
+  ) {
     await prisma.auditLog.create({
       data: {
         entity,

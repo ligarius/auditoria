@@ -1,7 +1,7 @@
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import type { AuthenticatedRequest } from '../../core/middleware/auth.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import type { AuthenticatedRequest } from '../../core/middleware/auth';
+import { auditService } from '../audit/audit.service';
 
 interface InterviewPayload {
   personName: string;
@@ -39,14 +39,15 @@ export const interviewService = {
   async list(projectId: string) {
     return prisma.interview.findMany({
       where: { projectId },
-      orderBy: [
-        { date: 'desc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }]
     });
   },
 
-  async create(projectId: string, payload: InterviewPayload, user: NonNullable<AuthenticatedRequest['user']>) {
+  async create(
+    projectId: string,
+    payload: InterviewPayload,
+    user: NonNullable<AuthenticatedRequest['user']>
+  ) {
     const data = sanitizePayload(payload);
 
     const interview = await prisma.interview.create({
@@ -63,7 +64,15 @@ export const interviewService = {
       }
     });
 
-    await auditService.record('Interview', interview.id, 'CREATE', user.id, projectId, null, interview);
+    await auditService.record(
+      'Interview',
+      interview.id,
+      'CREATE',
+      user.id,
+      projectId,
+      null,
+      interview
+    );
     return interview;
   },
 
@@ -73,7 +82,9 @@ export const interviewService = {
     payload: InterviewPayload,
     user: NonNullable<AuthenticatedRequest['user']>
   ) {
-    const existing = await prisma.interview.findUnique({ where: { id: interviewId } });
+    const existing = await prisma.interview.findUnique({
+      where: { id: interviewId }
+    });
     if (!existing || existing.projectId !== projectId) {
       throw new HttpError(404, 'Entrevista no encontrada');
     }
@@ -92,17 +103,39 @@ export const interviewService = {
       }
     });
 
-    await auditService.record('Interview', interviewId, 'UPDATE', user.id, projectId, existing, updated);
+    await auditService.record(
+      'Interview',
+      interviewId,
+      'UPDATE',
+      user.id,
+      projectId,
+      existing,
+      updated
+    );
     return updated;
   },
 
-  async remove(projectId: string, interviewId: string, user: NonNullable<AuthenticatedRequest['user']>) {
-    const existing = await prisma.interview.findUnique({ where: { id: interviewId } });
+  async remove(
+    projectId: string,
+    interviewId: string,
+    user: NonNullable<AuthenticatedRequest['user']>
+  ) {
+    const existing = await prisma.interview.findUnique({
+      where: { id: interviewId }
+    });
     if (!existing || existing.projectId !== projectId) {
       throw new HttpError(404, 'Entrevista no encontrada');
     }
 
     await prisma.interview.delete({ where: { id: interviewId } });
-    await auditService.record('Interview', interviewId, 'DELETE', user.id, projectId, existing, null);
+    await auditService.record(
+      'Interview',
+      interviewId,
+      'DELETE',
+      user.id,
+      projectId,
+      existing,
+      null
+    );
   }
 };

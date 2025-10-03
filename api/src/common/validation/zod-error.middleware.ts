@@ -1,9 +1,14 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
 
-import { formatZodIssues } from './helpers.js';
+import { formatZodIssues } from './helpers';
 
-export const zodErrorHandler = (err: unknown, req: Request, res: Response, next: NextFunction) => {
+export const zodErrorHandler = (
+  err: unknown,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   if (!(err instanceof ZodError)) {
     next(err);
     return;
@@ -15,7 +20,7 @@ export const zodErrorHandler = (err: unknown, req: Request, res: Response, next:
     status: 422,
     detail: 'La solicitud contiene datos inválidos.',
     errors: formatZodIssues(err),
-    ...(req.id ? { instance: req.id } : {}),
+    ...(req.id ? { instance: req.id } : {})
   } as const;
 
   res.status(422).json(problem);

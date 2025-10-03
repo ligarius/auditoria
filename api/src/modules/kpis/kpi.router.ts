@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireProjectRole } from '../../core/middleware/auth.js';
-import { kpiService } from './kpi.service.js';
+import { authenticate, requireProjectRole } from '../../core/middleware/auth';
+
+import { kpiService } from './kpi.service';
 
 const kpiRouter = Router();
 
@@ -10,7 +11,9 @@ kpiRouter.use(authenticate);
 
 const parseQueryDate = (value: unknown, label: string): Date | undefined => {
   if (Array.isArray(value)) {
-    return value.length > 0 ? parseQueryDate(value[value.length - 1], label) : undefined;
+    return value.length > 0
+      ? parseQueryDate(value[value.length - 1], label)
+      : undefined;
   }
 
   if (typeof value !== 'string') return undefined;
@@ -39,8 +42,9 @@ const getDateRangeFromQuery = (query: Record<string, unknown>) => {
 
 const optionalMetric = z
   .preprocess(
-    (value) => (value === '' || value === null || value === undefined ? undefined : value),
-    z.coerce.number(),
+    (value) =>
+      value === '' || value === null || value === undefined ? undefined : value,
+    z.coerce.number()
   )
   .optional();
 
@@ -52,10 +56,12 @@ const createSchema = z.object({
   inventoryAccuracy: optionalMetric,
   occupancyPct: optionalMetric,
   costPerOrder: optionalMetric,
-  kmPerDrop: optionalMetric,
+  kmPerDrop: optionalMetric
 });
 
-const updateSchema = createSchema.partial({ projectId: true }).extend({ date: z.coerce.date().optional() });
+const updateSchema = createSchema
+  .partial({ projectId: true })
+  .extend({ date: z.coerce.date().optional() });
 
 const normalizePayload = (payload: z.infer<typeof updateSchema>) => ({
   date: payload.date ?? undefined,
@@ -64,14 +70,15 @@ const normalizePayload = (payload: z.infer<typeof updateSchema>) => ({
   inventoryAccuracy: payload.inventoryAccuracy ?? undefined,
   occupancyPct: payload.occupancyPct ?? undefined,
   costPerOrder: payload.costPerOrder ?? undefined,
-  kmPerDrop: payload.kmPerDrop ?? undefined,
+  kmPerDrop: payload.kmPerDrop ?? undefined
 });
 
 kpiRouter.get(
   '/',
   requireProjectRole(['ConsultorLider', 'Auditor', 'SponsorPM', 'Invitado']),
   async (req, res) => {
-    const projectId = typeof req.query.projectId === 'string' ? req.query.projectId : undefined;
+    const projectId =
+      typeof req.query.projectId === 'string' ? req.query.projectId : undefined;
     if (!projectId) {
       return res.status(400).json({ title: 'projectId es requerido' });
     }
@@ -80,43 +87,60 @@ kpiRouter.get(
     try {
       dateFilters = getDateRangeFromQuery(req.query as Record<string, unknown>);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Rango de fechas inválido';
+      const message =
+        error instanceof Error ? error.message : 'Rango de fechas inválido';
       return res.status(400).json({ title: message });
     }
 
     const kpis = await kpiService.list(projectId, dateFilters);
     res.json(kpis);
-  },
+  }
 );
 
-kpiRouter.post('/', requireProjectRole(['ConsultorLider', 'Auditor']), async (req, res) => {
-  const payload = createSchema.parse(req.body);
-  const kpi = await kpiService.create(
-    payload.projectId,
-    {
-      date: payload.date,
-      otif: payload.otif ?? null,
-      pickPerHour: payload.pickPerHour ?? null,
-      inventoryAccuracy: payload.inventoryAccuracy ?? null,
-      occupancyPct: payload.occupancyPct ?? null,
-      costPerOrder: payload.costPerOrder ?? null,
-      kmPerDrop: payload.kmPerDrop ?? null,
-    },
-    req.user!.id,
-  );
-  res.status(201).json(kpi);
-});
+kpiRouter.post(
+  '/',
+  requireProjectRole(['ConsultorLider', 'Auditor']),
+  async (req, res) => {
+    const payload = createSchema.parse(req.body);
+    const kpi = await kpiService.create(
+      payload.projectId,
+      {
+        date: payload.date,
+        otif: payload.otif ?? null,
+        pickPerHour: payload.pickPerHour ?? null,
+        inventoryAccuracy: payload.inventoryAccuracy ?? null,
+        occupancyPct: payload.occupancyPct ?? null,
+        costPerOrder: payload.costPerOrder ?? null,
+        kmPerDrop: payload.kmPerDrop ?? null
+      },
+      req.user!.id
+    );
+    res.status(201).json(kpi);
+  }
+);
 
-kpiRouter.put('/:id', requireProjectRole(['ConsultorLider', 'Auditor']), async (req, res) => {
-  const payload = updateSchema.parse(req.body);
-  const kpi = await kpiService.update(req.params.id, normalizePayload(payload), req.user!.id);
-  res.json(kpi);
-});
+kpiRouter.put(
+  '/:id',
+  requireProjectRole(['ConsultorLider', 'Auditor']),
+  async (req, res) => {
+    const payload = updateSchema.parse(req.body);
+    const kpi = await kpiService.update(
+      req.params.id,
+      normalizePayload(payload),
+      req.user!.id
+    );
+    res.json(kpi);
+  }
+);
 
-kpiRouter.delete('/:id', requireProjectRole(['ConsultorLider']), async (req, res) => {
-  await kpiService.remove(req.params.id, req.user!.id);
-  res.status(204).send();
-});
+kpiRouter.delete(
+  '/:id',
+  requireProjectRole(['ConsultorLider']),
+  async (req, res) => {
+    await kpiService.remove(req.params.id, req.user!.id);
+    res.status(204).send();
+  }
+);
 
 // Compatibilidad con rutas anteriores basadas en projectId en el path
 kpiRouter.get(
@@ -127,42 +151,65 @@ kpiRouter.get(
     try {
       dateFilters = getDateRangeFromQuery(req.query as Record<string, unknown>);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Rango de fechas inválido';
+      const message =
+        error instanceof Error ? error.message : 'Rango de fechas inválido';
       return res.status(400).json({ title: message });
     }
 
     const kpis = await kpiService.list(req.params.projectId, dateFilters);
     res.json(kpis);
-  },
+  }
 );
 
-kpiRouter.post('/:projectId', requireProjectRole(['ConsultorLider', 'Auditor']), async (req, res) => {
-  const payload = updateSchema.parse({ ...req.body, projectId: req.params.projectId });
-  const kpi = await kpiService.create(
-    req.params.projectId,
-    {
-      date: payload.date ?? new Date(),
-      otif: payload.otif ?? null,
-      pickPerHour: payload.pickPerHour ?? null,
-      inventoryAccuracy: payload.inventoryAccuracy ?? null,
-      occupancyPct: payload.occupancyPct ?? null,
-      costPerOrder: payload.costPerOrder ?? null,
-      kmPerDrop: payload.kmPerDrop ?? null,
-    },
-    req.user!.id,
-  );
-  res.status(201).json(kpi);
-});
+kpiRouter.post(
+  '/:projectId',
+  requireProjectRole(['ConsultorLider', 'Auditor']),
+  async (req, res) => {
+    const payload = updateSchema.parse({
+      ...req.body,
+      projectId: req.params.projectId
+    });
+    const kpi = await kpiService.create(
+      req.params.projectId,
+      {
+        date: payload.date ?? new Date(),
+        otif: payload.otif ?? null,
+        pickPerHour: payload.pickPerHour ?? null,
+        inventoryAccuracy: payload.inventoryAccuracy ?? null,
+        occupancyPct: payload.occupancyPct ?? null,
+        costPerOrder: payload.costPerOrder ?? null,
+        kmPerDrop: payload.kmPerDrop ?? null
+      },
+      req.user!.id
+    );
+    res.status(201).json(kpi);
+  }
+);
 
-kpiRouter.put('/:projectId/:kpiId', requireProjectRole(['ConsultorLider', 'Auditor']), async (req, res) => {
-  const payload = updateSchema.parse({ ...req.body, projectId: req.params.projectId });
-  const kpi = await kpiService.update(req.params.kpiId, normalizePayload(payload), req.user!.id);
-  res.json(kpi);
-});
+kpiRouter.put(
+  '/:projectId/:kpiId',
+  requireProjectRole(['ConsultorLider', 'Auditor']),
+  async (req, res) => {
+    const payload = updateSchema.parse({
+      ...req.body,
+      projectId: req.params.projectId
+    });
+    const kpi = await kpiService.update(
+      req.params.kpiId,
+      normalizePayload(payload),
+      req.user!.id
+    );
+    res.json(kpi);
+  }
+);
 
-kpiRouter.delete('/:projectId/:kpiId', requireProjectRole(['ConsultorLider']), async (req, res) => {
-  await kpiService.remove(req.params.kpiId, req.user!.id);
-  res.status(204).send();
-});
+kpiRouter.delete(
+  '/:projectId/:kpiId',
+  requireProjectRole(['ConsultorLider']),
+  async (req, res) => {
+    await kpiService.remove(req.params.kpiId, req.user!.id);
+    res.status(204).send();
+  }
+);
 
 export { kpiRouter };

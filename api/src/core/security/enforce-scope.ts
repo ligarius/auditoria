@@ -1,7 +1,8 @@
-import type { AuthenticatedRequest } from '../middleware/auth.js';
-import { prisma } from '../config/db.js';
-import { HttpError } from '../errors/http-error.js';
-import { enforceProjectAccess } from './enforce-project-access.js';
+import type { AuthenticatedRequest } from '../middleware/auth';
+import { prisma } from '../config/db';
+import { HttpError } from '../errors/http-error';
+
+import { enforceProjectAccess } from './enforce-project-access';
 
 const extractString = (value: unknown): string | undefined => {
   if (typeof value === 'string' && value.trim().length > 0) {
@@ -10,7 +11,10 @@ const extractString = (value: unknown): string | undefined => {
   return undefined;
 };
 
-const extractFromObject = (source: unknown, key: string): string | undefined => {
+const extractFromObject = (
+  source: unknown,
+  key: string
+): string | undefined => {
   if (!source || typeof source !== 'object') {
     return undefined;
   }
@@ -48,9 +52,9 @@ export const ensureScopedAccess = async (req: AuthenticatedRequest) => {
     const hasMembership = await prisma.project.findFirst({
       where: {
         companyId,
-        memberships: { some: { userId: req.user.id } },
+        memberships: { some: { userId: req.user.id } }
       },
-      select: { id: true },
+      select: { id: true }
     });
 
     if (!hasMembership) {

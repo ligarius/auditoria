@@ -16,22 +16,33 @@ describe('scoringService.calculate', () => {
       ]
     };
 
-    const result = scoringService.calculate(
-      { q1: 'sí', q2: 15 },
-      config
-    );
+    const result = scoringService.calculate({ q1: 'sí', q2: 15 }, config);
 
     expect(result.total).toBe(10);
     expect(result.details).toHaveLength(2);
-    expect(result.details[0]).toMatchObject({ ruleId: 'r1', matched: true, contribution: 3 });
-    expect(result.details[1]).toMatchObject({ ruleId: 'r2', matched: true, contribution: 2 });
+    expect(result.details[0]).toMatchObject({
+      ruleId: 'r1',
+      matched: true,
+      contribution: 3
+    });
+    expect(result.details[1]).toMatchObject({
+      ruleId: 'r2',
+      matched: true,
+      contribution: 2
+    });
   });
 
   it('ignores rules that do not match', () => {
     const config = {
       rules: [
         { id: 'r1', questionId: 'q1', operator: 'eq', value: 'Sí', weight: 5 },
-        { id: 'r2', questionId: 'q2', operator: 'includes', value: 'urgente', weight: 2 }
+        {
+          id: 'r2',
+          questionId: 'q2',
+          operator: 'includes',
+          value: 'urgente',
+          weight: 2
+        }
       ]
     };
 

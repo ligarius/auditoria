@@ -26,5 +26,8 @@ export const logger = pino({
     ],
     censor: redactValue
   },
-  transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined
+  transport:
+    process.env.NODE_ENV !== 'production'
+      ? { target: 'pino-pretty' }
+      : undefined
 });

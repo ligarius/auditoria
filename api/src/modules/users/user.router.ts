@@ -1,7 +1,8 @@
 import { Router } from 'express';
 
-import { authenticate, requireRole } from '../../core/middleware/auth.js';
-import { userService } from './user.service.js';
+import { authenticate, requireRole } from '../../core/middleware/auth';
+
+import { userService } from './user.service';
 
 const userRouter = Router();
 
@@ -18,7 +19,11 @@ userRouter.post('/', async (req, res) => {
 });
 
 userRouter.put('/:userId', async (req, res) => {
-  const user = await userService.update(req.params.userId, req.body, req.user!.id);
+  const user = await userService.update(
+    req.params.userId,
+    req.body,
+    req.user!.id
+  );
   res.json(user);
 });
 
@@ -28,4 +33,3 @@ userRouter.delete('/:userId', async (req, res) => {
 });
 
 export { userRouter };
-

@@ -1,9 +1,9 @@
 import { Prisma, SopStatus } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
-import { approvalService } from '../governance/approval.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
+import { approvalService } from '../governance/approval.service';
 
 interface StepInput {
   id?: string;

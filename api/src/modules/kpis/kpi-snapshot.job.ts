@@ -1,14 +1,19 @@
-import { prisma } from '../../core/config/db.js';
-import { logger } from '../../core/config/logger.js';
+import { prisma } from '../../core/config/db';
+import { logger } from '../../core/config/logger';
 
 const startOfUtcDay = (date: Date) =>
-  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+  );
 
 const createRandomGenerator = (projectId: string, date: Date) => {
   const projectHash = Array.from(projectId).reduce((acc, char, index) => {
     return acc + char.charCodeAt(0) * (index + 1);
   }, 0);
-  const dateKey = Number.parseInt(date.toISOString().slice(0, 10).replaceAll('-', ''), 10);
+  const dateKey = Number.parseInt(
+    date.toISOString().slice(0, 10).replaceAll('-', ''),
+    10
+  );
 
   let seed = (projectHash * 9301 + dateKey * 49297) % 233280;
 
@@ -40,7 +45,7 @@ const buildSnapshotPayload = (projectId: string, snapshotDate: Date) => {
     inventoryAccuracy,
     occupancyPct,
     costPerOrder,
-    kmPerDrop,
+    kmPerDrop
   };
 };
 
@@ -51,7 +56,7 @@ const createJob = () => {
   const scheduleNextRun = () => {
     const now = new Date();
     const nextExecution = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)
     );
     const delay = Math.max(nextExecution.getTime() - now.getTime(), 1000);
 
@@ -68,7 +73,9 @@ const createJob = () => {
 
   const runJob = async () => {
     if (running) {
-      logger.warn('Job diario de KPI ya se encuentra en ejecución, se omite nueva instancia');
+      logger.warn(
+        'Job diario de KPI ya se encuentra en ejecución, se omite nueva instancia'
+      );
       return;
     }
 
@@ -83,20 +90,20 @@ const createJob = () => {
         const data = buildSnapshotPayload(project.id, snapshotDate);
         const existing = await prisma.kpiSnapshot.findFirst({
           where: { projectId: project.id, date: snapshotDate },
-          select: { id: true },
+          select: { id: true }
         });
 
         if (existing) {
           await prisma.kpiSnapshot.update({
             where: { id: existing.id },
-            data,
+            data
           });
         } else {
           await prisma.kpiSnapshot.create({
             data: {
               ...data,
-              projectId: project.id,
-            },
+              projectId: project.id
+            }
           });
         }
       }
@@ -104,12 +111,15 @@ const createJob = () => {
       logger.info(
         {
           projectCount: projects.length,
-          snapshotDate: snapshotDate.toISOString(),
+          snapshotDate: snapshotDate.toISOString()
         },
-        'Snapshots KPI generados automáticamente',
+        'Snapshots KPI generados automáticamente'
       );
     } catch (error) {
-      logger.error({ err: error }, 'No se pudieron generar los snapshots KPI diarios');
+      logger.error(
+        { err: error },
+        'No se pudieron generar los snapshots KPI diarios'
+      );
     } finally {
       running = false;
     }
@@ -119,7 +129,10 @@ const createJob = () => {
     start: () => {
       runJob()
         .catch((error) => {
-          logger.error({ err: error }, 'Error inicial al generar snapshots KPI');
+          logger.error(
+            { err: error },
+            'Error inicial al generar snapshots KPI'
+          );
         })
         .finally(() => {
           scheduleNextRun();
@@ -130,7 +143,7 @@ const createJob = () => {
         clearTimeout(timer);
         timer = null;
       }
-    },
+    }
   };
 };
 

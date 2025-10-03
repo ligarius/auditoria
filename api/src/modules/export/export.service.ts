@@ -1,15 +1,22 @@
 import fs from 'fs';
 import path from 'path';
+
 import archiver from 'archiver';
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import dayjs from 'dayjs';
-import { prisma } from '../../core/config/db.js';
+
+import { prisma } from '../../core/config/db';
 
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-const createSheet = (workbook: ExcelJS.Workbook, name: string, columns: string[], rows: any[]) => {
+const createSheet = (
+  workbook: ExcelJS.Workbook,
+  name: string,
+  columns: string[],
+  rows: any[]
+) => {
   const sheet = workbook.addWorksheet(name);
   sheet.addRow(columns);
   rows.forEach((row) => sheet.addRow(columns.map((key) => row[key])));
@@ -17,37 +24,118 @@ const createSheet = (workbook: ExcelJS.Workbook, name: string, columns: string[]
 
 export const exportService = {
   async excelZip(projectId: string) {
-    const project = await prisma.project.findUnique({ where: { id: projectId }, include: { company: true } });
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { company: true }
+    });
     if (!project) throw new Error('Proyecto no encontrado');
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Auditoría';
 
-    const dataItems = await prisma.dataRequestItem.findMany({ where: { projectId } });
-    createSheet(workbook, 'DataRequest', ['category', 'title', 'status', 'ownerName', 'dueDate', 'notes'], dataItems);
+    const dataItems = await prisma.dataRequestItem.findMany({
+      where: { projectId }
+    });
+    createSheet(
+      workbook,
+      'DataRequest',
+      ['category', 'title', 'status', 'ownerName', 'dueDate', 'notes'],
+      dataItems
+    );
 
-    const systems = await prisma.systemInventory.findMany({ where: { projectId } });
-    createSheet(workbook, 'Sistemas', ['systemName', 'type', 'ownerArea', 'usersActive', 'criticality', 'notes'], systems);
+    const systems = await prisma.systemInventory.findMany({
+      where: { projectId }
+    });
+    createSheet(
+      workbook,
+      'Sistemas',
+      [
+        'systemName',
+        'type',
+        'ownerArea',
+        'usersActive',
+        'criticality',
+        'notes'
+      ],
+      systems
+    );
 
-    const coverages = await prisma.processCoverage.findMany({ where: { projectId } });
-    createSheet(workbook, 'Cobertura', ['process', 'subProcess', 'systemNameRef', 'coverage', 'hasGap', 'gapDesc'], coverages);
+    const coverages = await prisma.processCoverage.findMany({
+      where: { projectId }
+    });
+    createSheet(
+      workbook,
+      'Cobertura',
+      [
+        'process',
+        'subProcess',
+        'systemNameRef',
+        'coverage',
+        'hasGap',
+        'gapDesc'
+      ],
+      coverages
+    );
 
-    const integrations = await prisma.integration.findMany({ where: { projectId } });
-    createSheet(workbook, 'Integraciones', ['source', 'target', 'type', 'periodicity', 'dailyVolume', 'notes'], integrations);
+    const integrations = await prisma.integration.findMany({
+      where: { projectId }
+    });
+    createSheet(
+      workbook,
+      'Integraciones',
+      ['source', 'target', 'type', 'periodicity', 'dailyVolume', 'notes'],
+      integrations
+    );
 
     const risks = await prisma.risk.findMany({ where: { projectId } });
-    createSheet(workbook, 'Riesgos', ['category', 'description', 'probability', 'impact', 'severity', 'rag'], risks);
+    createSheet(
+      workbook,
+      'Riesgos',
+      ['category', 'description', 'probability', 'impact', 'severity', 'rag'],
+      risks
+    );
 
     const findings = await prisma.finding.findMany({ where: { projectId } });
-    createSheet(workbook, 'Hallazgos', ['title', 'impact', 'recommendation', 'responsibleR', 'accountableA', 'status'], findings);
+    createSheet(
+      workbook,
+      'Hallazgos',
+      [
+        'title',
+        'impact',
+        'recommendation',
+        'responsibleR',
+        'accountableA',
+        'status'
+      ],
+      findings
+    );
 
     const pocs = await prisma.pOCItem.findMany({ where: { projectId } });
-    createSheet(workbook, 'POC', ['item', 'description', 'owner', 'status'], pocs);
+    createSheet(
+      workbook,
+      'POC',
+      ['item', 'description', 'owner', 'status'],
+      pocs
+    );
 
-    const decisions = await prisma.decisionLog.findMany({ where: { projectId } });
-    createSheet(workbook, 'Decisiones', ['date', 'topic', 'decision', 'approverA'], decisions);
+    const decisions = await prisma.decisionLog.findMany({
+      where: { projectId }
+    });
+    createSheet(
+      workbook,
+      'Decisiones',
+      ['date', 'topic', 'decision', 'approverA'],
+      decisions
+    );
 
-    const receptions = await prisma.reception.findMany({ where: { projectId } });
-    createSheet(workbook, 'Recepciones', ['date', 'truckPlate', 'carrier', 'dock', 'issues'], receptions);
+    const receptions = await prisma.reception.findMany({
+      where: { projectId }
+    });
+    createSheet(
+      workbook,
+      'Recepciones',
+      ['date', 'truckPlate', 'carrier', 'dock', 'issues'],
+      receptions
+    );
 
     const kpis = await prisma.kPI.findMany({ where: { projectId } });
     createSheet(workbook, 'KPIs', ['name', 'value', 'unit', 'date'], kpis);
@@ -70,11 +158,24 @@ export const exportService = {
   },
 
   async pdf(projectId: string) {
-    const project = await prisma.project.findUnique({ where: { id: projectId }, include: { company: true } });
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { company: true }
+    });
     if (!project) throw new Error('Proyecto no encontrado');
-    const risks = await prisma.risk.findMany({ where: { projectId }, orderBy: { severity: 'desc' }, take: 10 });
-    const findings = await prisma.finding.findMany({ where: { projectId }, take: 10 });
-    const kpis = await prisma.kPI.findMany({ where: { projectId }, orderBy: { date: 'asc' } });
+    const risks = await prisma.risk.findMany({
+      where: { projectId },
+      orderBy: { severity: 'desc' },
+      take: 10
+    });
+    const findings = await prisma.finding.findMany({
+      where: { projectId },
+      take: 10
+    });
+    const kpis = await prisma.kPI.findMany({
+      where: { projectId },
+      orderBy: { date: 'asc' }
+    });
 
     const pdfPath = path.join(tmpDir, `resumen-${projectId}.pdf`);
     const doc = new PDFDocument({ margin: 50 });
@@ -83,25 +184,32 @@ export const exportService = {
     const headerHeight = 120;
     doc.rect(0, 0, doc.page.width, headerHeight).fill('#0f172a');
     doc.fillColor('white');
-    doc.fontSize(28).text('Informe Ejecutivo', { align: 'center', baseline: 'middle' });
+    doc
+      .fontSize(28)
+      .text('Informe Ejecutivo', { align: 'center', baseline: 'middle' });
     doc.moveDown(0.5);
     doc.fontSize(14).text(`${project.company.name} · ${project.name}`, {
-      align: 'center',
+      align: 'center'
     });
     doc.moveDown(0.2);
     doc.fontSize(12).text(`Estado: ${project.status}`, { align: 'center' });
     const period = `${project.startDate ? dayjs(project.startDate).format('DD/MM/YYYY') : 'Sin inicio'} - ${
-      project.endDate ? dayjs(project.endDate).format('DD/MM/YYYY') : 'Sin cierre'
+      project.endDate
+        ? dayjs(project.endDate).format('DD/MM/YYYY')
+        : 'Sin cierre'
     }`;
     doc.text(period, { align: 'center' });
 
     doc.moveDown();
-    doc.fillColor('#0f172a').fontSize(16).text('Resumen ejecutivo', { underline: true });
+    doc
+      .fillColor('#0f172a')
+      .fontSize(16)
+      .text('Resumen ejecutivo', { underline: true });
     doc.fillColor('#1f2937').fontSize(12);
     doc.text(
       'Este informe resume el estado del proyecto, principales riesgos, hallazgos y métricas clave para la toma de decisiones.',
       {
-        align: 'justify',
+        align: 'justify'
       }
     );
 
@@ -119,20 +227,20 @@ export const exportService = {
     drawMetricRow([
       {
         label: 'Periodo',
-        value: period,
+        value: period
       },
       {
         label: 'Riesgos evaluados',
-        value: String(risks.length),
+        value: String(risks.length)
       },
       {
         label: 'Hallazgos registrados',
-        value: String(findings.length),
+        value: String(findings.length)
       },
       {
         label: 'KPIs monitoreados',
-        value: String(kpis.length),
-      },
+        value: String(kpis.length)
+      }
     ]);
 
     const sectionTitle = (title: string) => {
@@ -142,7 +250,10 @@ export const exportService = {
       doc.moveDown(0.3);
       doc.strokeColor('#cbd5f5');
       doc.lineWidth(2);
-      doc.moveTo(doc.x, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).stroke();
+      doc
+        .moveTo(doc.x, doc.y)
+        .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+        .stroke();
       doc.moveDown(0.5);
     };
 
@@ -157,7 +268,7 @@ export const exportService = {
             .font(index === 0 ? 'Helvetica-Bold' : 'Helvetica')
             .text(row[index] ?? '', startX + column.width * index, doc.y, {
               width: column.width - 10,
-              continued: index < columns.length - 1,
+              continued: index < columns.length - 1
             });
         });
         doc.text('\n');
@@ -173,12 +284,12 @@ export const exportService = {
         [
           { header: 'Descripción', width: 260 },
           { header: 'Severidad', width: 100 },
-          { header: 'RAG', width: 80 },
+          { header: 'RAG', width: 80 }
         ],
         risks.map((risk, index) => [
           `${index + 1}. ${risk.description}`,
           `${risk.severity}`,
-          risk.rag ?? '-',
+          risk.rag ?? '-'
         ])
       );
     }
@@ -191,12 +302,12 @@ export const exportService = {
         [
           { header: 'Hallazgo', width: 260 },
           { header: 'Impacto', width: 150 },
-          { header: 'Estado', width: 80 },
+          { header: 'Estado', width: 80 }
         ],
         findings.map((finding, index) => [
           `${index + 1}. ${finding.title}`,
           finding.impact,
-          finding.status,
+          finding.status
         ])
       );
     }
@@ -209,12 +320,12 @@ export const exportService = {
         [
           { header: 'Fecha', width: 100 },
           { header: 'Indicador', width: 200 },
-          { header: 'Valor', width: 120 },
+          { header: 'Valor', width: 120 }
         ],
         kpis.map((kpi) => [
           dayjs(kpi.date).format('DD/MM/YYYY'),
           kpi.name,
-          `${kpi.value} ${kpi.unit ?? ''}`.trim(),
+          `${kpi.value} ${kpi.unit ?? ''}`.trim()
         ])
       );
     }

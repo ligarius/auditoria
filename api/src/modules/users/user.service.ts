@@ -1,9 +1,9 @@
 import type { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { hashPassword } from '../../core/utils/password.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { hashPassword } from '../../core/utils/password';
+import { auditService } from '../audit/audit.service';
 
 const baseSelect = {
   id: true,
@@ -23,8 +23,13 @@ export const userService = {
     });
   },
 
-  async create(data: { name: string; email: string; role: string; password: string }, actorId: string) {
-    const existing = await prisma.user.findUnique({ where: { email: data.email } });
+  async create(
+    data: { name: string; email: string; role: string; password: string },
+    actorId: string
+  ) {
+    const existing = await prisma.user.findUnique({
+      where: { email: data.email }
+    });
     if (existing) {
       throw new HttpError(409, 'Ya existe un usuario con ese correo');
     }
@@ -38,7 +43,15 @@ export const userService = {
       },
       select: baseSelect
     });
-    await auditService.record('User', user.id, 'CREATE', actorId, undefined, null, user);
+    await auditService.record(
+      'User',
+      user.id,
+      'CREATE',
+      actorId,
+      undefined,
+      null,
+      user
+    );
     return user;
   },
 
@@ -66,7 +79,15 @@ export const userService = {
       data: updateData,
       select: baseSelect
     });
-    await auditService.record('User', id, 'UPDATE', actorId, undefined, existing, user);
+    await auditService.record(
+      'User',
+      id,
+      'UPDATE',
+      actorId,
+      undefined,
+      existing,
+      user
+    );
     return user;
   },
 
@@ -75,12 +96,24 @@ export const userService = {
     if (!existing) {
       throw new HttpError(404, 'Usuario no encontrado');
     }
-    const memberships = await prisma.membership.count({ where: { userId: id } });
+    const memberships = await prisma.membership.count({
+      where: { userId: id }
+    });
     if (memberships > 0) {
-      throw new HttpError(409, 'El usuario tiene membresías activas. Reasigna antes de eliminar.');
+      throw new HttpError(
+        409,
+        'El usuario tiene membresías activas. Reasigna antes de eliminar.'
+      );
     }
     await prisma.user.delete({ where: { id } });
-    await auditService.record('User', id, 'DELETE', actorId, undefined, existing, null);
+    await auditService.record(
+      'User',
+      id,
+      'DELETE',
+      actorId,
+      undefined,
+      existing,
+      null
+    );
   }
 };
-

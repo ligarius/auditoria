@@ -1,3 +1,3 @@
-export * from './helpers.js';
-export * from './request-validator.js';
-export * from './zod-error.middleware.js';
+export * from './helpers';
+export * from './request-validator';
+export * from './zod-error.middleware';

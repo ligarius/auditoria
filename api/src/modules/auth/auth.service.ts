@@ -1,7 +1,11 @@
-import { prisma } from '../../core/config/db.js';
-import { comparePassword } from '../../core/utils/password.js';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../core/utils/jwt.js';
-import { HttpError } from '../../core/errors/http-error.js';
+import { prisma } from '../../core/config/db';
+import { comparePassword } from '../../core/utils/password';
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken
+} from '../../core/utils/jwt';
+import { HttpError } from '../../core/errors/http-error';
 
 export const authService = {
   async login(email: string, password: string) {

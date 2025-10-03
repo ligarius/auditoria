@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireRole } from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import { meetingService } from './meeting.service.js';
+import { authenticate, requireRole } from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+
+import { meetingService } from './meeting.service';
 
 const meetingRouter = Router();
 
@@ -16,7 +17,7 @@ const baseSchema = z.object({
   agenda: z.string().optional(),
   scheduledAt: z.coerce.date(),
   location: z.string().optional(),
-  status: z.string().optional(),
+  status: z.string().optional()
 });
 
 const updateSchema = z.object({
@@ -25,12 +26,16 @@ const updateSchema = z.object({
   agenda: z.string().optional().nullable(),
   scheduledAt: z.coerce.date().optional(),
   location: z.string().optional().nullable(),
-  status: z.string().optional(),
+  status: z.string().optional()
 });
 
 meetingRouter.get('/', async (req, res) => {
-  const projectId = typeof req.query.projectId === 'string' ? req.query.projectId : undefined;
-  const committeeId = typeof req.query.committeeId === 'string' ? req.query.committeeId : undefined;
+  const projectId =
+    typeof req.query.projectId === 'string' ? req.query.projectId : undefined;
+  const committeeId =
+    typeof req.query.committeeId === 'string'
+      ? req.query.committeeId
+      : undefined;
   if (projectId) {
     await enforceProjectAccess(req.user, projectId);
   }
@@ -44,7 +49,7 @@ meetingRouter.post('/', requireRole('admin', 'consultor'), async (req, res) => {
   const meeting = await meetingService.create({
     ...payload,
     committeeId: payload.committeeId || undefined,
-    scheduledAt: payload.scheduledAt,
+    scheduledAt: payload.scheduledAt
   });
   res.status(201).json(meeting);
 });
@@ -55,24 +60,28 @@ meetingRouter.get('/:id', async (req, res) => {
   res.json(meeting);
 });
 
-meetingRouter.put('/:id', requireRole('admin', 'consultor'), async (req, res) => {
-  const payload = updateSchema.parse(req.body);
-  const meeting = await meetingService.get(req.params.id);
-  await enforceProjectAccess(req.user, meeting.projectId);
-  const updated = await meetingService.update(req.params.id, {
-    ...payload,
-    committeeId:
-      payload.committeeId === undefined
-        ? undefined
-        : payload.committeeId === ''
-          ? null
-          : payload.committeeId,
-    scheduledAt: payload.scheduledAt ?? undefined,
-    agenda: payload.agenda ?? undefined,
-    location: payload.location ?? undefined,
-  });
-  res.json(updated);
-});
+meetingRouter.put(
+  '/:id',
+  requireRole('admin', 'consultor'),
+  async (req, res) => {
+    const payload = updateSchema.parse(req.body);
+    const meeting = await meetingService.get(req.params.id);
+    await enforceProjectAccess(req.user, meeting.projectId);
+    const updated = await meetingService.update(req.params.id, {
+      ...payload,
+      committeeId:
+        payload.committeeId === undefined
+          ? undefined
+          : payload.committeeId === ''
+            ? null
+            : payload.committeeId,
+      scheduledAt: payload.scheduledAt ?? undefined,
+      agenda: payload.agenda ?? undefined,
+      location: payload.location ?? undefined
+    });
+    res.json(updated);
+  }
+);
 
 meetingRouter.delete('/:id', requireRole('admin'), async (req, res) => {
   const meeting = await meetingService.get(req.params.id);

@@ -1,9 +1,9 @@
 import type { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import type { AuthenticatedRequest } from '../../core/middleware/auth.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import type { AuthenticatedRequest } from '../../core/middleware/auth';
 
 const isLikertType = (value: string) => value.toLowerCase().includes('likert');
 
@@ -35,11 +35,11 @@ const buildQuestionSummary = (
     scaleMin: number | null;
     scaleMax: number | null;
   },
-  answers: Prisma.JsonValue[],
+  answers: Prisma.JsonValue[]
 ) => {
   const base = {
     questionId: question.id,
-    responses: answers.length,
+    responses: answers.length
   } as {
     questionId: string;
     responses: number;
@@ -61,11 +61,14 @@ const buildQuestionSummary = (
       return base;
     }
     const total = numericAnswers.reduce((sum, value) => sum + value, 0);
-    const distribution = numericAnswers.reduce<Record<string, number>>((acc, value) => {
-      const key = String(value);
-      acc[key] = (acc[key] ?? 0) + 1;
-      return acc;
-    }, {});
+    const distribution = numericAnswers.reduce<Record<string, number>>(
+      (acc, value) => {
+        const key = String(value);
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      },
+      {}
+    );
     return {
       ...base,
       average: Number((total / numericAnswers.length).toFixed(2)),
@@ -73,7 +76,7 @@ const buildQuestionSummary = (
       scale:
         question.scaleMin !== null && question.scaleMax !== null
           ? { min: question.scaleMin, max: question.scaleMax }
-          : undefined,
+          : undefined
     };
   }
 
@@ -83,11 +86,14 @@ const buildQuestionSummary = (
   if (textAnswers.length === 0) {
     return base;
   }
-  const distribution = textAnswers.reduce<Record<string, number>>((acc, value) => {
-    const key = value.slice(0, 120);
-    acc[key] = (acc[key] ?? 0) + 1;
-    return acc;
-  }, {});
+  const distribution = textAnswers.reduce<Record<string, number>>(
+    (acc, value) => {
+      const key = value.slice(0, 120);
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    },
+    {}
+  );
   const topResponses = Object.entries(distribution)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3)
@@ -103,15 +109,15 @@ export const projectSurveyService = {
       where: { projectId },
       orderBy: { createdAt: 'desc' },
       include: {
-        questions: { orderBy: { createdAt: 'asc' } },
-      },
+        questions: { orderBy: { createdAt: 'asc' } }
+      }
     });
   },
 
   async create(
     projectId: string,
     input: { title: string; description?: string; isActive?: boolean },
-    user: AuthenticatedRequest['user'],
+    user: AuthenticatedRequest['user']
   ) {
     await enforceProjectAccess(user, projectId);
     return prisma.survey.create({
@@ -119,9 +125,9 @@ export const projectSurveyService = {
         projectId,
         title: input.title,
         description: input.description ?? null,
-        isActive: input.isActive ?? true,
+        isActive: input.isActive ?? true
       },
-      include: { questions: true },
+      include: { questions: true }
     });
   },
 
@@ -135,12 +141,12 @@ export const projectSurveyService = {
       scaleMax?: number | null;
       required?: boolean;
     },
-    user: AuthenticatedRequest['user'],
+    user: AuthenticatedRequest['user']
   ) {
     await enforceProjectAccess(user, projectId);
     const survey = await prisma.survey.findFirst({
       where: { id: surveyId, projectId },
-      select: { id: true },
+      select: { id: true }
     });
     if (!survey) {
       throw new HttpError(404, 'Encuesta no encontrada');
@@ -152,12 +158,16 @@ export const projectSurveyService = {
         text: input.text,
         scaleMin: input.scaleMin ?? null,
         scaleMax: input.scaleMax ?? null,
-        required: input.required ?? true,
-      },
+        required: input.required ?? true
+      }
     });
   },
 
-  async summary(projectId: string, surveyId: string, user: AuthenticatedRequest['user']) {
+  async summary(
+    projectId: string,
+    surveyId: string,
+    user: AuthenticatedRequest['user']
+  ) {
     await enforceProjectAccess(user, projectId);
     const survey = await prisma.survey.findFirst({
       where: { id: surveyId, projectId },
@@ -165,26 +175,28 @@ export const projectSurveyService = {
         questions: { orderBy: { createdAt: 'asc' } },
         responses: {
           include: {
-            answers: true,
-          },
-        },
-      },
+            answers: true
+          }
+        }
+      }
     });
     if (!survey) {
       throw new HttpError(404, 'Encuesta no encontrada');
     }
     const summaries = survey.questions.map((question) => {
       const answers = survey.responses.flatMap((response) =>
-        response.answers.filter((answer) => answer.questionId === question.id).map((answer) => answer.value),
+        response.answers
+          .filter((answer) => answer.questionId === question.id)
+          .map((answer) => answer.value)
       );
       return buildQuestionSummary(
         {
           id: question.id,
           type: question.type,
           scaleMin: question.scaleMin,
-          scaleMax: question.scaleMax,
+          scaleMax: question.scaleMax
         },
-        answers,
+        answers
       );
     });
 
@@ -194,9 +206,9 @@ export const projectSurveyService = {
         title: survey.title,
         description: survey.description,
         isActive: survey.isActive,
-        questions: survey.questions,
+        questions: survey.questions
       },
-      summaries,
+      summaries
     };
-  },
+  }
 };

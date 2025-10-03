@@ -1,8 +1,8 @@
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { auditService } from '../audit/audit.service';
 
 const optionalString = z
   .string()
@@ -12,7 +12,7 @@ const optionalString = z
 
 const evidenceSchema = z.object({
   url: z.string().trim().min(1, 'La URL de la evidencia es obligatoria'),
-  description: optionalString,
+  description: optionalString
 });
 
 const checkItemSchema = z.object({
@@ -21,7 +21,7 @@ const checkItemSchema = z.object({
     .trim()
     .min(1, 'La descripción del ítem es obligatoria'),
   status: z.enum(['ok', 'no_ok', 'na']).default('ok'),
-  notes: optionalString,
+  notes: optionalString
 });
 
 const createCheckSchema = z.object({
@@ -32,7 +32,7 @@ const createCheckSchema = z.object({
   notes: optionalString,
   items: z.array(checkItemSchema).default([]),
   evidence: z.array(evidenceSchema).default([]),
-  performedAt: z.coerce.date().optional(),
+  performedAt: z.coerce.date().optional()
 });
 
 const assignmentItemSchema = z.object({
@@ -42,7 +42,7 @@ const assignmentItemSchema = z.object({
     .int()
     .positive('La cantidad debe ser mayor a 0')
     .optional(),
-  notes: optionalString,
+  notes: optionalString
 });
 
 const createPpeSchema = z.object({
@@ -57,7 +57,7 @@ const createPpeSchema = z.object({
   items: z
     .array(assignmentItemSchema)
     .min(1, 'Registra al menos un EPP entregado'),
-  evidence: z.array(evidenceSchema).default([]),
+  evidence: z.array(evidenceSchema).default([])
 });
 
 const createIncidentSchema = z.object({
@@ -69,7 +69,7 @@ const createIncidentSchema = z.object({
   location: optionalString,
   immediateActions: optionalString,
   correctiveActions: optionalString,
-  photos: z.array(evidenceSchema).default([]),
+  photos: z.array(evidenceSchema).default([])
 });
 
 const toJsonArray = (
@@ -87,11 +87,11 @@ export const hseService = {
         createdBy: {
           select: {
             id: true,
-            name: true,
-          },
-        },
+            name: true
+          }
+        }
       },
-      orderBy: [{ performedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ performedAt: 'desc' }, { createdAt: 'desc' }]
     });
   },
 
@@ -109,16 +109,16 @@ export const hseService = {
         items: toJsonArray(data.items),
         evidence: toJsonArray(data.evidence),
         performedAt: data.performedAt ?? new Date(),
-        createdById: userId,
+        createdById: userId
       },
       include: {
         createdBy: {
           select: {
             id: true,
-            name: true,
-          },
-        },
-      },
+            name: true
+          }
+        }
+      }
     });
 
     await auditService.record(
@@ -141,11 +141,11 @@ export const hseService = {
         createdBy: {
           select: {
             id: true,
-            name: true,
-          },
-        },
+            name: true
+          }
+        }
       },
-      orderBy: [{ assignedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ assignedAt: 'desc' }, { createdAt: 'desc' }]
     });
   },
 
@@ -162,16 +162,16 @@ export const hseService = {
         assignedAt: data.assignedAt ?? new Date(),
         items: toJsonArray(data.items),
         evidence: toJsonArray(data.evidence),
-        createdById: userId,
+        createdById: userId
       },
       include: {
         createdBy: {
           select: {
             id: true,
-            name: true,
-          },
-        },
-      },
+            name: true
+          }
+        }
+      }
     });
 
     await auditService.record(
@@ -194,11 +194,11 @@ export const hseService = {
         createdBy: {
           select: {
             id: true,
-            name: true,
-          },
-        },
+            name: true
+          }
+        }
       },
-      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }]
     });
   },
 
@@ -217,16 +217,16 @@ export const hseService = {
         immediateActions: data.immediateActions ?? null,
         correctiveActions: data.correctiveActions ?? null,
         photos: toJsonArray(data.photos),
-        createdById: userId,
+        createdById: userId
       },
       include: {
         createdBy: {
           select: {
             id: true,
-            name: true,
-          },
-        },
-      },
+            name: true
+          }
+        }
+      }
     });
 
     await auditService.record(
@@ -240,5 +240,5 @@ export const hseService = {
     );
 
     return created;
-  },
+  }
 };

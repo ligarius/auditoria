@@ -1,7 +1,8 @@
 import { Router } from 'express';
 
-import { authenticate, requireRole } from '../../core/middleware/auth.js';
-import { companyService } from './company.service.js';
+import { authenticate, requireRole } from '../../core/middleware/auth';
+
+import { companyService } from './company.service';
 
 const companyRouter = Router();
 
@@ -23,7 +24,11 @@ companyRouter.post('/', async (req, res) => {
 });
 
 companyRouter.put('/:companyId', async (req, res) => {
-  const company = await companyService.update(req.params.companyId, req.body, req.user!.id);
+  const company = await companyService.update(
+    req.params.companyId,
+    req.body,
+    req.user!.id
+  );
   res.json(company);
 });
 

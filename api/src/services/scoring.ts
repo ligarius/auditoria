@@ -15,7 +15,16 @@ export interface ScoreResult {
 const ruleSchema = z.object({
   id: z.string().min(1),
   questionId: z.string().min(1),
-  operator: z.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'includes', 'oneOf']),
+  operator: z.enum([
+    'eq',
+    'neq',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'includes',
+    'oneOf'
+  ]),
   value: z.any().optional(),
   weight: z.number().finite().default(1)
 });
@@ -52,22 +61,38 @@ const evaluateRule = (
     case 'gt': {
       const numericAnswer = toNumber(answer);
       const numericValue = toNumber(rule.value);
-      return numericAnswer !== null && numericValue !== null && numericAnswer > numericValue;
+      return (
+        numericAnswer !== null &&
+        numericValue !== null &&
+        numericAnswer > numericValue
+      );
     }
     case 'gte': {
       const numericAnswer = toNumber(answer);
       const numericValue = toNumber(rule.value);
-      return numericAnswer !== null && numericValue !== null && numericAnswer >= numericValue;
+      return (
+        numericAnswer !== null &&
+        numericValue !== null &&
+        numericAnswer >= numericValue
+      );
     }
     case 'lt': {
       const numericAnswer = toNumber(answer);
       const numericValue = toNumber(rule.value);
-      return numericAnswer !== null && numericValue !== null && numericAnswer < numericValue;
+      return (
+        numericAnswer !== null &&
+        numericValue !== null &&
+        numericAnswer < numericValue
+      );
     }
     case 'lte': {
       const numericAnswer = toNumber(answer);
       const numericValue = toNumber(rule.value);
-      return numericAnswer !== null && numericValue !== null && numericAnswer <= numericValue;
+      return (
+        numericAnswer !== null &&
+        numericValue !== null &&
+        numericAnswer <= numericValue
+      );
     }
     case 'includes':
       if (Array.isArray(answer)) {

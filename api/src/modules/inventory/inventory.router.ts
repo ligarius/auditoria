@@ -2,9 +2,14 @@ import { BarcodeLabelType, InventoryCountStatus } from '@prisma/client';
 import { Router } from 'express';
 import multer from 'multer';
 
-import { authenticate, requireProjectRole, type AuthenticatedRequest } from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import { inventoryService } from './inventory.service.js';
+import {
+  authenticate,
+  requireProjectRole,
+  type AuthenticatedRequest
+} from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+
+import { inventoryService } from './inventory.service';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -31,16 +36,22 @@ const parseCountStatus = (value: unknown): InventoryCountStatus | undefined => {
     return undefined;
   }
   const normalized = value.trim().toLowerCase() as InventoryCountStatus;
-  return (Object.values(InventoryCountStatus) as InventoryCountStatus[]).includes(normalized)
+  return (
+    Object.values(InventoryCountStatus) as InventoryCountStatus[]
+  ).includes(normalized)
     ? normalized
     : undefined;
 };
 
-inventoryRouter.get('/skus/:projectId', requireProjectRole(viewerRoles), async (req: AuthenticatedRequest, res) => {
-  const { projectId } = req.params;
-  const skus = await inventoryService.listSkus(projectId);
-  res.json(skus);
-});
+inventoryRouter.get(
+  '/skus/:projectId',
+  requireProjectRole(viewerRoles),
+  async (req: AuthenticatedRequest, res) => {
+    const { projectId } = req.params;
+    const skus = await inventoryService.listSkus(projectId);
+    res.json(skus);
+  }
+);
 
 inventoryRouter.post(
   '/skus/import/:projectId',
@@ -51,9 +62,12 @@ inventoryRouter.post(
     if (!req.file) {
       return res.status(400).json({ message: 'Archivo CSV requerido' });
     }
-    const result = await inventoryService.importSkus(projectId, req.file.buffer);
+    const result = await inventoryService.importSkus(
+      projectId,
+      req.file.buffer
+    );
     return res.json(result);
-  },
+  }
 );
 
 inventoryRouter.get(
@@ -63,7 +77,7 @@ inventoryRouter.get(
     const { projectId } = req.params;
     const locations = await inventoryService.listLocations(projectId);
     res.json(locations);
-  },
+  }
 );
 
 inventoryRouter.post(
@@ -85,18 +99,28 @@ inventoryRouter.post(
         return {
           zone: {
             code: String(value.zone.code ?? ''),
-            name: value.zone.name ? String(value.zone.name) : undefined,
+            name: value.zone.name ? String(value.zone.name) : undefined
           },
           rack: {
             code: String(value.rack.code ?? ''),
-            name: value.rack.name ? String(value.rack.name) : undefined,
+            name: value.rack.name ? String(value.rack.name) : undefined
           },
           rowStart: Number(value.rowStart ?? value.row ?? 0),
           rowEnd: Number(value.rowEnd ?? value.row ?? value.rowStart ?? 0),
           levelStart: Number(value.levelStart ?? value.level ?? 0),
-          levelEnd: Number(value.levelEnd ?? value.level ?? value.levelStart ?? 0),
-          positionStart: Number(value.positionStart ?? value.posStart ?? value.pos ?? 0),
-          positionEnd: Number(value.positionEnd ?? value.posEnd ?? value.pos ?? value.positionStart ?? 0),
+          levelEnd: Number(
+            value.levelEnd ?? value.level ?? value.levelStart ?? 0
+          ),
+          positionStart: Number(
+            value.positionStart ?? value.posStart ?? value.pos ?? 0
+          ),
+          positionEnd: Number(
+            value.positionEnd ??
+              value.posEnd ??
+              value.pos ??
+              value.positionStart ??
+              0
+          )
         };
       })
       .filter(Boolean);
@@ -105,9 +129,12 @@ inventoryRouter.post(
       return res.status(400).json({ message: 'No hay definiciones válidas' });
     }
 
-    const result = await inventoryService.bulkCreateLocations(projectId, parsedDefinitions);
+    const result = await inventoryService.bulkCreateLocations(
+      projectId,
+      parsedDefinitions
+    );
     res.status(201).json(result);
-  },
+  }
 );
 
 inventoryRouter.get(
@@ -117,7 +144,7 @@ inventoryRouter.get(
     const { projectId } = req.params;
     const counts = await inventoryService.listCounts(projectId);
     res.json(counts);
-  },
+  }
 );
 
 inventoryRouter.post(
@@ -136,7 +163,7 @@ inventoryRouter.post(
 
     const count = await inventoryService.createCount(projectId, toleranceValue);
     res.status(201).json(count);
-  },
+  }
 );
 
 inventoryRouter.patch(
@@ -152,7 +179,10 @@ inventoryRouter.patch(
       status?: unknown;
     };
     const parsedStatus = parseCountStatus(body.status);
-    const payload: { tolerancePct?: number | null; status?: InventoryCountStatus } = {};
+    const payload: {
+      tolerancePct?: number | null;
+      status?: InventoryCountStatus;
+    } = {};
 
     if (Object.prototype.hasOwnProperty.call(body ?? {}, 'tolerancePct')) {
       if (body.tolerancePct === null) {
@@ -172,7 +202,7 @@ inventoryRouter.patch(
 
     const updated = await inventoryService.updateCount(countId, payload);
     res.json(updated);
-  },
+  }
 );
 
 inventoryRouter.get(
@@ -184,7 +214,7 @@ inventoryRouter.get(
     await enforceProjectAccess(req.user, projectId);
     const detail = await inventoryService.getCountDetail(countId);
     res.json(detail);
-  },
+  }
 );
 
 inventoryRouter.get(
@@ -196,7 +226,7 @@ inventoryRouter.get(
     await enforceProjectAccess(req.user, projectId);
     const tasks = await inventoryService.listTasks(countId);
     res.json(tasks);
-  },
+  }
 );
 
 inventoryRouter.post(
@@ -219,10 +249,10 @@ inventoryRouter.post(
     const task = await inventoryService.createTask(countId, {
       zoneId: String(zoneId),
       assignedToId: assignedToId ? String(assignedToId) : undefined,
-      blind: typeof blind === 'boolean' ? blind : undefined,
+      blind: typeof blind === 'boolean' ? blind : undefined
     });
     res.status(201).json(task);
-  },
+  }
 );
 
 inventoryRouter.post(
@@ -253,10 +283,10 @@ inventoryRouter.post(
       locationId: String(locationId),
       skuId: skuId ? String(skuId) : undefined,
       qty: parsedQty,
-      deviceId: deviceId ? String(deviceId) : undefined,
+      deviceId: deviceId ? String(deviceId) : undefined
     });
     res.status(201).json(scan);
-  },
+  }
 );
 
 inventoryRouter.post(
@@ -273,11 +303,16 @@ inventoryRouter.post(
       return res.status(400).json({ message: 'qty2 inválido' });
     }
 
-    const recount = await inventoryService.recordRecount(countId, taskId, scanId, {
-      qty2: parsedQty,
-    });
+    const recount = await inventoryService.recordRecount(
+      countId,
+      taskId,
+      scanId,
+      {
+        qty2: parsedQty
+      }
+    );
     res.status(200).json(recount);
-  },
+  }
 );
 
 inventoryRouter.post(
@@ -289,7 +324,7 @@ inventoryRouter.post(
     await enforceProjectAccess(req.user, projectId);
     const detail = await inventoryService.closeCount(countId);
     res.json(detail);
-  },
+  }
 );
 
 inventoryRouter.get(
@@ -301,7 +336,7 @@ inventoryRouter.get(
     await enforceProjectAccess(req.user, projectId);
     const variances = await inventoryService.listVariances(countId);
     res.json(variances);
-  },
+  }
 );
 
 inventoryRouter.patch(
@@ -315,10 +350,10 @@ inventoryRouter.patch(
     const updated = await inventoryService.updateVarianceReason(
       countId,
       varianceId,
-      typeof reason === 'string' ? reason : undefined,
+      typeof reason === 'string' ? reason : undefined
     );
     res.json(updated ?? null);
-  },
+  }
 );
 
 inventoryRouter.get(
@@ -332,10 +367,10 @@ inventoryRouter.get(
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="variaciones-${countId}.csv"`,
+      `attachment; filename="variaciones-${countId}.csv"`
     );
     res.send(buffer);
-  },
+  }
 );
 
 inventoryRouter.post(
@@ -343,7 +378,10 @@ inventoryRouter.post(
   requireProjectRole(editorRoles),
   async (req: AuthenticatedRequest, res) => {
     const { projectId } = req.params;
-    const { type, ids } = req.body as { type?: BarcodeLabelType; ids?: unknown };
+    const { type, ids } = req.body as {
+      type?: BarcodeLabelType;
+      ids?: unknown;
+    };
 
     if (!type || !Object.values(BarcodeLabelType).includes(type)) {
       return res.status(400).json({ message: 'Tipo de etiqueta inválido' });
@@ -354,11 +392,18 @@ inventoryRouter.post(
     }
 
     const idList = ids.map((value) => String(value));
-    const { buffer } = await inventoryService.generateLabels(projectId, type, idList);
+    const { buffer } = await inventoryService.generateLabels(
+      projectId,
+      type,
+      idList
+    );
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="labels-${type.toLowerCase()}-${Date.now()}.pdf"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="labels-${type.toLowerCase()}-${Date.now()}.pdf"`
+    );
     res.send(buffer);
-  },
+  }
 );
 
 inventoryRouter.post(
@@ -373,9 +418,18 @@ inventoryRouter.post(
     }
 
     const idList = labelIds.map((value) => String(value));
-    const updated = await inventoryService.markLabelsInstalled(projectId, idList, req.user!.id);
-    res.json({ updated: updated.map((label) => ({ id: label.id, installedAt: label.installedAt })) });
-  },
+    const updated = await inventoryService.markLabelsInstalled(
+      projectId,
+      idList,
+      req.user!.id
+    );
+    res.json({
+      updated: updated.map((label) => ({
+        id: label.id,
+        installedAt: label.installedAt
+      }))
+    });
+  }
 );
 
 export { inventoryRouter };

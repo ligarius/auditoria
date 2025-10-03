@@ -10,7 +10,9 @@ export type RequestValidationSchema = {
 const parsePart = (schema: ZodTypeAny | undefined, value: unknown) =>
   schema ? schema.parse(value) : value;
 
-export const validateRequest = (schemas: RequestValidationSchema): RequestHandler => {
+export const validateRequest = (
+  schemas: RequestValidationSchema
+): RequestHandler => {
   return (req, _res, next) => {
     try {
       if (schemas.body) {

@@ -1,26 +1,31 @@
-import type { Prisma } from '@prisma/client';
-import type { ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
+import type {
+  Prisma,
+  ProjectWorkflowState as ProjectWorkflowStateType
+} from '@prisma/client';
 import { ProjectWorkflowState } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
 
 const WORKFLOW_STATES: readonly ProjectWorkflowStateType[] = [
   ProjectWorkflowState.planificacion,
   ProjectWorkflowState.recoleccion_datos,
   ProjectWorkflowState.analisis,
   ProjectWorkflowState.recomendaciones,
-  ProjectWorkflowState.cierre,
+  ProjectWorkflowState.cierre
 ];
 
-const WORKFLOW_TRANSITIONS: Record<ProjectWorkflowStateType, ProjectWorkflowStateType[]> = {
+const WORKFLOW_TRANSITIONS: Record<
+  ProjectWorkflowStateType,
+  ProjectWorkflowStateType[]
+> = {
   planificacion: [ProjectWorkflowState.recoleccion_datos],
   recoleccion_datos: [ProjectWorkflowState.analisis],
   analisis: [ProjectWorkflowState.recomendaciones],
   recomendaciones: [ProjectWorkflowState.cierre],
-  cierre: [],
+  cierre: []
 };
 
 const WORKFLOW_SYNONYMS: Record<string, ProjectWorkflowStateType> = {
@@ -38,12 +43,12 @@ const WORKFLOW_SYNONYMS: Record<string, ProjectWorkflowStateType> = {
   RECOMMENDATIONS: ProjectWorkflowState.recomendaciones,
   CIERRE: ProjectWorkflowState.cierre,
   CLOSE: ProjectWorkflowState.cierre,
-  CLOSING: ProjectWorkflowState.cierre,
+  CLOSING: ProjectWorkflowState.cierre
 };
 
 const coerceWorkflowState = (
   value: unknown,
-  defaultState: ProjectWorkflowStateType = ProjectWorkflowState.planificacion,
+  defaultState: ProjectWorkflowStateType = ProjectWorkflowState.planificacion
 ): ProjectWorkflowStateType => {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return defaultState;
@@ -54,7 +59,9 @@ const coerceWorkflowState = (
     return mapped;
   }
   const lowerKey = value.trim().toLowerCase() as ProjectWorkflowStateType;
-  if ((WORKFLOW_STATES as readonly ProjectWorkflowStateType[]).includes(lowerKey)) {
+  if (
+    (WORKFLOW_STATES as readonly ProjectWorkflowStateType[]).includes(lowerKey)
+  ) {
     return lowerKey;
   }
   throw new HttpError(400, 'Estado de proyecto inválido');
@@ -62,7 +69,12 @@ const coerceWorkflowState = (
 
 export const projectService = {
   async listByUser(userId: string, role: string) {
-    const baseQuery = { include: { company: true, owner: { select: { id: true, name: true, email: true } } } } as const;
+    const baseQuery = {
+      include: {
+        company: true,
+        owner: { select: { id: true, name: true, email: true } }
+      }
+    } as const;
     if (role === 'admin') {
       return prisma.project.findMany(baseQuery);
     }
@@ -100,7 +112,10 @@ export const projectService = {
     },
     user: { id: string; role: string }
   ) {
-    const companyExists = await prisma.company.findUnique({ where: { id: data.companyId }, select: { id: true } });
+    const companyExists = await prisma.company.findUnique({
+      where: { id: data.companyId },
+      select: { id: true }
+    });
     if (!companyExists) {
       throw new HttpError(404, 'Empresa no encontrada');
     }
@@ -128,30 +143,64 @@ export const projectService = {
       update: { role: membershipRole },
       create: { userId: user.id, projectId: project.id, role: membershipRole }
     });
-    await auditService.record('Project', project.id, 'CREATE', user.id, project.id, null, project);
+    await auditService.record(
+      'Project',
+      project.id,
+      'CREATE',
+      user.id,
+      project.id,
+      null,
+      project
+    );
     return project;
   },
 
-  async update(id: string, data: Prisma.ProjectUncheckedUpdateInput, user: { id: string; role: string }) {
+  async update(
+    id: string,
+    data: Prisma.ProjectUncheckedUpdateInput,
+    user: { id: string; role: string }
+  ) {
     const before = await prisma.project.findUnique({ where: { id } });
     if (!before) {
       throw new HttpError(404, 'Proyecto no encontrado');
     }
     if (user.role !== 'admin' && before.ownerId !== user.id) {
-      throw new HttpError(403, 'Solo el propietario puede actualizar el proyecto');
+      throw new HttpError(
+        403,
+        'Solo el propietario puede actualizar el proyecto'
+      );
     }
     if (Object.prototype.hasOwnProperty.call(data, 'status')) {
-      throw new HttpError(400, 'El estado del proyecto debe modificarse mediante el workflow');
+      throw new HttpError(
+        400,
+        'El estado del proyecto debe modificarse mediante el workflow'
+      );
     }
     const project = await prisma.project.update({ where: { id }, data });
-    await auditService.record('Project', id, 'UPDATE', user.id, id, before, project);
+    await auditService.record(
+      'Project',
+      id,
+      'UPDATE',
+      user.id,
+      id,
+      before,
+      project
+    );
     return project;
   },
 
   async remove(id: string, userId: string) {
     const before = await prisma.project.findUnique({ where: { id } });
     await prisma.project.delete({ where: { id } });
-    await auditService.record('Project', id, 'DELETE', userId, id, before, null);
+    await auditService.record(
+      'Project',
+      id,
+      'DELETE',
+      userId,
+      id,
+      before,
+      null
+    );
   },
 
   async invite(projectId: string, email: string, role: string) {
@@ -247,13 +296,20 @@ export const projectService = {
 
   async getFeatures(id: string, user: { id: string; role: string }) {
     await enforceProjectAccess(user, id);
-    const project = await prisma.project.findUnique({ where: { id }, select: { settings: true } });
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: { settings: true }
+    });
     if (!project) {
       throw new HttpError(404, 'Proyecto no encontrado');
     }
     const raw = project.settings as { enabledFeatures?: unknown } | null;
-    const rawFeatures = Array.isArray(raw?.enabledFeatures) ? raw?.enabledFeatures ?? [] : [];
-    const enabled = rawFeatures.filter((feature): feature is string => typeof feature === 'string');
+    const rawFeatures = Array.isArray(raw?.enabledFeatures)
+      ? (raw?.enabledFeatures ?? [])
+      : [];
+    const enabled = rawFeatures.filter(
+      (feature): feature is string => typeof feature === 'string'
+    );
     return { enabled };
   },
 
@@ -261,7 +317,7 @@ export const projectService = {
     await enforceProjectAccess(user, id);
     const project = await prisma.project.findUnique({
       where: { id },
-      include: { company: true },
+      include: { company: true }
     });
     if (!project) {
       throw new HttpError(404, 'Proyecto no encontrado');
@@ -287,7 +343,7 @@ export const projectService = {
       pocItems,
       decisionsCount,
       kpis,
-      tasks,
+      tasks
     ] = await Promise.all([
       prisma.dataRequestItem.findMany({ where: { projectId: id } }),
       prisma.surveyLink.findMany({
@@ -308,8 +364,11 @@ export const projectService = {
       prisma.finding.findMany({ where: { projectId: id } }),
       prisma.pOCItem.findMany({ where: { projectId: id } }),
       prisma.decisionLog.count({ where: { projectId: id } }),
-      prisma.kPI.findMany({ where: { projectId: id }, orderBy: { date: 'desc' } }),
-      prisma.projectTask.findMany({ where: { projectId: id } }),
+      prisma.kPI.findMany({
+        where: { projectId: id },
+        orderBy: { date: 'desc' }
+      }),
+      prisma.projectTask.findMany({ where: { projectId: id } })
     ]);
 
     const now = new Date();
@@ -317,7 +376,10 @@ export const projectService = {
       ['Pending', 'En progreso', 'Pendiente'].includes(item.status)
     );
     const overdueDataItems = dataItems.filter(
-      (item) => item.dueDate && new Date(item.dueDate) < now && item.status !== 'Recibido'
+      (item) =>
+        item.dueDate &&
+        new Date(item.dueDate) < now &&
+        item.status !== 'Recibido'
     );
 
     const activeSurveyLinks = surveyLinks.filter(
@@ -332,7 +394,8 @@ export const projectService = {
     );
 
     const coverageAverage = coverages.length
-      ? coverages.reduce((acc, item) => acc + (item.coverage ?? 0), 0) / coverages.length
+      ? coverages.reduce((acc, item) => acc + (item.coverage ?? 0), 0) /
+        coverages.length
       : null;
     const coverageGaps = coverages.filter((item) => item.hasGap).length;
 
@@ -340,15 +403,20 @@ export const projectService = {
       (entry) => (entry.openVulns ?? '').trim().length > 0
     ).length;
 
-    const totalTco = costEntries.reduce((acc, item) => acc + computeTco(item), 0);
+    const totalTco = costEntries.reduce(
+      (acc, item) => acc + computeTco(item),
+      0
+    );
 
-    const criticalRisks = risks.filter((risk) =>
-      risk.severity >= 4 || (risk.rag ?? '').toLowerCase() === 'rojo'
+    const criticalRisks = risks.filter(
+      (risk) => risk.severity >= 4 || (risk.rag ?? '').toLowerCase() === 'rojo'
     ).length;
 
     const openFindings = findings.filter((finding) => {
       const status = (finding.status ?? '').toLowerCase();
-      return status !== 'closed' && status !== 'cerrado' && status !== 'implementado';
+      return (
+        status !== 'closed' && status !== 'cerrado' && status !== 'implementado'
+      );
     }).length;
 
     const activePoc = pocItems.filter((item) => {
@@ -356,8 +424,10 @@ export const projectService = {
       return status !== 'completado' && status !== 'cerrado';
     }).length;
 
-    const lateTasks = tasks.filter((task) =>
-      task.endDate < now && !['completado', 'cerrado'].includes((task.status ?? '').toLowerCase())
+    const lateTasks = tasks.filter(
+      (task) =>
+        task.endDate < now &&
+        !['completado', 'cerrado'].includes((task.status ?? '').toLowerCase())
     );
     const upcomingTasks = tasks
       .filter((task) => task.startDate >= now)
@@ -371,27 +441,27 @@ export const projectService = {
         status: project.status,
         company: project.company,
         startDate: project.startDate,
-        endDate: project.endDate,
+        endDate: project.endDate
       },
       sections: {
         preKickoff: {
           total: dataItems.length,
           pending: pendingDataItems.length,
-          overdue: overdueDataItems.length,
+          overdue: overdueDataItems.length
         },
         surveys: {
           total: surveyLinks.length,
           active: activeSurveyLinks.length,
           published: publishedSurveyLinks.length,
           questions: totalQuestions,
-          responses: questionnaireResponsesCount,
+          responses: questionnaireResponsesCount
         },
         interviews: {
-          total: interviewsCount,
+          total: interviewsCount
         },
         processes: {
           deliverables: processAssetsCount,
-          featuresEnabled: enabledFeatures.length,
+          featuresEnabled: enabledFeatures.length
         },
         systems: {
           inventory: inventoryCount,
@@ -399,29 +469,29 @@ export const projectService = {
           coverage: coverages.length,
           gaps: coverageGaps,
           averageCoverage: coverageAverage,
-          dataQuality: dataQualityCount,
+          dataQuality: dataQualityCount
         },
         security: {
           posture: securityEntries.length,
           openVulnerabilities,
           performance: performanceCount,
           costs: costEntries.length,
-          totalTco,
+          totalTco
         },
         risks: {
           total: risks.length,
-          critical: criticalRisks,
+          critical: criticalRisks
         },
         findings: {
           total: findings.length,
-          open: openFindings,
+          open: openFindings
         },
         poc: {
           total: pocItems.length,
-          active: activePoc,
+          active: activePoc
         },
         decisions: {
-          total: decisionsCount,
+          total: decisionsCount
         },
         kpis: {
           total: kpis.length,
@@ -431,9 +501,9 @@ export const projectService = {
                 name: kpis[0].name,
                 value: kpis[0].value,
                 unit: kpis[0].unit,
-                date: kpis[0].date,
+                date: kpis[0].date
               }
-            : null,
+            : null
         },
         gantt: {
           total: tasks.length,
@@ -442,19 +512,23 @@ export const projectService = {
             ? {
                 id: nextTask.id,
                 name: nextTask.name,
-                startDate: nextTask.startDate,
+                startDate: nextTask.startDate
               }
-            : null,
-        },
-      },
+            : null
+        }
+      }
     };
   }
 };
 
 const extractEnabledFeatures = (settings: Prisma.JsonValue | null) => {
   const raw = settings as { enabledFeatures?: unknown } | null;
-  const rawFeatures = Array.isArray(raw?.enabledFeatures) ? raw?.enabledFeatures ?? [] : [];
-  return rawFeatures.filter((feature): feature is string => typeof feature === 'string');
+  const rawFeatures = Array.isArray(raw?.enabledFeatures)
+    ? (raw?.enabledFeatures ?? [])
+    : [];
+  return rawFeatures.filter(
+    (feature): feature is string => typeof feature === 'string'
+  );
 };
 
 const countFormComponents = (formJson: Prisma.JsonValue): number => {
@@ -469,10 +543,16 @@ const countFormComponents = (formJson: Prisma.JsonValue): number => {
       return components.reduce((acc, item) => acc + walk(item), 0);
     }
     if (typeof components === 'object') {
-      const component = components as { components?: unknown; columns?: { components?: unknown }[] };
+      const component = components as {
+        components?: unknown;
+        columns?: { components?: unknown }[];
+      };
       const nestedFromComponents = walk(component.components ?? []);
       const nestedFromColumns = Array.isArray(component.columns)
-        ? component.columns.reduce((acc, col) => acc + walk(col.components ?? []), 0)
+        ? component.columns.reduce(
+            (acc, col) => acc + walk(col.components ?? []),
+            0
+          )
         : 0;
       return 1 + nestedFromComponents + nestedFromColumns;
     }

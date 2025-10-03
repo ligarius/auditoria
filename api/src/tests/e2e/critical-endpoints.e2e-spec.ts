@@ -1,10 +1,9 @@
 import type { Express } from 'express';
 import request from 'supertest';
-
 import { BarcodeLabelType, SopStatus } from '@prisma/client';
 
-import { signAccessToken } from '../../core/utils/jwt.js';
-import { approvalService } from '../../modules/governance/approval.service.js';
+import { signAccessToken } from '../../core/utils/jwt';
+import { approvalService } from '../../modules/governance/approval.service';
 
 const prismaMock = {
   membership: {
@@ -22,35 +21,35 @@ const prismaMock = {
   }
 };
 
-jest.mock('../../core/config/db.js', () => ({
+jest.mock('../../core/config/db', () => ({
   get prisma() {
     return prismaMock;
   }
 }));
 
-jest.mock('../../core/security/enforce-project-access.js', () => ({
+jest.mock('../../core/security/enforce-project-access', () => ({
   enforceProjectAccess: jest.fn().mockResolvedValue(undefined)
 }));
 
-jest.mock('../../core/security/enforce-scope.js', () => ({
+jest.mock('../../core/security/enforce-scope', () => ({
   ensureScopedAccess: jest.fn().mockResolvedValue(undefined)
 }));
 
-jest.mock('../../modules/audit/audit.service.js', () => ({
+jest.mock('../../modules/audit/audit.service', () => ({
   auditService: {
     record: jest.fn().mockResolvedValue(undefined)
   }
 }));
 
-jest.mock('../../services/queue.js', () => ({
+jest.mock('../../services/queue', () => ({
   initializeQueueWorkers: jest.fn().mockResolvedValue(undefined)
 }));
 
-jest.mock('../../services/approval-sla.js', () => ({
+jest.mock('../../services/approval-sla', () => ({
   startApprovalSlaMonitor: jest.fn()
 }));
 
-jest.mock('../../modules/kpis/kpi-snapshot.job.js', () => ({
+jest.mock('../../modules/kpis/kpi-snapshot.job', () => ({
   startKpiSnapshotCron: jest.fn()
 }));
 
@@ -58,19 +57,23 @@ const generateLabelsMock = jest.fn();
 const getCountProjectMock = jest.fn();
 const closeCountMock = jest.fn();
 
-jest.mock('../../modules/inventory/inventory.service.js', () => ({
+jest.mock('../../modules/inventory/inventory.service', () => ({
   inventoryService: {
-    generateLabels: (...args: Parameters<typeof generateLabelsMock>) => generateLabelsMock(...args),
-    getCountProject: (...args: Parameters<typeof getCountProjectMock>) => getCountProjectMock(...args),
-    closeCount: (...args: Parameters<typeof closeCountMock>) => closeCountMock(...args)
+    generateLabels: (...args: Parameters<typeof generateLabelsMock>) =>
+      generateLabelsMock(...args),
+    getCountProject: (...args: Parameters<typeof getCountProjectMock>) =>
+      getCountProjectMock(...args),
+    closeCount: (...args: Parameters<typeof closeCountMock>) =>
+      closeCountMock(...args)
   }
 }));
 
 const buildExcelMock = jest.fn();
 
-jest.mock('../../modules/routes/routes-export.service.js', () => ({
+jest.mock('../../modules/routes/routes-export.service', () => ({
   routeExportService: {
-    buildExcel: (...args: Parameters<typeof buildExcelMock>) => buildExcelMock(...args)
+    buildExcel: (...args: Parameters<typeof buildExcelMock>) =>
+      buildExcelMock(...args)
   }
 }));
 
@@ -83,7 +86,7 @@ describe('Critical endpoints smoke tests', () => {
   });
 
   beforeAll(async () => {
-    ({ app } = await import('../../server.js'));
+    ({ app } = await import('../../server'));
   });
 
   beforeEach(() => {
@@ -115,7 +118,9 @@ describe('Critical endpoints smoke tests', () => {
 
     const approvalSpy = jest
       .spyOn(approvalService, 'create')
-      .mockResolvedValueOnce({} as unknown as Awaited<ReturnType<typeof approvalService.create>>);
+      .mockResolvedValueOnce(
+        {} as unknown as Awaited<ReturnType<typeof approvalService.create>>
+      );
 
     const response = await request(app)
       .post('/api/sops/sop-123/publish')
@@ -150,7 +155,11 @@ describe('Critical endpoints smoke tests', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toContain('application/pdf');
-    expect(generateLabelsMock).toHaveBeenCalledWith('project-123', BarcodeLabelType.SKU, ['sku-1']);
+    expect(generateLabelsMock).toHaveBeenCalledWith(
+      'project-123',
+      BarcodeLabelType.SKU,
+      ['sku-1']
+    );
   });
 
   it('closes an inventory count and returns its detail', async () => {
@@ -170,7 +179,10 @@ describe('Critical endpoints smoke tests', () => {
   });
 
   it('exports routes plan as Excel workbook', async () => {
-    prismaMock.routePlan.findUnique.mockResolvedValue({ id: 'plan-9', projectId: 'project-123' });
+    prismaMock.routePlan.findUnique.mockResolvedValue({
+      id: 'plan-9',
+      projectId: 'project-123'
+    });
     buildExcelMock.mockResolvedValue({
       buffer: Buffer.from('excel-data'),
       filename: 'plan.xlsx',
@@ -183,7 +195,9 @@ describe('Critical endpoints smoke tests', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
-    expect(response.headers['content-type']).toContain('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect(response.headers['content-type']).toContain(
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
     expect(buildExcelMock).toHaveBeenCalledWith('plan-9');
   });
 });

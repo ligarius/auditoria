@@ -1,5 +1,5 @@
-import { env } from '../core/config/env.js';
-import { logger } from '../core/config/logger.js';
+import { env } from '../core/config/env';
+import { logger } from '../core/config/logger';
 
 type EmailPayload = {
   to: string[];
@@ -8,7 +8,7 @@ type EmailPayload = {
 };
 
 export const notificationService = {
-  async sendEmail({ to, subject, html }: EmailPayload) {
+  async sendEmail({ to, subject, html: _html }: EmailPayload) {
     const sender = env.notificationsEmailFrom;
     const recipients = Array.from(
       new Set([...to, ...env.notificationsEmailRecipients])

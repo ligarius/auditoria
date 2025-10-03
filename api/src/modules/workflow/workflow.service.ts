@@ -1,14 +1,14 @@
 import { ProjectWorkflowState } from '@prisma/client';
 import type { ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
+import { prisma } from '../../core/config/db';
 
 const allowed: Record<ProjectWorkflowStateType, ProjectWorkflowStateType[]> = {
   planificacion: [ProjectWorkflowState.recoleccion_datos],
   recoleccion_datos: [ProjectWorkflowState.analisis],
   analisis: [ProjectWorkflowState.recomendaciones],
   recomendaciones: [ProjectWorkflowState.cierre],
-  cierre: [],
+  cierre: []
 };
 
 export async function getWorkflow(projectId: string) {
@@ -24,7 +24,10 @@ export async function getWorkflow(projectId: string) {
   };
 }
 
-export async function transition(projectId: string, next: ProjectWorkflowStateType) {
+export async function transition(
+  projectId: string,
+  next: ProjectWorkflowStateType
+) {
   const p = await prisma.project.findUnique({ where: { id: projectId } });
   if (!p) throw new Error('Proyecto no encontrado');
   const current = p.status as ProjectWorkflowStateType;

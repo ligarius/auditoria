@@ -5,9 +5,10 @@ import {
   authenticate,
   requireProjectMembership,
   requireRole
-} from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import { processCatalogService } from './process-catalog.service.js';
+} from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+
+import { processCatalogService } from './process-catalog.service';
 
 const processCatalogRouter = Router();
 

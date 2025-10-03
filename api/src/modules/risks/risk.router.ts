@@ -1,10 +1,15 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import { authenticate, requireProjectMembership, requireRole } from '../../core/middleware/auth.js';
-import { riskService } from './risk.service.js';
+import { prisma } from '../../core/config/db';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import {
+  authenticate,
+  requireProjectMembership,
+  requireRole
+} from '../../core/middleware/auth';
+
+import { riskService } from './risk.service';
 
 const riskRouter = Router();
 
@@ -19,7 +24,7 @@ const baseSchema = z.object({
   owner: z.string().optional(),
   dueDate: z.coerce.date().optional(),
   rag: z.string().optional(),
-  meetingId: z.string().min(1).optional(),
+  meetingId: z.string().min(1).optional()
 });
 
 const updateSchema = baseSchema.partial();
@@ -31,40 +36,52 @@ riskRouter.get('/', requireProjectMembership(), async (req, res) => {
   res.json(risks);
 });
 
-riskRouter.post('/', requireRole('admin', 'consultor'), requireProjectMembership(), async (req, res) => {
-  const projectId = (req as any).projectId as string;
-  const payload = baseSchema.parse(req.body);
-  const risk = await riskService.create(
-    projectId,
-    {
-      ...payload,
-      dueDate: payload.dueDate ?? undefined,
-      meetingId: payload.meetingId || undefined,
-    },
-    req.user!.id,
-  );
-  res.status(201).json(risk);
-});
-
-riskRouter.patch('/:id', requireRole('admin', 'consultor'), async (req, res) => {
-  const { id } = req.params;
-  const item = await prisma.risk.findUnique({ where: { id } });
-  if (!item) {
-    return res.status(404).json({ title: 'No encontrado' });
+riskRouter.post(
+  '/',
+  requireRole('admin', 'consultor'),
+  requireProjectMembership(),
+  async (req, res) => {
+    const projectId = (req as any).projectId as string;
+    const payload = baseSchema.parse(req.body);
+    const risk = await riskService.create(
+      projectId,
+      {
+        ...payload,
+        dueDate: payload.dueDate ?? undefined,
+        meetingId: payload.meetingId || undefined
+      },
+      req.user!.id
+    );
+    res.status(201).json(risk);
   }
-  await enforceProjectAccess(req.user, item.projectId);
-  const payload = updateSchema.parse(req.body);
-  const risk = await riskService.update(
-    id,
-    {
-      ...payload,
-      dueDate: payload.dueDate ?? undefined,
-      meetingId: payload.meetingId === undefined ? undefined : payload.meetingId || null,
-    },
-    req.user!.id,
-  );
-  res.json(risk);
-});
+);
+
+riskRouter.patch(
+  '/:id',
+  requireRole('admin', 'consultor'),
+  async (req, res) => {
+    const { id } = req.params;
+    const item = await prisma.risk.findUnique({ where: { id } });
+    if (!item) {
+      return res.status(404).json({ title: 'No encontrado' });
+    }
+    await enforceProjectAccess(req.user, item.projectId);
+    const payload = updateSchema.parse(req.body);
+    const risk = await riskService.update(
+      id,
+      {
+        ...payload,
+        dueDate: payload.dueDate ?? undefined,
+        meetingId:
+          payload.meetingId === undefined
+            ? undefined
+            : payload.meetingId || null
+      },
+      req.user!.id
+    );
+    res.json(risk);
+  }
+);
 
 riskRouter.delete('/:id', requireRole('admin'), async (req, res) => {
   const { id } = req.params;

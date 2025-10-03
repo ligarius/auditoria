@@ -1,10 +1,13 @@
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
 
 export const decisionService = {
   async list(projectId: string) {
-    return prisma.decision.findMany({ where: { projectId }, orderBy: { date: 'desc' } });
+    return prisma.decision.findMany({
+      where: { projectId },
+      orderBy: { date: 'desc' }
+    });
   },
 
   async create(projectId: string, payload: any, userId: string) {
@@ -14,10 +17,18 @@ export const decisionService = {
     const created = await prisma.decision.create({
       data: {
         ...payload,
-        projectId,
-      },
+        projectId
+      }
     });
-    await auditService.record('Decision', created.id, 'CREATE', userId, projectId, null, created);
+    await auditService.record(
+      'Decision',
+      created.id,
+      'CREATE',
+      userId,
+      projectId,
+      null,
+      created
+    );
     return created;
   },
 
@@ -31,10 +42,18 @@ export const decisionService = {
       where: { id },
       data: {
         ...payload,
-        approverA: payload.approverA ?? before.approverA,
-      },
+        approverA: payload.approverA ?? before.approverA
+      }
     });
-    await auditService.record('Decision', id, 'UPDATE', userId, before.projectId, before, updated);
+    await auditService.record(
+      'Decision',
+      id,
+      'UPDATE',
+      userId,
+      before.projectId,
+      before,
+      updated
+    );
     return updated;
   },
 
@@ -42,6 +61,14 @@ export const decisionService = {
     const before = await prisma.decision.findUnique({ where: { id } });
     if (!before) throw new HttpError(404, 'Decisión no encontrada');
     await prisma.decision.delete({ where: { id } });
-    await auditService.record('Decision', id, 'DELETE', userId, before.projectId, before, null);
-  },
+    await auditService.record(
+      'Decision',
+      id,
+      'DELETE',
+      userId,
+      before.projectId,
+      before,
+      null
+    );
+  }
 };

@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
-import { prisma } from '../../core/config/db.js';
-import { env } from '../../core/config/env.js';
+import { prisma } from '../../core/config/db';
+import { env } from '../../core/config/env';
 
 const storagePath = env.fileStoragePath;
 

@@ -1,12 +1,12 @@
 import type { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { logger } from '../../core/config/logger.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import type { AuthenticatedRequest } from '../../core/middleware/auth.js';
-import { scoringService } from '../../services/scoring.js';
-import { tokenService } from '../../services/token.js';
-import { queueService } from '../../services/queue.js';
+import { prisma } from '../../core/config/db';
+import { logger } from '../../core/config/logger';
+import { HttpError } from '../../core/errors/http-error';
+import type { AuthenticatedRequest } from '../../core/middleware/auth';
+import { scoringService } from '../../services/scoring';
+import { tokenService } from '../../services/token';
+import { queueService } from '../../services/queue';
 
 interface UserContext {
   id: string;
@@ -200,7 +200,10 @@ export const formsService = {
       throw new HttpError(404, 'Proyecto no encontrado');
     }
     if (project.companyId !== version.template.companyId) {
-      throw new HttpError(409, 'El proyecto no pertenece a la empresa de la plantilla');
+      throw new HttpError(
+        409,
+        'El proyecto no pertenece a la empresa de la plantilla'
+      );
     }
 
     const token = tokenService.generate(24);
@@ -221,7 +224,10 @@ export const formsService = {
       await queueService.enqueueSurveyInvite({ surveyLinkId: link.id });
       await queueService.scheduleSurveyReminder({ surveyLinkId: link.id });
     } catch (error) {
-      logger.warn({ err: error, surveyLinkId: link.id }, 'No se pudieron programar recordatorios de encuesta');
+      logger.warn(
+        { err: error, surveyLinkId: link.id },
+        'No se pudieron programar recordatorios de encuesta'
+      );
     }
 
     return link;
@@ -240,7 +246,10 @@ export const formsService = {
     }
 
     const now = new Date();
-    if ((link.expiresAt && link.expiresAt < now) || (link.maxResponses && link.usedCount >= link.maxResponses)) {
+    if (
+      (link.expiresAt && link.expiresAt < now) ||
+      (link.maxResponses && link.usedCount >= link.maxResponses)
+    ) {
       throw new HttpError(410, 'El link ya no está disponible');
     }
 
@@ -274,7 +283,10 @@ export const formsService = {
     }
 
     const now = new Date();
-    if ((link.expiresAt && link.expiresAt < now) || (link.maxResponses && link.usedCount >= link.maxResponses)) {
+    if (
+      (link.expiresAt && link.expiresAt < now) ||
+      (link.maxResponses && link.usedCount >= link.maxResponses)
+    ) {
       throw new HttpError(410, 'El link ya no está disponible');
     }
 
@@ -282,13 +294,23 @@ export const formsService = {
       if (!user) {
         throw new HttpError(401, 'Autenticación requerida para responder');
       }
-      await ensureProjectAccess({ id: user.id, role: user.role }, link.projectId);
+      await ensureProjectAccess(
+        { id: user.id, role: user.role },
+        link.projectId
+      );
     }
 
-    const score = scoringService.calculate(input.answers, link.version.scoringJson ?? undefined);
+    const score = scoringService.calculate(
+      input.answers,
+      link.version.scoringJson ?? undefined
+    );
 
     const response = await prisma.$transaction(async (tx) => {
-      const respondentId = await resolveRespondentId(tx, link.project.companyId, input.respondent);
+      const respondentId = await resolveRespondentId(
+        tx,
+        link.project.companyId,
+        input.respondent
+      );
 
       const createdResponse = await tx.questionnaireResponse.create({
         data: {
@@ -313,7 +335,10 @@ export const formsService = {
     try {
       await queueService.cancelSurveyReminder(link.id);
     } catch (error) {
-      logger.warn({ err: error, surveyLinkId: link.id }, 'No se pudo cancelar el recordatorio de encuesta');
+      logger.warn(
+        { err: error, surveyLinkId: link.id },
+        'No se pudo cancelar el recordatorio de encuesta'
+      );
     }
 
     return {

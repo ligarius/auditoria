@@ -1,11 +1,13 @@
-import { prisma } from '../config/db.js';
-import { HttpError } from '../errors/http-error.js';
-import type { AuthenticatedRequest } from '../middleware/auth.js';
+import { prisma } from '../config/db';
+import { HttpError } from '../errors/http-error';
+import type { AuthenticatedRequest } from '../middleware/auth';
 
 export const enforceProjectAccess = async (
   user:
     | (Pick<NonNullable<AuthenticatedRequest['user']>, 'id' | 'role'> &
-        Partial<Pick<NonNullable<AuthenticatedRequest['user']>, 'email' | 'projects'>>)
+        Partial<
+          Pick<NonNullable<AuthenticatedRequest['user']>, 'email' | 'projects'>
+        >)
     | undefined,
   projectId: string
 ) => {

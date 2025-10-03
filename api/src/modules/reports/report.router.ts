@@ -1,8 +1,9 @@
 import { Router } from 'express';
 
-import { authenticate } from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import { reportService } from './report.service.js';
+import { authenticate } from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+
+import { reportService } from './report.service';
 
 const reportRouter = Router();
 
@@ -14,7 +15,7 @@ reportRouter.get('/projects/:projectId/exec.pdf', async (req, res) => {
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="reporte-${req.params.projectId}-ejecutivo.pdf"`,
+    `attachment; filename="reporte-${req.params.projectId}-ejecutivo.pdf"`
   );
   res.send(pdf);
 });
@@ -22,11 +23,15 @@ reportRouter.get('/projects/:projectId/exec.pdf', async (req, res) => {
 reportRouter.get('/:type/projects/:projectId.pdf', async (req, res) => {
   const { type, projectId } = req.params;
   await enforceProjectAccess(req.user, projectId);
-  const pdf = await reportService.generateModulePdf(projectId, type, req.user?.id);
+  const pdf = await reportService.generateModulePdf(
+    projectId,
+    type,
+    req.user?.id
+  );
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="reporte-${projectId}-${type}.pdf"`,
+    `attachment; filename="reporte-${projectId}-${type}.pdf"`
   );
   res.send(pdf);
 });

@@ -2,8 +2,8 @@ import fs from 'fs/promises';
 
 import type { CapacityCalc, File as FileRecord } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { fileService } from '../files/file.service.js';
+import { prisma } from '../../core/config/db';
+import { fileService } from '../files/file.service';
 
 interface SimulationRow {
   zoneId: string;
@@ -21,7 +21,11 @@ const normalizeMemo = (memo: unknown, totalPP: number) => {
     return { notes: memo, totalPP, savedAt: timestamp };
   }
   if (typeof memo === 'object') {
-    return { ...(memo as Record<string, unknown>), totalPP, savedAt: timestamp };
+    return {
+      ...(memo as Record<string, unknown>),
+      totalPP,
+      savedAt: timestamp
+    };
   }
   return { value: memo, totalPP, savedAt: timestamp };
 };
@@ -31,7 +35,7 @@ const readPlanDataUrl = async (file: FileRecord) => {
     const buffer = await fs.readFile(file.path);
     const base64 = buffer.toString('base64');
     return `data:${file.mime};base64,${base64}`;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -43,14 +47,14 @@ const toPlanResponse = (file: FileRecord, dataUrl: string | null) => ({
   size: file.size,
   createdAt: file.createdAt,
   uploadedBy: file.uploadedBy,
-  dataUrl,
+  dataUrl
 });
 
 export const layoutService = {
   async getProjectLayout(projectId: string) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { settings: true },
+      select: { settings: true }
     });
 
     if (!project) {
@@ -59,12 +63,19 @@ export const layoutService = {
 
     const rawSettings = project.settings;
     const settings =
-      rawSettings && typeof rawSettings === 'object' ? (rawSettings as Record<string, unknown>) : {};
-    const planFileId = typeof settings.layoutPlanFileId === 'string' ? settings.layoutPlanFileId : null;
+      rawSettings && typeof rawSettings === 'object'
+        ? (rawSettings as Record<string, unknown>)
+        : {};
+    const planFileId =
+      typeof settings.layoutPlanFileId === 'string'
+        ? settings.layoutPlanFileId
+        : null;
 
     let plan: ReturnType<typeof toPlanResponse> | null = null;
     if (planFileId) {
-      const planFile = await prisma.file.findUnique({ where: { id: planFileId } });
+      const planFile = await prisma.file.findUnique({
+        where: { id: planFileId }
+      });
       if (planFile) {
         const dataUrl = await readPlanDataUrl(planFile);
         plan = toPlanResponse(planFile, dataUrl);
@@ -77,9 +88,9 @@ export const layoutService = {
       include: {
         capacityCalcs: {
           orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-      },
+          take: 1
+        }
+      }
     });
 
     const zoneEntries = zones.map((zone) => {
@@ -96,21 +107,28 @@ export const layoutService = {
               pp: latest.pp,
               memo: latest.memo,
               createdAt: latest.createdAt,
-              updatedAt: latest.updatedAt,
+              updatedAt: latest.updatedAt
             }
-          : null,
+          : null
       };
     });
 
-    const totalPP = zoneEntries.reduce((sum, zone) => sum + (zone.latestCalc?.pp ?? 0), 0);
+    const totalPP = zoneEntries.reduce(
+      (sum, zone) => sum + (zone.latestCalc?.pp ?? 0),
+      0
+    );
 
     return { plan, zones: zoneEntries, totalPP };
   },
 
-  async updatePlan(projectId: string, file: Express.Multer.File, userId: string) {
+  async updatePlan(
+    projectId: string,
+    file: Express.Multer.File,
+    userId: string
+  ) {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, settings: true },
+      select: { id: true, settings: true }
     });
 
     if (!project) {
@@ -121,13 +139,15 @@ export const layoutService = {
 
     const rawSettings = project.settings;
     const settings =
-      rawSettings && typeof rawSettings === 'object' ? (rawSettings as Record<string, unknown>) : {};
+      rawSettings && typeof rawSettings === 'object'
+        ? (rawSettings as Record<string, unknown>)
+        : {};
 
     await prisma.project.update({
       where: { id: projectId },
       data: {
-        settings: { ...settings, layoutPlanFileId: savedFile.id },
-      },
+        settings: { ...settings, layoutPlanFileId: savedFile.id }
+      }
     });
 
     const dataUrl = await readPlanDataUrl(savedFile);
@@ -135,7 +155,11 @@ export const layoutService = {
     return toPlanResponse(savedFile, dataUrl);
   },
 
-  async saveSimulation(projectId: string, rows: SimulationRow[], memo: unknown) {
+  async saveSimulation(
+    projectId: string,
+    rows: SimulationRow[],
+    memo: unknown
+  ) {
     if (rows.length === 0) {
       return { totalPP: 0, created: [] as CapacityCalc[] };
     }
@@ -143,7 +167,7 @@ export const layoutService = {
     const zoneIds = rows.map((row) => row.zoneId);
     const zones = await prisma.warehouseZone.findMany({
       where: { projectId, id: { in: zoneIds } },
-      select: { id: true },
+      select: { id: true }
     });
 
     if (zones.length !== rows.length) {
@@ -161,10 +185,10 @@ export const layoutService = {
             rackType: row.rackType,
             aisles: row.aisles,
             pp: row.pp,
-            memo: memoPayload,
-          },
-        }),
-      ),
+            memo: memoPayload
+          }
+        })
+      )
     );
 
     return { totalPP, created };
@@ -173,7 +197,7 @@ export const layoutService = {
   async listZoneCalcs(zoneId: string) {
     const zone = await prisma.warehouseZone.findUnique({
       where: { id: zoneId },
-      select: { id: true },
+      select: { id: true }
     });
 
     if (!zone) {
@@ -182,15 +206,15 @@ export const layoutService = {
 
     return prisma.capacityCalc.findMany({
       where: { zoneId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc' }
     });
   },
 
   async getZoneProject(zoneId: string) {
     const zone = await prisma.warehouseZone.findUnique({
       where: { id: zoneId },
-      select: { projectId: true },
+      select: { projectId: true }
     });
     return zone?.projectId ?? null;
-  },
+  }
 };

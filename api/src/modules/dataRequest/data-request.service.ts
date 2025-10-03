@@ -1,9 +1,12 @@
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
 
 export const dataRequestService = {
-  async list(projectId: string, filters: { category?: string; status?: string }) {
+  async list(
+    projectId: string,
+    filters: { category?: string; status?: string }
+  ) {
     return prisma.dataRequestItem.findMany({
       where: {
         projectId,
@@ -14,8 +17,18 @@ export const dataRequestService = {
   },
 
   async create(projectId: string, payload: any, userId: string) {
-    const item = await prisma.dataRequestItem.create({ data: { ...payload, projectId } });
-    await auditService.record('DataRequestItem', item.id, 'CREATE', userId, projectId, null, item);
+    const item = await prisma.dataRequestItem.create({
+      data: { ...payload, projectId }
+    });
+    await auditService.record(
+      'DataRequestItem',
+      item.id,
+      'CREATE',
+      userId,
+      projectId,
+      null,
+      item
+    );
     return item;
   },
 
@@ -24,8 +37,19 @@ export const dataRequestService = {
     if (!before) {
       throw new HttpError(404, 'Elemento no encontrado');
     }
-    const item = await prisma.dataRequestItem.update({ where: { id }, data: payload });
-    await auditService.record('DataRequestItem', id, 'UPDATE', userId, before.projectId, before, item);
+    const item = await prisma.dataRequestItem.update({
+      where: { id },
+      data: payload
+    });
+    await auditService.record(
+      'DataRequestItem',
+      id,
+      'UPDATE',
+      userId,
+      before.projectId,
+      before,
+      item
+    );
     return item;
   },
 
@@ -35,6 +59,14 @@ export const dataRequestService = {
       throw new HttpError(404, 'Elemento no encontrado');
     }
     await prisma.dataRequestItem.delete({ where: { id } });
-    await auditService.record('DataRequestItem', id, 'DELETE', userId, before.projectId, before, null);
+    await auditService.record(
+      'DataRequestItem',
+      id,
+      'DELETE',
+      userId,
+      before.projectId,
+      before,
+      null
+    );
   }
 };

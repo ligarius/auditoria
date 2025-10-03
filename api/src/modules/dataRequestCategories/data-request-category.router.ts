@@ -1,7 +1,8 @@
 import { Router } from 'express';
 
-import { authenticate, requireRole } from '../../core/middleware/auth.js';
-import { dataRequestCategoryService } from './data-request-category.service.js';
+import { authenticate, requireRole } from '../../core/middleware/auth';
+
+import { dataRequestCategoryService } from './data-request-category.service';
 
 const dataRequestCategoryRouter = Router();
 
@@ -13,7 +14,10 @@ dataRequestCategoryRouter.get('/', async (_req, res) => {
 });
 
 dataRequestCategoryRouter.post('/', requireRole('admin'), async (req, res) => {
-  const category = await dataRequestCategoryService.create(req.body, req.user!.id);
+  const category = await dataRequestCategoryService.create(
+    req.body,
+    req.user!.id
+  );
   res.status(201).json(category);
 });
 
@@ -34,7 +38,10 @@ dataRequestCategoryRouter.delete(
   '/:categoryId',
   requireRole('admin'),
   async (req, res) => {
-    await dataRequestCategoryService.remove(req.params.categoryId, req.user!.id);
+    await dataRequestCategoryService.remove(
+      req.params.categoryId,
+      req.user!.id
+    );
     res.status(204).send();
   }
 );

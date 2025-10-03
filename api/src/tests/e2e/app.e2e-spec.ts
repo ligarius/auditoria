@@ -1,7 +1,7 @@
 import type { Express } from 'express';
 import request from 'supertest';
 
-import { signAccessToken } from '../../core/utils/jwt.js';
+import { signAccessToken } from '../../core/utils/jwt';
 interface MockMembership {
   userId: string;
   projectId: string;
@@ -36,14 +36,22 @@ const seedProjects = (): MockProject[] => [
     ownerId: 'consultant-user',
     settings: { enabledFeatures: ['reception', 'picking'] },
     company: { id: 'company-1', name: 'Nutrial' },
-    owner: { id: 'consultant-user', name: 'Consultor', email: 'consultor@test.com' }
+    owner: {
+      id: 'consultant-user',
+      name: 'Consultor',
+      email: 'consultor@test.com'
+    }
   },
   {
     id: 'project-b',
     ownerId: 'consultant-user',
     settings: null,
     company: { id: 'company-1', name: 'Nutrial' },
-    owner: { id: 'consultant-user', name: 'Consultor', email: 'consultor@test.com' }
+    owner: {
+      id: 'consultant-user',
+      name: 'Consultor',
+      email: 'consultor@test.com'
+    }
   }
 ];
 
@@ -106,9 +114,9 @@ type PrismaMock = {
   };
 };
 
-var prismaMock: PrismaMock;
+let prismaMock: PrismaMock;
 
-jest.mock('../../core/config/db.js', () => ({
+jest.mock('../../core/config/db', () => ({
   get prisma() {
     return prismaMock;
   }
@@ -117,12 +125,16 @@ jest.mock('../../core/config/db.js', () => ({
 prismaMock = {
   membership: {
     findMany: jest.fn(({ where }) =>
-      Promise.resolve(memberships.filter((item) => item.userId === where?.userId))
+      Promise.resolve(
+        memberships.filter((item) => item.userId === where?.userId)
+      )
     ),
     findUnique: jest.fn(({ where }) => {
       const { userId_projectId } = where;
       const membership = memberships.find(
-        (item) => item.userId === userId_projectId.userId && item.projectId === userId_projectId.projectId
+        (item) =>
+          item.userId === userId_projectId.userId &&
+          item.projectId === userId_projectId.projectId
       );
       return Promise.resolve(membership ?? null);
     }),
@@ -303,10 +315,10 @@ prismaMock = {
         isActive: data.isActive ?? true,
         createdAt: new Date(),
         updatedAt: new Date(),
-        questions: [],
-      }),
+        questions: []
+      })
     ),
-    findFirst: jest.fn(() => Promise.resolve(null)),
+    findFirst: jest.fn(() => Promise.resolve(null))
   },
   surveyQuestion: {
     create: jest.fn(({ data }) =>
@@ -319,9 +331,9 @@ prismaMock = {
         scaleMax: data.scaleMax ?? null,
         required: data.required ?? true,
         createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
-    ),
+        updatedAt: new Date()
+      })
+    )
   },
   auditLog: {
     create: jest.fn()
@@ -342,13 +354,25 @@ afterEach(() => {
 });
 
 beforeAll(async () => {
-  ({ app } = await import('../../server.js'));
+  ({ app } = await import('../../server'));
 });
 
 describe('GET /api/projects/:id/features', () => {
-  const adminToken = signAccessToken({ sub: 'admin-user', email: 'admin@test.com', role: 'admin' });
-  const consultantToken = signAccessToken({ sub: 'consultant-user', email: 'consultor@test.com', role: 'consultor' });
-  const outsiderToken = signAccessToken({ sub: 'outsider', email: 'outsider@test.com', role: 'consultor' });
+  const adminToken = signAccessToken({
+    sub: 'admin-user',
+    email: 'admin@test.com',
+    role: 'admin'
+  });
+  const consultantToken = signAccessToken({
+    sub: 'consultant-user',
+    email: 'consultor@test.com',
+    role: 'consultor'
+  });
+  const outsiderToken = signAccessToken({
+    sub: 'outsider',
+    email: 'outsider@test.com',
+    role: 'consultor'
+  });
 
   it('returns enabled features for an admin without requiring membership', async () => {
     const response = await request(app)
@@ -357,7 +381,10 @@ describe('GET /api/projects/:id/features', () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ enabled: ['reception', 'picking'] });
-    expect(prismaMock.project.findUnique).toHaveBeenCalledWith({ where: { id: 'project-a' }, select: { settings: true } });
+    expect(prismaMock.project.findUnique).toHaveBeenCalledWith({
+      where: { id: 'project-a' },
+      select: { settings: true }
+    });
   });
 
   it('returns enabled features for a consultant with membership', async () => {
@@ -381,11 +408,21 @@ describe('GET /api/projects/:id/features', () => {
 });
 
 describe('Companies API', () => {
-  const adminToken = signAccessToken({ sub: 'admin-user', email: 'admin@test.com', role: 'admin' });
-  const consultantToken = signAccessToken({ sub: 'consultant-user', email: 'consultor@test.com', role: 'consultor' });
+  const adminToken = signAccessToken({
+    sub: 'admin-user',
+    email: 'admin@test.com',
+    role: 'admin'
+  });
+  const consultantToken = signAccessToken({
+    sub: 'consultant-user',
+    email: 'consultor@test.com',
+    role: 'consultor'
+  });
 
   it('lists companies for admin users', async () => {
-    const response = await request(app).get('/api/companies').set('Authorization', `Bearer ${adminToken}`);
+    const response = await request(app)
+      .get('/api/companies')
+      .set('Authorization', `Bearer ${adminToken}`);
 
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
@@ -415,7 +452,11 @@ describe('Companies API', () => {
 });
 
 describe('Project surveys API', () => {
-  const adminToken = signAccessToken({ sub: 'admin-user', email: 'admin@test.com', role: 'admin' });
+  const adminToken = signAccessToken({
+    sub: 'admin-user',
+    email: 'admin@test.com',
+    role: 'admin'
+  });
 
   it('lista encuestas del proyecto', async () => {
     const mockSurveys = [
@@ -427,8 +468,8 @@ describe('Project surveys API', () => {
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
-        questions: [],
-      },
+        questions: []
+      }
     ];
     prismaMock.survey.findMany.mockResolvedValueOnce(mockSurveys);
 
@@ -437,11 +478,13 @@ describe('Project surveys API', () => {
       .set('Authorization', `Bearer ${adminToken}`);
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'survey-1' })]));
+    expect(response.body).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'survey-1' })])
+    );
     expect(prismaMock.survey.findMany).toHaveBeenCalledWith({
       where: { projectId: 'project-a' },
       orderBy: { createdAt: 'desc' },
-      include: { questions: { orderBy: { createdAt: 'asc' } } },
+      include: { questions: { orderBy: { createdAt: 'asc' } } }
     });
   });
 
@@ -454,13 +497,17 @@ describe('Project surveys API', () => {
       isActive: false,
       createdAt: new Date(),
       updatedAt: new Date(),
-      questions: [],
+      questions: []
     });
 
     const response = await request(app)
       .post('/api/projects/project-a/surveys')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ title: 'Clima laboral', description: 'Pulso interno', isActive: false });
+      .send({
+        title: 'Clima laboral',
+        description: 'Pulso interno',
+        isActive: false
+      });
 
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ id: 'survey-new', isActive: false });
@@ -469,9 +516,9 @@ describe('Project surveys API', () => {
         projectId: 'project-a',
         title: 'Clima laboral',
         description: 'Pulso interno',
-        isActive: false,
+        isActive: false
       },
-      include: { questions: true },
+      include: { questions: true }
     });
   });
 
@@ -486,13 +533,19 @@ describe('Project surveys API', () => {
       scaleMax: 5,
       required: true,
       createdAt: new Date(),
-      updatedAt: new Date(),
+      updatedAt: new Date()
     });
 
     const response = await request(app)
       .post('/api/projects/project-a/surveys/survey-1/questions')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ type: 'Likert', text: 'Califique el servicio', scaleMin: 1, scaleMax: 5, required: true });
+      .send({
+        type: 'Likert',
+        text: 'Califique el servicio',
+        scaleMin: 1,
+        scaleMax: 5,
+        required: true
+      });
 
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ id: 'question-1', type: 'Likert' });
@@ -503,8 +556,8 @@ describe('Project surveys API', () => {
         text: 'Califique el servicio',
         scaleMin: 1,
         scaleMax: 5,
-        required: true,
-      },
+        required: true
+      }
     });
   });
 
@@ -524,8 +577,8 @@ describe('Project surveys API', () => {
           scaleMax: 5,
           required: true,
           createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+          updatedAt: new Date()
+        }
       ],
       responses: [
         {
@@ -534,8 +587,14 @@ describe('Project surveys API', () => {
           submittedAt: new Date(),
           createdAt: new Date(),
           answers: [
-            { id: 'a1', responseId: 'r1', questionId: 'q1', value: 4, createdAt: new Date() },
-          ],
+            {
+              id: 'a1',
+              responseId: 'r1',
+              questionId: 'q1',
+              value: 4,
+              createdAt: new Date()
+            }
+          ]
         },
         {
           id: 'r2',
@@ -543,10 +602,16 @@ describe('Project surveys API', () => {
           submittedAt: new Date(),
           createdAt: new Date(),
           answers: [
-            { id: 'a2', responseId: 'r2', questionId: 'q1', value: 5, createdAt: new Date() },
-          ],
-        },
-      ],
+            {
+              id: 'a2',
+              responseId: 'r2',
+              questionId: 'q1',
+              value: 5,
+              createdAt: new Date()
+            }
+          ]
+        }
+      ]
     });
 
     const response = await request(app)
@@ -554,13 +619,16 @@ describe('Project surveys API', () => {
       .set('Authorization', `Bearer ${adminToken}`);
 
     expect(response.status).toBe(200);
-    expect(response.body.summaries[0]).toMatchObject({ responses: 2, average: 4.5 });
+    expect(response.body.summaries[0]).toMatchObject({
+      responses: 2,
+      average: 4.5
+    });
     expect(prismaMock.survey.findFirst).toHaveBeenCalledWith({
       where: { id: 'survey-1', projectId: 'project-a' },
       include: {
         questions: { orderBy: { createdAt: 'asc' } },
-        responses: { include: { answers: true } },
-      },
+        responses: { include: { answers: true } }
+      }
     });
   });
 });

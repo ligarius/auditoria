@@ -10,5 +10,5 @@ export const formatZodIssues = (error: ZodError): ValidationIssue[] =>
   error.issues.map((issue) => ({
     path: issue.path.join('.') || '<root>',
     message: issue.message,
-    code: issue.code,
+    code: issue.code
   }));

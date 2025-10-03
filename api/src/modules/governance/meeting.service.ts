@@ -1,5 +1,5 @@
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
 
 export interface MeetingInput {
   projectId: string;
@@ -26,9 +26,9 @@ export const meetingService = {
     return prisma.meeting.findMany({
       where: {
         projectId: projectId ?? undefined,
-        committeeId: committeeId ?? undefined,
+        committeeId: committeeId ?? undefined
       },
-      orderBy: { scheduledAt: 'desc' },
+      orderBy: { scheduledAt: 'desc' }
     });
   },
 
@@ -42,7 +42,7 @@ export const meetingService = {
 
   async create(data: MeetingInput) {
     return prisma.meeting.create({
-      data,
+      data
     });
   },
 
@@ -53,7 +53,7 @@ export const meetingService = {
     }
     return prisma.meeting.update({
       where: { id },
-      data,
+      data
     });
   },
 
@@ -63,5 +63,5 @@ export const meetingService = {
       throw new HttpError(404, 'Reunión no encontrada');
     }
     await prisma.meeting.delete({ where: { id } });
-  },
+  }
 };

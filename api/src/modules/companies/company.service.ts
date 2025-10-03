@@ -1,8 +1,8 @@
 import type { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
 
 const baseSelect = {
   id: true,
@@ -37,7 +37,15 @@ export const companyService = {
       data,
       select: baseSelect
     });
-    await auditService.record('Company', company.id, 'CREATE', userId, undefined, null, company);
+    await auditService.record(
+      'Company',
+      company.id,
+      'CREATE',
+      userId,
+      undefined,
+      null,
+      company
+    );
     return company;
   },
 
@@ -51,7 +59,15 @@ export const companyService = {
       data,
       select: baseSelect
     });
-    await auditService.record('Company', id, 'UPDATE', userId, undefined, existing, company);
+    await auditService.record(
+      'Company',
+      id,
+      'UPDATE',
+      userId,
+      undefined,
+      existing,
+      company
+    );
     return company;
   },
 
@@ -67,6 +83,14 @@ export const companyService = {
       throw new HttpError(409, 'La empresa tiene proyectos asociados');
     }
     await prisma.company.delete({ where: { id } });
-    await auditService.record('Company', id, 'DELETE', userId, undefined, company, null);
+    await auditService.record(
+      'Company',
+      id,
+      'DELETE',
+      userId,
+      undefined,
+      company,
+      null
+    );
   }
 };

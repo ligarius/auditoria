@@ -8,7 +8,12 @@ describe('computeReceptionTimes', () => {
     const tUnloadStart = dayjs('2024-01-01T10:15:00Z').toDate();
     const tUnloadEnd = dayjs('2024-01-01T10:45:00Z').toDate();
     const tExit = dayjs('2024-01-01T11:00:00Z').toDate();
-    const metrics = computeReceptionTimes({ tArriveGate, tUnloadStart, tUnloadEnd, tExit });
+    const metrics = computeReceptionTimes({
+      tArriveGate,
+      tUnloadStart,
+      tUnloadEnd,
+      tExit
+    });
     expect(metrics.dwell).toBe(60);
     expect(metrics.unload).toBe(30);
     expect(metrics.idle).toBe(30);

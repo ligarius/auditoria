@@ -1,5 +1,5 @@
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
 
 export interface CommitteeInput {
   projectId: string;
@@ -18,7 +18,7 @@ export const committeeService = {
   async list(projectId?: string) {
     return prisma.committee.findMany({
       where: projectId ? { projectId } : undefined,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc' }
     });
   },
 
@@ -32,7 +32,7 @@ export const committeeService = {
 
   async create(data: CommitteeInput) {
     return prisma.committee.create({
-      data,
+      data
     });
   },
 
@@ -43,7 +43,7 @@ export const committeeService = {
     }
     return prisma.committee.update({
       where: { id },
-      data,
+      data
     });
   },
 
@@ -53,5 +53,5 @@ export const committeeService = {
       throw new HttpError(404, 'Comité no encontrado');
     }
     await prisma.committee.delete({ where: { id } });
-  },
+  }
 };

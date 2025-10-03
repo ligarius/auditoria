@@ -5,7 +5,7 @@ const WORKFLOW_LABELS: Record<ProjectWorkflowState, string> = {
   recoleccion_datos: 'Recolección de datos',
   analisis: 'Análisis',
   recomendaciones: 'Recomendaciones',
-  cierre: 'Cierre',
+  cierre: 'Cierre'
 };
 
 const escapeHtml = (value: unknown): string => {
@@ -29,7 +29,7 @@ const formatDate = (value: Date | string | null | undefined) => {
     return '—';
   }
   return new Intl.DateTimeFormat('es-CL', {
-    dateStyle: 'medium',
+    dateStyle: 'medium'
   }).format(date);
 };
 
@@ -80,7 +80,7 @@ export const renderExecutiveReport = (data: ExecutiveReportData) => {
         <p><strong>Impacto:</strong> ${escapeHtml(finding.impact)}</p>
         <p><strong>Recomendación:</strong> ${escapeHtml(finding.recommendation)}</p>
         <p class="finding-meta"><span>${escapeHtml(finding.status)}</span> · <span>${escapeHtml(
-          formatDate(finding.targetDate ?? null),
+          formatDate(finding.targetDate ?? null)
         )}</span></p>
       </div>`;
     })
@@ -196,8 +196,9 @@ export const renderExecutiveReport = (data: ExecutiveReportData) => {
     </section>
     <section class="content">
       <h2>Indicadores Clave</h2>
-      ${data.kpis.length > 0
-        ? `<table>
+      ${
+        data.kpis.length > 0
+          ? `<table>
           <thead>
             <tr>
               <th>Indicador</th>
@@ -207,7 +208,8 @@ export const renderExecutiveReport = (data: ExecutiveReportData) => {
           </thead>
           <tbody>${kpiRows}</tbody>
         </table>`
-        : '<p>No hay KPIs registrados.</p>'}
+          : '<p>No hay KPIs registrados.</p>'
+      }
 
       <h2>Hallazgos Prioritarios</h2>
       ${data.findings.length > 0 ? findingsRows : '<p>No hay hallazgos abiertos.</p>'}

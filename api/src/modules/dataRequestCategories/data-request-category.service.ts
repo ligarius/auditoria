@@ -1,13 +1,16 @@
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
 
 export const dataRequestCategoryService = {
   async list() {
     return prisma.dataRequestCategory.findMany({ orderBy: { name: 'asc' } });
   },
 
-  async create(payload: { name: string; description?: string }, userId: string) {
+  async create(
+    payload: { name: string; description?: string },
+    userId: string
+  ) {
     const category = await prisma.dataRequestCategory.create({ data: payload });
     await auditService.record(
       'DataRequestCategory',
@@ -26,13 +29,15 @@ export const dataRequestCategoryService = {
     payload: { name?: string; description?: string },
     userId: string
   ) {
-    const before = await prisma.dataRequestCategory.findUnique({ where: { id } });
+    const before = await prisma.dataRequestCategory.findUnique({
+      where: { id }
+    });
     if (!before) {
       throw new HttpError(404, 'Categoría no encontrada');
     }
     const category = await prisma.dataRequestCategory.update({
       where: { id },
-      data: payload,
+      data: payload
     });
     await auditService.record(
       'DataRequestCategory',
@@ -47,7 +52,9 @@ export const dataRequestCategoryService = {
   },
 
   async remove(id: string, userId: string) {
-    const before = await prisma.dataRequestCategory.findUnique({ where: { id } });
+    const before = await prisma.dataRequestCategory.findUnique({
+      where: { id }
+    });
     if (!before) {
       throw new HttpError(404, 'Categoría no encontrada');
     }
@@ -61,5 +68,5 @@ export const dataRequestCategoryService = {
       before,
       null
     );
-  },
+  }
 };

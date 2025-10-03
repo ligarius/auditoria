@@ -1,6 +1,6 @@
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
 
 const entityMap = {
   inventory: prisma.systemInventory,
@@ -24,11 +24,26 @@ export const systemsService = {
     return items;
   },
 
-  async create(projectId: string, key: EntityKey, payload: any, userId: string) {
+  async create(
+    projectId: string,
+    key: EntityKey,
+    payload: any,
+    userId: string
+  ) {
     const repo = entityMap[key];
     const created = await repo.create({ data: { ...payload, projectId } });
-    await auditService.record(repoName(key), created.id, 'CREATE', userId, projectId, null, created);
-    return key === 'costs' ? { ...created, tco3y: computeTco(created) } : created;
+    await auditService.record(
+      repoName(key),
+      created.id,
+      'CREATE',
+      userId,
+      projectId,
+      null,
+      created
+    );
+    return key === 'costs'
+      ? { ...created, tco3y: computeTco(created) }
+      : created;
   },
 
   async update(id: string, key: EntityKey, payload: any, userId: string) {
@@ -36,8 +51,18 @@ export const systemsService = {
     const before = await repo.findUnique({ where: { id } });
     if (!before) throw new HttpError(404, 'Registro no encontrado');
     const updated = await repo.update({ where: { id }, data: payload });
-    await auditService.record(repoName(key), id, 'UPDATE', userId, before.projectId, before, updated);
-    return key === 'costs' ? { ...updated, tco3y: computeTco(updated) } : updated;
+    await auditService.record(
+      repoName(key),
+      id,
+      'UPDATE',
+      userId,
+      before.projectId,
+      before,
+      updated
+    );
+    return key === 'costs'
+      ? { ...updated, tco3y: computeTco(updated) }
+      : updated;
   },
 
   async remove(id: string, key: EntityKey, userId: string) {
@@ -45,7 +70,15 @@ export const systemsService = {
     const before = await repo.findUnique({ where: { id } });
     if (!before) throw new HttpError(404, 'Registro no encontrado');
     await repo.delete({ where: { id } });
-    await auditService.record(repoName(key), id, 'DELETE', userId, before.projectId, before, null);
+    await auditService.record(
+      repoName(key),
+      id,
+      'DELETE',
+      userId,
+      before.projectId,
+      before,
+      null
+    );
   }
 };
 
@@ -58,7 +91,7 @@ const repoName = (key: EntityKey) =>
     security: 'SecurityPosture',
     performance: 'Performance',
     costs: 'CostLicensing'
-  }[key]);
+  })[key];
 
 const computeTco = (cost: any) => {
   const costAnnual = cost.costAnnual ?? 0;

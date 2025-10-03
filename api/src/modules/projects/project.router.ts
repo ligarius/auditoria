@@ -1,24 +1,25 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireRole } from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import { projectService } from './project.service.js';
-import { generateProjectReportPdf } from '../export/report.service.js';
-import { projectSurveyService } from './project-survey.service.js';
+import { authenticate, requireRole } from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import { generateProjectReportPdf } from '../export/report.service';
+
+import { projectService } from './project.service';
+import { projectSurveyService } from './project-survey.service';
 
 const projectRouter = Router();
 
 projectRouter.use(authenticate);
 
 const workflowTransitionSchema = z.object({
-  state: z.string().min(1, 'Estado requerido'),
+  state: z.string().min(1, 'Estado requerido')
 });
 
 const createSurveySchema = z.object({
   title: z.string().min(1, 'Título requerido').trim(),
   description: z.string().optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.boolean().optional()
 });
 
 const createSurveyQuestionSchema = z
@@ -27,30 +28,36 @@ const createSurveyQuestionSchema = z
     text: z.string().min(1, 'Pregunta requerida'),
     scaleMin: z.number().int().optional(),
     scaleMax: z.number().int().optional(),
-    required: z.boolean().optional(),
+    required: z.boolean().optional()
   })
   .superRefine((data, ctx) => {
     if (data.type && data.type.toLowerCase().includes('likert')) {
-      if (typeof data.scaleMin !== 'number' || typeof data.scaleMax !== 'number') {
+      if (
+        typeof data.scaleMin !== 'number' ||
+        typeof data.scaleMax !== 'number'
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Debes definir el rango de la escala Likert',
+          message: 'Debes definir el rango de la escala Likert'
         });
       } else if (data.scaleMin >= data.scaleMax) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'El mínimo de la escala debe ser menor al máximo',
+          message: 'El mínimo de la escala debe ser menor al máximo'
         });
       }
     }
   });
 
 const workflowDiagramSchema = z.object({
-  definition: z.any(),
+  definition: z.any()
 });
 
 projectRouter.get('/', async (req, res) => {
-  const projects = await projectService.listByUser(req.user!.id, req.user!.role);
+  const projects = await projectService.listByUser(
+    req.user!.id,
+    req.user!.role
+  );
   res.json(projects);
 });
 
@@ -67,16 +74,27 @@ projectRouter.get('/:projectId/report.pdf', async (req, res) => {
   try {
     const pdf = await generateProjectReportPdf(req.params.projectId);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="reporte-${req.params.projectId}.pdf"`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="reporte-${req.params.projectId}.pdf"`
+    );
     res.send(pdf);
   } catch (error: any) {
-    const status = error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 400;
-    res.status(status ?? 400).json({ error: error.message ?? 'No se pudo generar el PDF' });
+    const status =
+      error instanceof Error && 'statusCode' in error
+        ? (error as any).statusCode
+        : 400;
+    res
+      .status(status ?? 400)
+      .json({ error: error.message ?? 'No se pudo generar el PDF' });
   }
 });
 
 projectRouter.get('/:projectId/surveys', async (req, res) => {
-  const surveys = await projectSurveyService.list(req.params.projectId, req.user);
+  const surveys = await projectSurveyService.list(
+    req.params.projectId,
+    req.user
+  );
   res.json(surveys);
 });
 
@@ -85,9 +103,13 @@ projectRouter.post(
   requireRole('admin', 'consultor'),
   async (req, res) => {
     const body = createSurveySchema.parse(req.body);
-    const survey = await projectSurveyService.create(req.params.projectId, body, req.user);
+    const survey = await projectSurveyService.create(
+      req.params.projectId,
+      body,
+      req.user
+    );
     res.status(201).json(survey);
-  },
+  }
 );
 
 projectRouter.post(
@@ -99,17 +121,17 @@ projectRouter.post(
       req.params.projectId,
       req.params.surveyId,
       body,
-      req.user,
+      req.user
     );
     res.status(201).json(question);
-  },
+  }
 );
 
 projectRouter.get('/:projectId/surveys/:surveyId/summary', async (req, res) => {
   const summary = await projectSurveyService.summary(
     req.params.projectId,
     req.params.surveyId,
-    req.user,
+    req.user
   );
   res.json(summary);
 });
@@ -125,7 +147,7 @@ projectRouter.get('/:projectId/summary', async (req, res) => {
 projectRouter.get('/:projectId/workflow', async (req, res) => {
   const workflow = await projectService.getWorkflow(req.params.projectId, {
     id: req.user!.id,
-    role: req.user!.role,
+    role: req.user!.role
   });
   res.json(workflow);
 });
@@ -146,14 +168,22 @@ projectRouter.post('/', requireRole('admin', 'consultor'), async (req, res) => {
   res.status(201).json(project);
 });
 
-projectRouter.put('/:projectId', requireRole('admin', 'consultor'), async (req, res) => {
-  await enforceProjectAccess(req.user, req.params.projectId);
-  const project = await projectService.update(req.params.projectId, req.body, {
-    id: req.user!.id,
-    role: req.user!.role
-  });
-  res.json(project);
-});
+projectRouter.put(
+  '/:projectId',
+  requireRole('admin', 'consultor'),
+  async (req, res) => {
+    await enforceProjectAccess(req.user, req.params.projectId);
+    const project = await projectService.update(
+      req.params.projectId,
+      req.body,
+      {
+        id: req.user!.id,
+        role: req.user!.role
+      }
+    );
+    res.json(project);
+  }
+);
 
 projectRouter.put(
   '/:projectId/workflow/diagram',
@@ -191,11 +221,15 @@ projectRouter.delete('/:projectId', requireRole('admin'), async (req, res) => {
   res.status(204).send();
 });
 
-projectRouter.post('/:projectId/invite', requireRole('admin'), async (req, res) => {
-  await enforceProjectAccess(req.user, req.params.projectId);
-  const { email, role } = req.body;
-  const user = await projectService.invite(req.params.projectId, email, role);
-  res.json(user);
-});
+projectRouter.post(
+  '/:projectId/invite',
+  requireRole('admin'),
+  async (req, res) => {
+    await enforceProjectAccess(req.user, req.params.projectId);
+    const { email, role } = req.body;
+    const user = await projectService.invite(req.params.projectId, email, role);
+    res.json(user);
+  }
+);
 
 export { projectRouter };

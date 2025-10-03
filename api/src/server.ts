@@ -1,28 +1,30 @@
 import 'dotenv/config';
+import 'express-async-errors';
+
+import type { IncomingHttpHeaders } from 'http';
+
 import cors from 'cors';
 import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
-import 'express-async-errors';
 import pino from 'pino';
-import type { IncomingHttpHeaders } from 'http';
 
-import { appRouter } from './app.js';
-import { env } from './core/config/env.js';
-import { metricsRegistry } from './core/metrics/registry.js';
-import { globalRateLimiter } from './core/middleware/rate-limit.js';
-import { errorHandler } from './core/errors/error-handler.js';
-import { logger } from './core/config/logger.js';
-import { findingRouter } from './modules/findings/finding.router.js';
-import { riskRouter } from './modules/risks/risk.router.js';
-import { formsRouter } from './modules/forms/forms.router.js';
-import workflowRouter from './modules/workflow/workflow.router.js';
-import reportRouter from './modules/export/report.router.js';
-import { initializeQueueWorkers } from './services/queue.js';
-import { startApprovalSlaMonitor } from './services/approval-sla.js';
-import surveysRouter from './routes/surveys.js';
-import { zodErrorHandler } from './common/validation/zod-error.middleware.js';
-import { startKpiSnapshotCron } from './modules/kpis/kpi-snapshot.job.js';
+import { appRouter } from './app';
+import { env } from './core/config/env';
+import { metricsRegistry } from './core/metrics/registry';
+import { globalRateLimiter } from './core/middleware/rate-limit';
+import { errorHandler } from './core/errors/error-handler';
+import { logger } from './core/config/logger';
+import { findingRouter } from './modules/findings/finding.router';
+import { riskRouter } from './modules/risks/risk.router';
+import { formsRouter } from './modules/forms/forms.router';
+import workflowRouter from './modules/workflow/workflow.router';
+import reportRouter from './modules/export/report.router';
+import { initializeQueueWorkers } from './services/queue';
+import { startApprovalSlaMonitor } from './services/approval-sla';
+import surveysRouter from './routes/surveys';
+import { zodErrorHandler } from './common/validation/zod-error.middleware';
+import { startKpiSnapshotCron } from './modules/kpis/kpi-snapshot.job';
 
 const app = express();
 

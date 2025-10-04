@@ -1,6 +1,5 @@
 import { execSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 import {
   PrismaClient,
@@ -20,7 +19,8 @@ const runMigrations = (): void => {
     return;
   }
 
-  const apiRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+  // seed.cjs se emite en dist/prisma → subir dos niveles hasta la raíz del paquete API
+  const apiRoot = resolve(__dirname, '..', '..');
   console.log('[seed] Ejecutando prisma migrate deploy antes de sembrar datos…');
   try {
     execSync('npx prisma migrate deploy', {

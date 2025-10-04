@@ -10,7 +10,7 @@
     "start": "node dist/server.cjs",
     "prisma": "prisma",
     "dev:db:migrate": "prisma migrate dev",
-    "db:seed": "tsx --tsconfig tsconfig.seed.json prisma/seed.ts",
+    "db:seed": "esbuild prisma/seed.ts --platform=node --bundle --format=cjs --outfile=dist/prisma/seed.cjs && node dist/prisma/seed.cjs",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
     "seed": "npm run db:seed",
@@ -88,6 +88,6 @@
     "typescript": "5.3.3"
   },
   "prisma": {
-    "seed": "tsx --tsconfig tsconfig.seed.json prisma/seed.ts"
+    "seed": "esbuild prisma/seed.ts --platform=node --bundle --format=cjs --outfile=dist/prisma/seed.cjs && node dist/prisma/seed.cjs"
   }
 }

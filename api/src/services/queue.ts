@@ -25,9 +25,36 @@ type QueueInitialization = {
   initializeQueueWorkers: () => Promise<void>;
 };
 
+const REDIS_READY_TIMEOUT_MS = 5000;
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number) => {
+  return await new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Redis connection timeout'));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+};
+
 const createQueueInfrastructure = (): QueueInitialization => {
   const connection = new Redis(env.redisUrl, {
-    maxRetriesPerRequest: null
+    maxRetriesPerRequest: null,
+    lazyConnect: true,
+    retryStrategy: (times) => {
+      if (times >= 3) {
+        return null;
+      }
+      return Math.min(times * 500, 2000);
+    }
   });
 
   connection.on('error', (error: Error) => {
@@ -65,6 +92,7 @@ const createQueueInfrastructure = (): QueueInitialization => {
 
   const workers: Worker[] = [];
   let workersInitialized = false;
+  let queuesAvailable = true;
 
   const buildReminderJobId = (surveyLinkId: string) =>
     `survey-reminder:${surveyLinkId}`;
@@ -72,14 +100,27 @@ const createQueueInfrastructure = (): QueueInitialization => {
     `survey-invite:${surveyLinkId}`;
 
   const initializeQueueWorkers = async () => {
-    if (workersInitialized) {
+    if (workersInitialized || !queuesAvailable) {
       return;
     }
 
-    await Promise.all([
-      inviteQueue.waitUntilReady(),
-      reminderQueue.waitUntilReady()
-    ]);
+    try {
+      await withTimeout(connection.connect(), REDIS_READY_TIMEOUT_MS);
+      await Promise.all(
+        [inviteQueue.waitUntilReady(), reminderQueue.waitUntilReady()].map(
+          async (promise) => await withTimeout(promise, REDIS_READY_TIMEOUT_MS)
+        )
+      );
+    } catch (error) {
+      queuesAvailable = false;
+      workersInitialized = false;
+      logger.error(
+        { err: error },
+        'BullMQ deshabilitado: no se pudo establecer conexión con Redis'
+      );
+      connection.disconnect();
+      return;
+    }
 
     const inviteWorker = new Worker<SurveyInviteJobData>(
       'survey-invite',
@@ -198,11 +239,25 @@ const createQueueInfrastructure = (): QueueInitialization => {
 
   const queueService: QueueServiceImpl = {
     enqueueSurveyInvite: async (data: SurveyInviteJobData) => {
+      if (!queuesAvailable) {
+        logger.warn(
+          { surveyLinkId: data.surveyLinkId },
+          'BullMQ no disponible, la invitación de encuesta no se encoló'
+        );
+        return;
+      }
       await inviteQueue.add('survey-invite', data, {
         jobId: buildInviteJobId(data.surveyLinkId)
       });
     },
     scheduleSurveyReminder: async (data: SurveyReminderJobData) => {
+      if (!queuesAvailable) {
+        logger.warn(
+          { surveyLinkId: data.surveyLinkId },
+          'BullMQ no disponible, el recordatorio de encuesta no se programó'
+        );
+        return;
+      }
       const reminderDays = data.remindAfterDays ?? env.surveyReminderDays;
       const delay = Math.max(reminderDays, 1) * 24 * 60 * 60 * 1000;
       await reminderQueue.add(
@@ -215,6 +270,9 @@ const createQueueInfrastructure = (): QueueInitialization => {
       );
     },
     cancelSurveyReminder: async (surveyLinkId: string) => {
+      if (!queuesAvailable) {
+        return;
+      }
       const job = await reminderQueue.getJob(buildReminderJobId(surveyLinkId));
       if (job) {
         await job.remove();

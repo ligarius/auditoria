@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { authenticate, requireRole } from '../../core/middleware/auth.js';
+import {
+  authenticate,
+  requireRole,
+  type AuthenticatedRequest
+} from '../../core/middleware/auth.js';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 import { generateProjectReportPdf } from '../export/report.service.js';
 import { getHttpErrorPayload } from '../../core/errors/http-error.js';
@@ -55,12 +59,34 @@ const workflowDiagramSchema = z.object({
   definition: z.any()
 });
 
-projectRouter.get('/', async (req, res) => {
-  const projects = await projectService.listByUser(
-    req.user!.id,
-    req.user!.role
-  );
-  res.json(projects);
+projectRouter.get('/', async (req, res, next) => {
+  try {
+    const request = req as AuthenticatedRequest & {
+      auth?: { sub?: string; role?: string };
+    };
+
+    const userId =
+      request.user?.id ??
+      (typeof request.auth?.sub === 'string' ? request.auth.sub : undefined);
+    const role =
+      request.user?.role ??
+      (typeof request.auth?.role === 'string' ? request.auth.role : undefined);
+
+    if (!userId || !role) {
+      return res.status(401).json({ title: 'No autenticado' });
+    }
+
+    const projects = await projectService.listByUser(userId, role);
+
+    return res.status(200).json({
+      items: projects,
+      total: projects.length,
+      page: 1,
+      pageSize: projects.length
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 projectRouter.get('/:projectId/features', async (req, res) => {

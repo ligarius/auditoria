@@ -18,10 +18,11 @@ export const authService = {
       throw new HttpError(401, 'Credenciales inválidas');
     }
     const payload = { sub: user.id, email: user.email, role: user.role };
+    const { passwordHash: _passwordHash, ...safeUser } = user;
     return {
       accessToken: signAccessToken(payload),
       refreshToken: signRefreshToken(payload),
-      user
+      user: safeUser
     };
   },
 

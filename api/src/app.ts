@@ -34,6 +34,7 @@ import { fiveSRouter } from './modules/fiveS/five-s.router.js';
 import { hseRouter } from './modules/hse/hse.router.js';
 import { layoutRouter } from './modules/layout/layout.router.js';
 import { routesRouter } from './modules/routes/routes.router.js';
+import { debugRouter } from './modules/debug/debug.router.js';
 
 const appRouter = Router();
 
@@ -71,5 +72,6 @@ appRouter.use('/fiveS', fiveSRouter);
 appRouter.use('/hse', hseRouter);
 appRouter.use('/layout', layoutRouter);
 appRouter.use('/routes', routesRouter);
+appRouter.use('/debug', debugRouter);
 
 export { appRouter };

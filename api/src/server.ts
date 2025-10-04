@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import 'express-async-errors';
 
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
@@ -13,9 +14,6 @@ import { metricsRegistry } from './core/metrics/registry.js';
 import { globalRateLimiter } from './core/middleware/rate-limit.js';
 import { errorHandler } from './core/errors/error-handler.js';
 import { logger } from './core/config/logger.js';
-import { findingRouter } from './modules/findings/finding.router.js';
-import { riskRouter } from './modules/risks/risk.router.js';
-import { formsRouter } from './modules/forms/forms.router.js';
 import workflowRouter from './modules/workflow/workflow.router.js';
 import reportRouter from './modules/export/report.router.js';
 import { initializeQueueWorkers } from './services/queue.js';
@@ -58,25 +56,6 @@ const sanitizeHeaders = (
     {}
   );
 };
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.includes('*') ||
-        allowedOrigins.includes(origin)
-      ) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error('Origen no permitido por CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  })
-);
 
 app.use(helmet());
 app.use(
@@ -121,9 +100,28 @@ app.use(
     }
   })
 );
-app.use(globalRateLimiter);
 app.use(json());
 app.use(urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes('*') ||
+        allowedOrigins.includes(origin)
+      ) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Origen no permitido por CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
+app.use(globalRateLimiter);
 
 app.get(['/health', '/api/health'], (_req, res) => res.json({ ok: true }));
 app.get('/metrics', async (_req, res) => {
@@ -131,12 +129,9 @@ app.get('/metrics', async (_req, res) => {
   res.send(await metricsRegistry.metrics());
 });
 
-app.use('/api/risks', riskRouter);
-app.use('/api/findings', findingRouter);
-app.use('/api/forms', formsRouter);
+app.use('/api', appRouter);
 app.use('/api/workflow', workflowRouter);
 app.use('/api/export', reportRouter);
-app.use('/api', appRouter);
 app.use('/api/surveys', surveysRouter);
 app.use((req, res) => {
   const problem = {

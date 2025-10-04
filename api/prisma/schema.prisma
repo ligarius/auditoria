@@ -19,11 +19,13 @@ model Company {
 }
 
 enum ProjectWorkflowState {
-  planificacion
-  recoleccion_datos
-  analisis
-  recomendaciones
-  cierre
+  planificacion       @map("PLANIFICACION")
+  recoleccion_datos   @map("TRABAJO_CAMPO")
+  analisis            @map("INFORME")
+  recomendaciones     @map("RECOMENDACIONES")
+  cierre              @map("CIERRE")
+
+  @@map("EstadoProyecto")
 }
 
 enum ProcessType {

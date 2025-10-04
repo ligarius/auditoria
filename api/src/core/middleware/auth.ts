@@ -17,12 +17,12 @@ export interface AuthenticatedRequest extends Request {
 
 export const authenticate = async (
   req: AuthenticatedRequest,
-  _res: Response,
+  res: Response,
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    throw new HttpError(401, 'No autenticado');
+    return res.status(401).json({ title: 'No autenticado' });
   }
 
   const token = authHeader.replace('Bearer ', '');
@@ -46,9 +46,12 @@ export const authenticate = async (
       projects: projectRoles
     };
     await ensureScopedAccess(req);
-    next();
+    return next();
   } catch (error) {
-    throw new HttpError(401, 'Token inválido', error);
+    if (error instanceof HttpError) {
+      return next(error);
+    }
+    return res.status(401).json({ title: 'Token inválido' });
   }
 };
 

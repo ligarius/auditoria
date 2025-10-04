@@ -61,12 +61,16 @@ RUN apt-get update \
     chromium \
     ca-certificates \
     curl \
+    fonts-noto-core \
+    fonts-noto-cjk \
     fonts-liberation \
     fonts-noto-color-emoji \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
+    libatspi2.0-0 \
     libcups2 \
+    libdbus-1-3 \
     libdrm2 \
     libgbm1 \
     libglib2.0-0 \

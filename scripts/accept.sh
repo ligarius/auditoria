@@ -10,6 +10,18 @@ WAIT_TIMEOUT="${ACCEPT_HEALTH_TIMEOUT:-180}"
 WAIT_INTERVAL="${ACCEPT_HEALTH_INTERVAL:-3}"
 PDF_CHECK_URL="${ACCEPT_PDF_CHECK_URL:-http://localhost:4000/api/debug/pdf-check}"
 
+TMP_FILES=()
+
+cleanup() {
+  for tmp in "${TMP_FILES[@]}"; do
+    if [[ -n "$tmp" && -f "$tmp" ]]; then
+      rm -f "$tmp"
+    fi
+  done
+}
+
+trap cleanup EXIT
+
 info() {
   printf '\n[accept] %s\n' "$*"
 }
@@ -62,10 +74,17 @@ info "Fetching API health"
 curl --fail --show-error --silent "$HEALTH_URL"
 
 info "Checking PDF generation at $PDF_CHECK_URL"
-pdf_check_response="$(curl --fail --show-error --silent "$PDF_CHECK_URL")"
-if ! grep -q '"pdfByteLength":[1-9]' <<<"$pdf_check_response"; then
-  echo "PDF check did not return a valid payload" >&2
-  echo "$pdf_check_response" >&2
+tmp_pdf="$(mktemp)"
+TMP_FILES+=("$tmp_pdf")
+curl --fail --show-error --silent --output "$tmp_pdf" "$PDF_CHECK_URL"
+pdf_header="$(head -c 4 "$tmp_pdf")"
+if [[ "$pdf_header" != "%PDF" ]]; then
+  echo "PDF check did not return a valid PDF header" >&2
+  exit 1
+fi
+pdf_size="$(wc -c < "$tmp_pdf")"
+if [[ "$pdf_size" -le 0 ]]; then
+  echo "PDF check produced an empty file" >&2
   exit 1
 fi
 

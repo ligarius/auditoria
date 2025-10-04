@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 set -eu
 
 if [ -z "${DATABASE_URL:-}" ]; then
@@ -6,16 +6,17 @@ if [ -z "${DATABASE_URL:-}" ]; then
   exit 1
 fi
 
-printf 'Applying database migrations...\n'
+printf '[entrypoint] Applying database migrations...\n'
 until npx prisma migrate deploy >/tmp/prisma-migrate.log 2>&1; do
   cat /tmp/prisma-migrate.log >&2 || true
-  printf 'Database unavailable, retrying in 5 seconds...\n'
+  printf '[entrypoint] Database unavailable, retrying in 5 seconds...\n'
   sleep 5
-  printf 'Re-attempting database migrations...\n'
+  printf '[entrypoint] Re-attempting database migrations...\n'
   rm -f /tmp/prisma-migrate.log
 done
 cat /tmp/prisma-migrate.log >&2 || true
 rm -f /tmp/prisma-migrate.log
-printf 'Database migrations applied successfully.\n'
+printf '[entrypoint] Database migrations applied successfully.\n'
 
+printf '[entrypoint] Starting API...\n'
 exec node dist/server.cjs

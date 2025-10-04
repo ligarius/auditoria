@@ -63,6 +63,9 @@ RUN apt-get update \
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
 COPY --from=deps /usr/src/app/prisma ./prisma
+# Crear alias para templates en ruta estable usada por el runtime
+RUN mkdir -p /usr/src/dist && \
+    ln -s /usr/src/app/dist/templates /usr/src/dist/templates
 COPY package*.json ./
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 

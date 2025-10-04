@@ -10,18 +10,19 @@ Suite full-stack para gestionar auditorías operacionales multiempresa. El proye
 4. [Stack tecnológico](#stack-tecnológico)
 5. [Estructura del repositorio](#estructura-del-repositorio)
 6. [Requisitos previos](#requisitos-previos)
-7. [Configuración local con Docker](#configuración-local-con-docker)
-8. [Configuración sin Docker](#configuración-sin-docker)
-9. [Variables de entorno](#variables-de-entorno)
-10. [Base de datos, migraciones y semillas](#base-de-datos-migraciones-y-semillas)
-11. [Scripts útiles](#scripts-útiles)
-12. [Testing y calidad](#testing-y-calidad)
-13. [Flujo de desarrollo sugerido](#flujo-de-desarrollo-sugerido)
-14. [Despliegue](#despliegue)
-15. [Resolución de problemas](#resolución-de-problemas)
-16. [FAQ](#faq)
-17. [Contribuir](#contribuir)
-18. [Licencia](#licencia)
+7. [Guía rápida: primera ejecución](#guía-rápida-primera-ejecución)
+8. [Configuración local con Docker](#configuración-local-con-docker)
+9. [Configuración sin Docker](#configuración-sin-docker)
+10. [Variables de entorno](#variables-de-entorno)
+11. [Base de datos, migraciones y semillas](#base-de-datos-migraciones-y-semillas)
+12. [Scripts útiles](#scripts-útiles)
+13. [Testing y calidad](#testing-y-calidad)
+14. [Flujo de desarrollo sugerido](#flujo-de-desarrollo-sugerido)
+15. [Despliegue](#despliegue)
+16. [Resolución de problemas](#resolución-de-problemas)
+17. [FAQ](#faq)
+18. [Contribuir](#contribuir)
+19. [Licencia](#licencia)
 
 ## Visión general
 
@@ -101,6 +102,36 @@ Consulta el directorio `docs/` para notas puntuales (por ejemplo, análisis de f
 - Docker + Docker Compose (recomendado para un entorno consistente).
 - PostgreSQL 15 si decides ejecutar los servicios fuera de Docker.
 - Redis opcional cuando habilites colas BullMQ fuera de Docker.
+
+## Guía rápida: primera ejecución
+
+Sigue estos pasos para levantar toda la suite desde una máquina limpia utilizando Docker Compose.
+
+1. **Clona el repositorio y entra al directorio del proyecto:**
+   ```bash
+   git clone https://github.com/tu-org/auditoria.git
+   cd auditoria
+   ```
+2. **Configura las variables de entorno base.** Duplica el archivo de ejemplo para que los scripts encuentren un `.env` válido.
+   ```bash
+   cp .env.development .env
+   ```
+3. **Instala dependencias de backend y frontend.** Esto habilita comandos como `lint`, `test` y `build` dentro de cada paquete.
+   ```bash
+   npm install --prefix api
+   npm install --prefix web
+   ```
+4. **Construye y levanta la pila completa.** El wrapper valida la existencia del archivo `.env` y reenvía los parámetros a Docker Compose.
+   ```bash
+   ./scripts/compose.sh up -d --build
+   ```
+5. **Ejecuta el flujo de aceptación.** Aplicará migraciones, cargará semillas, verificará la salud de la API y compilará el frontend.
+   ```bash
+   ./scripts/accept.sh
+   ```
+6. **Verifica los servicios:** abre `http://localhost:5173` para la SPA y `http://localhost:4000/health` para la API.
+
+> Si necesitas reiniciar desde cero, utiliza el [reinicio limpio](#reinicio-limpio) antes de repetir los pasos anteriores.
 
 ## Configuración local con Docker
 

@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { authenticate, requireRole } from '../../core/middleware/auth.js';
 import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
 import { generateProjectReportPdf } from '../export/report.service.js';
+import { HttpError } from '../../core/errors/http-error.js';
+import { logger } from '../../core/config/logger.js';
 
 import { projectService } from './project.service.js';
 import { projectSurveyService } from './project-survey.service.js';
@@ -79,14 +81,17 @@ projectRouter.get('/:projectId/report.pdf', async (req, res) => {
       `inline; filename="reporte-${req.params.projectId}.pdf"`
     );
     res.send(pdf);
-  } catch (error: any) {
-    const status =
-      error instanceof Error && 'statusCode' in error
-        ? (error as any).statusCode
-        : 400;
-    res
-      .status(status ?? 400)
-      .json({ error: error.message ?? 'No se pudo generar el PDF' });
+  } catch (error: unknown) {
+    if (error instanceof HttpError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    logger.error(
+      { err: error, projectId: req.params.projectId },
+      'Unexpected error generating project PDF'
+    );
+
+    res.status(500).json({ error: 'No se pudo generar el PDF' });
   }
 });
 

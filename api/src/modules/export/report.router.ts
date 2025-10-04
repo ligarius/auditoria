@@ -1,5 +1,8 @@
 import { Router } from 'express';
 
+import { HttpError } from '../../core/errors/http-error.js';
+import { logger } from '../../core/config/logger.js';
+
 import { generateProjectReportPdf } from './report.service.js';
 
 const router = Router();
@@ -13,8 +16,17 @@ router.get('/projects/:id/pdf', async (req, res) => {
       `inline; filename="proyecto-${req.params.id}.pdf"`
     );
     res.send(pdf);
-  } catch (e: any) {
-    res.status(400).json({ error: e.message });
+  } catch (error: unknown) {
+    if (error instanceof HttpError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    logger.error(
+      { err: error, projectId: req.params.id },
+      'Unexpected error generating project report PDF'
+    );
+
+    res.status(500).json({ error: 'No se pudo generar el PDF' });
   }
 });
 

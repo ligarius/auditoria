@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_RecepcionDemo"
+                  targetNamespace="http://auditoria.demo/bpmn">
+  <bpmn:process id="Process_RecepcionDemo" name="Recepción inbound demo" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Proveedor" name="Cita de proveedor confirmada">
+      <bpmn:outgoing>Flow_ProveedorArribo</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_RegistrarIngreso" name="Registrar ingreso en portería">
+      <bpmn:incoming>Flow_ProveedorArribo</bpmn:incoming>
+      <bpmn:outgoing>Flow_Documentos</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_ControlDocumentos" name="Documentos completos?" default="Flow_SinDiscrepancias">
+      <bpmn:incoming>Flow_Documentos</bpmn:incoming>
+      <bpmn:outgoing>Flow_SinDiscrepancias</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ConDiscrepancias</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_ManejarDiscrepancia" name="Resolver discrepancia con proveedor">
+      <bpmn:incoming>Flow_ConDiscrepancias</bpmn:incoming>
+      <bpmn:outgoing>Flow_RetornoControl</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_Descargar" name="Descargar y validar pallets">
+      <bpmn:incoming>Flow_SinDiscrepancias</bpmn:incoming>
+      <bpmn:incoming>Flow_RetornoControl</bpmn:incoming>
+      <bpmn:outgoing>Flow_ActualizarStock</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_Inventario" name="Inventario actualizado">
+      <bpmn:incoming>Flow_ActualizarStock</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ProveedorArribo" sourceRef="StartEvent_Proveedor" targetRef="Task_RegistrarIngreso"/>
+    <bpmn:sequenceFlow id="Flow_Documentos" sourceRef="Task_RegistrarIngreso" targetRef="Gateway_ControlDocumentos"/>
+    <bpmn:sequenceFlow id="Flow_SinDiscrepancias" sourceRef="Gateway_ControlDocumentos" targetRef="Task_Descargar"/>
+    <bpmn:sequenceFlow id="Flow_ConDiscrepancias" sourceRef="Gateway_ControlDocumentos" targetRef="Task_ManejarDiscrepancia"/>
+    <bpmn:sequenceFlow id="Flow_RetornoControl" sourceRef="Task_ManejarDiscrepancia" targetRef="Task_Descargar"/>
+    <bpmn:sequenceFlow id="Flow_ActualizarStock" sourceRef="Task_Descargar" targetRef="EndEvent_Inventario"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_RecepcionDemo">
+    <bpmndi:BPMNPlane id="BPMNPlane_RecepcionDemo" bpmnElement="Process_RecepcionDemo">
+      <bpmndi:BPMNShape id="Shape_StartEvent_Proveedor" bpmnElement="StartEvent_Proveedor">
+        <dc:Bounds x="120" y="180" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RegistrarIngreso" bpmnElement="Task_RegistrarIngreso">
+        <dc:Bounds x="200" y="160" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_ControlDocumentos" bpmnElement="Gateway_ControlDocumentos" isMarkerVisible="true">
+        <dc:Bounds x="370" y="175" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Descargar" bpmnElement="Task_Descargar">
+        <dc:Bounds x="470" y="160" width="150" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_ManejarDiscrepancia" bpmnElement="Task_ManejarDiscrepancia">
+        <dc:Bounds x="370" y="260" width="150" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_Inventario" bpmnElement="EndEvent_Inventario">
+        <dc:Bounds x="660" y="180" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_ProveedorArribo" bpmnElement="Flow_ProveedorArribo">
+        <di:waypoint x="156" y="198"/>
+        <di:waypoint x="200" y="198"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_Documentos" bpmnElement="Flow_Documentos">
+        <di:waypoint x="330" y="198"/>
+        <di:waypoint x="370" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_SinDiscrepancias" bpmnElement="Flow_SinDiscrepancias">
+        <di:waypoint x="420" y="200"/>
+        <di:waypoint x="470" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ConDiscrepancias" bpmnElement="Flow_ConDiscrepancias">
+        <di:waypoint x="395" y="225"/>
+        <di:waypoint x="395" y="260"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_RetornoControl" bpmnElement="Flow_RetornoControl">
+        <di:waypoint x="520" y="300"/>
+        <di:waypoint x="545" y="300"/>
+        <di:waypoint x="545" y="240"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_ActualizarStock" bpmnElement="Flow_ActualizarStock">
+        <di:waypoint x="620" y="200"/>
+        <di:waypoint x="660" y="198"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

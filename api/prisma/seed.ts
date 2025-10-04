@@ -275,7 +275,7 @@ async function main(): Promise<void> {
       id: 'seed-process-reception-flow',
       type: 'BPMN',
       title: 'Flujo recepción inbound',
-      url: 'https://example.com/docs/recepcion-bpmn',
+      url: '/demo/recepcion-demo.bpmn',
     },
     {
       id: 'seed-process-picking-flow',

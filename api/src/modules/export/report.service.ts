@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import * as puppeteer from 'puppeteer';
 import { type ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
+import { createPuppeteerLaunchOptions } from '../../core/browser/puppeteer.js';
 import { prisma } from '../../core/config/db.js';
 import { HttpError } from '../../core/errors/http-error.js';
 
@@ -618,10 +619,7 @@ export async function generateProjectReportPdf(projectId: string) {
 
   let browser: puppeteer.Browser | null = null;
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    browser = await puppeteer.launch(createPuppeteerLaunchOptions());
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
     await page.emulateMediaType('screen');

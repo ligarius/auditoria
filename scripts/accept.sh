@@ -8,6 +8,7 @@ WAIT_SCRIPT="$ROOT_DIR/scripts/wait-on.sh"
 HEALTH_URL="${ACCEPT_HEALTH_URL:-http://localhost:4000/health}"
 WAIT_TIMEOUT="${ACCEPT_HEALTH_TIMEOUT:-180}"
 WAIT_INTERVAL="${ACCEPT_HEALTH_INTERVAL:-3}"
+PDF_CHECK_URL="${ACCEPT_PDF_CHECK_URL:-http://localhost:4000/api/debug/pdf-check}"
 
 info() {
   printf '\n[accept] %s\n' "$*"
@@ -59,6 +60,14 @@ info "Waiting for API health at $HEALTH_URL"
 
 info "Fetching API health"
 curl --fail --show-error --silent "$HEALTH_URL"
+
+info "Checking PDF generation at $PDF_CHECK_URL"
+pdf_check_response="$(curl --fail --show-error --silent "$PDF_CHECK_URL")"
+if ! grep -q '"pdfByteLength":[1-9]' <<<"$pdf_check_response"; then
+  echo "PDF check did not return a valid payload" >&2
+  echo "$pdf_check_response" >&2
+  exit 1
+fi
 
 info "Building web application"
 run_in_dir "$ROOT_DIR/web" npm run build

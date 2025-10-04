@@ -2,7 +2,10 @@ import { existsSync } from 'node:fs';
 import { resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const projectRoot = typeof __dirname !== 'undefined' ? resolve(__dirname, '..', '..') : process.cwd();
+const projectRoot =
+  typeof __dirname !== 'undefined'
+    ? resolve(__dirname, '..', '..')
+    : process.cwd();
 const distTemplatesDir = resolve(projectRoot, 'dist', 'templates');
 const srcTemplatesDir = resolve(projectRoot, 'src', 'templates');
 

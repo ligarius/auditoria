@@ -13,7 +13,12 @@ describe('startup assets', () => {
 
     if (!fs.existsSync(templatePath)) {
       fs.mkdirSync(path.dirname(templatePath), { recursive: true });
-      const sourcePath = path.resolve(process.cwd(), 'src', 'templates', 'module-report.hbs');
+      const sourcePath = path.resolve(
+        process.cwd(),
+        'src',
+        'templates',
+        'module-report.hbs'
+      );
       fs.copyFileSync(sourcePath, templatePath);
     }
   });

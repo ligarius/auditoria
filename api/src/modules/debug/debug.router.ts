@@ -52,11 +52,18 @@ debugRouter.get('/pdf-check', async (_req, res, next) => {
     await page.close();
 
     const browserProcess = browser.process();
-    res.json({
-      ok: true,
-      pdfByteLength: pdf.length,
-      executablePath: browserProcess?.spawnfile ?? null
-    });
+
+    if (browserProcess?.spawnfile) {
+      res.setHeader('X-Puppeteer-Executable', browserProcess.spawnfile);
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      'inline; filename="auditoria-pdf-check.pdf"'
+    );
+
+    res.status(200).send(pdf);
   } catch (error) {
     next(error);
   } finally {

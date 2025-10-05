@@ -71,9 +71,12 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
           `${API_BASE}/process-assets/${projectId}`,
           { headers }
         );
-        const workflowResponse = await fetch(`${API_BASE}/workflow/${projectId}`, {
-          headers,
-        });
+        const workflowResponse = await fetch(
+          `${API_BASE}/workflow/${projectId}`,
+          {
+            headers,
+          }
+        );
 
         const assets: ProcessAsset[] = processAssetsResponse.ok
           ? ((await processAssetsResponse.json()) as ProcessAsset[])
@@ -83,7 +86,8 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
           throw new Error('No workflow data');
         }
 
-        const workflowJson = (await workflowResponse.json()) as WorkflowResponse;
+        const workflowJson =
+          (await workflowResponse.json()) as WorkflowResponse;
         if (cancelled) return;
         setData(workflowJson);
         setDiagramError(null);
@@ -139,7 +143,7 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
           sources.push(async () =>
             typeof workflowDefinition === 'string'
               ? workflowDefinition
-              : workflowDefinition?.xml ?? null
+              : (workflowDefinition?.xml ?? null)
           );
         }
 
@@ -215,9 +219,7 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
 
   if (!data) {
     if (diagramError) {
-      return (
-        <div className="p-4 text-sm text-slate-500">{diagramError}</div>
-      );
+      return <div className="p-4 text-sm text-slate-500">{diagramError}</div>;
     }
     return <div className="p-4 text-sm">Cargando flujo…</div>;
   }

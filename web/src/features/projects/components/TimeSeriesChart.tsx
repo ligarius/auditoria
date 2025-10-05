@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 const CHART_WIDTH = 360;
 const CHART_HEIGHT = 200;
@@ -55,8 +55,16 @@ export const TimeSeriesChart = ({
     [normalized]
   );
 
-  const minDate = normalized[0]?.date ?? new Date();
-  const maxDate = normalized[normalized.length - 1]?.date ?? minDate;
+  const { minDate, maxDate } = useMemo(() => {
+    if (normalized.length === 0) {
+      const now = new Date();
+      return { minDate: now, maxDate: now };
+    }
+
+    const first = normalized[0].date;
+    const last = normalized[normalized.length - 1]?.date ?? first;
+    return { minDate: first, maxDate: last };
+  }, [normalized]);
   const dateRange = Math.max(maxDate.getTime() - minDate.getTime(), 1);
 
   const valueExtent = useMemo(() => {
@@ -74,16 +82,22 @@ export const TimeSeriesChart = ({
 
   const valueRange = Math.max(valueExtent.max - valueExtent.min, 1);
 
-  const getX = (date: Date) => {
-    if (dateRange === 0) return CHART_WIDTH / 2;
-    const position = (date.getTime() - minDate.getTime()) / dateRange;
-    return PADDING_X + position * (CHART_WIDTH - PADDING_X * 2);
-  };
+  const getX = useCallback(
+    (date: Date) => {
+      if (dateRange === 0) return CHART_WIDTH / 2;
+      const position = (date.getTime() - minDate.getTime()) / dateRange;
+      return PADDING_X + position * (CHART_WIDTH - PADDING_X * 2);
+    },
+    [dateRange, minDate]
+  );
 
-  const getY = (value: number) => {
-    const ratio = (value - valueExtent.min) / valueRange;
-    return CHART_HEIGHT - PADDING_Y - ratio * (CHART_HEIGHT - PADDING_Y * 2);
-  };
+  const getY = useCallback(
+    (value: number) => {
+      const ratio = (value - valueExtent.min) / valueRange;
+      return CHART_HEIGHT - PADDING_Y - ratio * (CHART_HEIGHT - PADDING_Y * 2);
+    },
+    [valueExtent.min, valueRange]
+  );
 
   const pathD = useMemo(() => {
     if (validPoints.length === 0) return '';

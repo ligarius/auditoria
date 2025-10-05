@@ -52,7 +52,11 @@ describe('WorkflowPanel', () => {
         return Promise.resolve(
           new Response(
             JSON.stringify([
-              { id: 'asset-1', type: 'BPMN', url: 'https://example.com/asset.bpmn' },
+              {
+                id: 'asset-1',
+                type: 'BPMN',
+                url: 'https://example.com/asset.bpmn',
+              },
             ]),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
           )
@@ -61,16 +65,23 @@ describe('WorkflowPanel', () => {
       if (url === `${API_BASE}/workflow/project-123`) {
         return Promise.resolve(
           new Response(
-            JSON.stringify({ estadoActual: 'enRevision', workflowDefinition: null }),
+            JSON.stringify({
+              estadoActual: 'enRevision',
+              workflowDefinition: null,
+            }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
           )
         );
       }
       if (url === 'https://example.com/asset.bpmn') {
-        return Promise.resolve(new Response('<asset-diagram />', { status: 200 }));
+        return Promise.resolve(
+          new Response('<asset-diagram />', { status: 200 })
+        );
       }
       if (url.endsWith('/demo/recepcion-demo.bpmn')) {
-        return Promise.resolve(new Response('<demo-diagram />', { status: 200 }));
+        return Promise.resolve(
+          new Response('<demo-diagram />', { status: 200 })
+        );
       }
       throw new Error(`Unhandled fetch: ${url}`);
     });
@@ -80,9 +91,13 @@ describe('WorkflowPanel', () => {
     render(<WorkflowPanel projectId="project-123" />);
 
     await waitFor(() => expect(BpmnConstructorMock).toHaveBeenCalled());
-    await waitFor(() => expect(importXmlMock).toHaveBeenCalledWith('<asset-diagram />'));
+    await waitFor(() =>
+      expect(importXmlMock).toHaveBeenCalledWith('<asset-diagram />')
+    );
     expect(importXmlMock).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText('No hay diagrama disponible')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('No hay diagrama disponible')
+    ).not.toBeInTheDocument();
   });
 
   test('falls back to demo BPMN when no asset exists', async () => {
@@ -98,14 +113,22 @@ describe('WorkflowPanel', () => {
       }
       if (url === `${API_BASE}/workflow/project-empty`) {
         return Promise.resolve(
-          new Response(JSON.stringify({ estadoActual: 'enRevision', workflowDefinition: null }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          })
+          new Response(
+            JSON.stringify({
+              estadoActual: 'enRevision',
+              workflowDefinition: null,
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
         );
       }
       if (url.endsWith('/demo/recepcion-demo.bpmn')) {
-        return Promise.resolve(new Response('<demo-diagram />', { status: 200 }));
+        return Promise.resolve(
+          new Response('<demo-diagram />', { status: 200 })
+        );
       }
       throw new Error(`Unhandled fetch: ${url}`);
     });
@@ -114,8 +137,12 @@ describe('WorkflowPanel', () => {
 
     render(<WorkflowPanel projectId="project-empty" />);
 
-    await waitFor(() => expect(importXmlMock).toHaveBeenCalledWith('<demo-diagram />'));
-    expect(screen.queryByText('No hay diagrama disponible')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(importXmlMock).toHaveBeenCalledWith('<demo-diagram />')
+    );
+    expect(
+      screen.queryByText('No hay diagrama disponible')
+    ).not.toBeInTheDocument();
   });
 
   test('shows message and emits toast when BPMN cannot be loaded', async () => {
@@ -131,10 +158,16 @@ describe('WorkflowPanel', () => {
       }
       if (url === `${API_BASE}/workflow/project-broken`) {
         return Promise.resolve(
-          new Response(JSON.stringify({ estadoActual: 'enRevision', workflowDefinition: null }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          })
+          new Response(
+            JSON.stringify({
+              estadoActual: 'enRevision',
+              workflowDefinition: null,
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
         );
       }
       if (url.endsWith('/demo/recepcion-demo.bpmn')) {

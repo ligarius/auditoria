@@ -34,7 +34,8 @@ describe('startup assets', () => {
   });
 
   it('falls back to bundled template when env path is invalid', () => {
-    process.env.MODULE_REPORT_TEMPLATE = 'file:///nonexistent/path/module-report.hbs';
+    process.env.MODULE_REPORT_TEMPLATE =
+      'file:///nonexistent/path/module-report.hbs';
 
     const resolved = resolveAsset('module-report.hbs');
     const expected = path.resolve(

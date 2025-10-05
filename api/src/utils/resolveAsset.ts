@@ -13,13 +13,18 @@ export function resolveModuleReportTemplate(): string {
   const fromEnv = process.env.MODULE_REPORT_TEMPLATE;
   if (fromEnv && fromEnv.trim()) {
     try {
+      let candidate: string;
       if (fromEnv.startsWith('file://')) {
-        return fileURLToPath(fromEnv);
+        candidate = fileURLToPath(fromEnv);
+      } else if (isAbsolute(fromEnv)) {
+        candidate = fromEnv;
+      } else {
+        candidate = resolve(process.cwd(), fromEnv);
       }
-      if (isAbsolute(fromEnv)) {
-        return fromEnv;
+
+      if (existsSync(candidate)) {
+        return candidate;
       }
-      return resolve(process.cwd(), fromEnv);
     } catch {
       // fallback
     }

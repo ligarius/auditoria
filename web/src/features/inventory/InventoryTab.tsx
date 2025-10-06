@@ -96,7 +96,6 @@ const InventoryTab = ({ projectId }: InventoryTabProps) => {
 
   useEffect(() => {
     fetchInventory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   useEffect(() => {

@@ -1,0 +1,6 @@
+{
+  "name": "@empty/lodash.isequal",
+  "version": "0.0.0",
+  "main": "index.js",
+  "type": "commonjs"
+}

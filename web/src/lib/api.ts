@@ -2,7 +2,6 @@
 import axios from 'axios';
 
 declare module 'axios' {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   export interface AxiosRequestConfig {
     _retry?: boolean;
   }

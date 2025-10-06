@@ -8,7 +8,10 @@ dist
 api/dist
 web/dist
 api/coverage
-.docker-cache
+
+# Prisma migrations no versionadas
+api/prisma/migrations/
+.docker-cache/
 
 # build
 api/dist

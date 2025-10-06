@@ -78,7 +78,7 @@ export function Builder({
     }
     try {
       return JSON.parse(trimmed);
-    } catch (error) {
+    } catch {
       throw new Error('El JSON de scoring no es válido');
     }
   };

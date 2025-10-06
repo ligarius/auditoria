@@ -151,7 +151,6 @@ export default function SurveysTab({ projectId }: SurveysTabProps) {
     if (selectedSurveyId) {
       fetchSummary(selectedSurveyId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   return (

@@ -165,7 +165,7 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
               setDiagramError(null);
             }
             return;
-          } catch (error) {
+          } catch {
             viewerRef.current?.destroy?.();
             viewerRef.current = null;
           }

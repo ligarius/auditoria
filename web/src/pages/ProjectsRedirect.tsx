@@ -21,7 +21,7 @@ export default function ProjectsRedirect() {
           localStorage.setItem(LAST_PROJECT_KEY, first.id);
           navigate(`/projects/${first.id}`, { replace: true });
         }
-      } catch (error) {
+      } catch {
         navigate('/login', { replace: true });
       }
     };

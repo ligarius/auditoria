@@ -1,4 +1,4 @@
-import type { BrowserLaunchArgumentOptions, LaunchOptions } from 'puppeteer';
+import type { LaunchOptions } from 'puppeteer';
 
 const DEFAULT_LAUNCH_ARGS = [
   '--no-sandbox',
@@ -6,9 +6,7 @@ const DEFAULT_LAUNCH_ARGS = [
   '--disable-dev-shm-usage'
 ];
 
-export function createPuppeteerLaunchOptions():
-  | LaunchOptions
-  | (LaunchOptions & BrowserLaunchArgumentOptions) {
+export function createPuppeteerLaunchOptions(): LaunchOptions {
   const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim();
 
   return {

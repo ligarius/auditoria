@@ -191,7 +191,6 @@ const FiveSTab = ({ projectId }: FiveSTabProps) => {
 
   useEffect(() => {
     fetchAudits();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   useEffect(() => {

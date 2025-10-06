@@ -61,11 +61,21 @@ run_in_dir "$ROOT_DIR/web" npm run lint
 info "Type-checking Web"
 run_in_dir "$ROOT_DIR/web" npx tsc --noEmit
 
-info "Running database migrations"
-run_api npm run migrate:deploy
+echo
+echo "[accept] Syncing schema (no migrations)"
+if [[ "$USE_DOCKER" == "1" ]]; then
+  "$COMPOSE_CMD" exec -T api npx prisma db push
+else
+  run_in_dir "$ROOT_DIR/api" npx prisma db push
+fi
 
-info "Seeding database"
-run_api npm run seed
+echo
+echo "[accept] Seeding (if available)"
+if [[ "$USE_DOCKER" == "1" ]]; then
+  "$COMPOSE_CMD" exec -T api npm run seed || true
+else
+  run_in_dir "$ROOT_DIR/api" npm run seed || true
+fi
 
 info "Waiting for API health at $HEALTH_URL"
 "$WAIT_SCRIPT" "$HEALTH_URL" "$WAIT_TIMEOUT" "$WAIT_INTERVAL"

@@ -244,7 +244,6 @@ const RoutesTab = ({ projectId }: RoutesTabProps) => {
 
   useEffect(() => {
     loadPlans();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   useEffect(() => {

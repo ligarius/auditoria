@@ -194,7 +194,6 @@ const generatePdf = async (
       });
     }
 
-    // eslint-disable-next-line no-await-in-loop
     const barcodeBuffer = await bwipjs.toBuffer({
       bcid: 'code128',
       text: items[index]!.code,
@@ -535,7 +534,6 @@ export const inventoryService = {
       }));
 
       for (const sku of skus) {
-        // eslint-disable-next-line no-await-in-loop
         await prisma.barcodeLabel.upsert({
           where: {
             projectId_type_code: {
@@ -583,7 +581,6 @@ export const inventoryService = {
     }));
 
     for (const location of locations) {
-      // eslint-disable-next-line no-await-in-loop
       await prisma.barcodeLabel.upsert({
         where: {
           projectId_type_code: {

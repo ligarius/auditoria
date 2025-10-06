@@ -13,27 +13,27 @@ import {
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
-const runMigrations = (): void => {
+const syncSchema = (): void => {
   if (process.env.SKIP_MIGRATE_ON_SEED === 'true') {
-    console.log('[seed] SKIP_MIGRATE_ON_SEED=true, omitiendo prisma migrate deploy');
+    console.log('[seed] SKIP_MIGRATE_ON_SEED=true, omitiendo prisma db push');
     return;
   }
 
   // seed.cjs se emite en dist/prisma → subir dos niveles hasta la raíz del paquete API
   const apiRoot = resolve(__dirname, '..', '..');
-  console.log('[seed] Ejecutando prisma migrate deploy antes de sembrar datos…');
+  console.log('[seed] Ejecutando prisma db push antes de sembrar datos…');
   try {
-    execSync('npx prisma migrate deploy', {
+    execSync('npx prisma db push', {
       cwd: apiRoot,
       stdio: 'inherit',
     });
   } catch (error) {
-    console.error('\n[seed] No se pudieron aplicar las migraciones automáticamente. Ejecuta `npx prisma migrate deploy` y reintenta.');
+    console.error('\n[seed] No se pudo sincronizar el esquema automáticamente. Ejecuta `npx prisma db push` y reintenta.');
     throw error;
   }
 };
 
-runMigrations();
+syncSchema();
 
 const prisma = new PrismaClient();
 
@@ -51,7 +51,7 @@ const ensureWorkflowEnum = (): void => {
   for (const item of expected) {
     if (!values.includes(item)) {
       throw new Error(
-        'El enum ProjectWorkflowState no contiene todas las opciones requeridas. Ejecuta las migraciones antes de correr la semilla.',
+        'El enum ProjectWorkflowState no contiene todas las opciones requeridas. Sincroniza el esquema (prisma db push) antes de correr la semilla.',
       );
     }
   }

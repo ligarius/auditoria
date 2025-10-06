@@ -139,7 +139,6 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
       return;
     }
     fetchWorkflow();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   useEffect(() => {
@@ -149,7 +148,6 @@ export const WorkflowTab = ({ projectId }: WorkflowTabProps) => {
     loadDiagram(currentDiagram).catch(() => {
       /* handled arriba */
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDiagram]);
 
   const handleSaveDiagram = async () => {

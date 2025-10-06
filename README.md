@@ -46,7 +46,7 @@ El backend expone un API REST con autenticación JWT, permisos basados en member
 root
 ├── api/              Backend Express + Prisma
 │   ├── src/          Casos de uso, rutas y controladores
-│   ├── prisma/       Esquema, migraciones y seeds
+│   ├── prisma/       Esquema y seeds (sin migraciones versionadas)
 │   └── openapi.yaml  Definición del contrato REST
 ├── web/              Frontend React (Vite + Tailwind + shadcn/ui)
 ├── scripts/          Utilidades para Docker y espera de servicios
@@ -56,7 +56,7 @@ root
 
 - **API**: Servidor Express con Pino para logs, Prisma como ORM y PostgreSQL como base de datos. Maneja autenticación JWT, RBAC por proyecto y exportables generados con ExcelJS/PDFKit.
 - **Web**: SPA en React/TypeScript. Usa React Query para datos, Tailwind CSS para estilos y componentes accesibles con shadcn/ui y Radix.
-- **Infra**: Docker Compose facilita levantar Postgres, API y Web. Los scripts aplican migraciones (`prisma migrate deploy`) antes de exponer la API.
+- **Infra**: Docker Compose facilita levantar Postgres, API y Web. Los scripts sincronizan el esquema (`prisma db push` o `baseline.sql`) antes de exponer la API.
 
 ## Stack tecnológico
 
@@ -64,7 +64,7 @@ root
 | --- | --- | --- |
 | Backend | Node.js 18, Express, Prisma, Zod, Pino | API REST, validaciones y observabilidad |
 | Frontend | React 18, Vite, TypeScript, Tailwind, shadcn/ui | SPA modular con tabs por módulo de auditoría |
-| Base de datos | PostgreSQL 15 | Migraciones gestionadas por Prisma |
+| Base de datos | PostgreSQL 15 | Sincronización de esquema con Prisma (db push/baseline) |
 | Jobs & archivos | BullMQ, Redis, ExcelJS, PDFKit, Puppeteer | Procesamiento de reportes y exportables |
 | Testing | Jest, Supertest, Vitest, Testing Library | Suites unitarias y de componentes |
 | DevOps | Docker, Docker Compose, scripts bash | Orquestación local y automatización de tareas |
@@ -148,7 +148,7 @@ Sigue estos pasos para levantar toda la suite desde una máquina limpia utilizan
    ```bash
    ./scripts/compose.sh up -d --build
    ```
-4. Ejecuta el smoke test automatizado que espera la salud de la API, corre migraciones/seeds y compila el frontend:
+4. Ejecuta el smoke test automatizado que espera la salud de la API, sincroniza esquema/seeds y compila el frontend:
    ```bash
    ./scripts/accept.sh
    ```
@@ -162,7 +162,7 @@ Cuando necesites limpiar el estado (por ejemplo, repetir seeds):
 ./scripts/compose.sh down -v
 ./scripts/compose.sh up -d db
 ./scripts/compose.sh up -d api
-./scripts/compose.sh exec api npx prisma migrate deploy
+./scripts/compose.sh exec api npx prisma db push
 ./scripts/compose.sh exec api npm run seed
 ./scripts/compose.sh up -d web
 ```
@@ -221,25 +221,48 @@ El frontend quedará en `http://localhost:5173`. Recuerda ajustar `VITE_API_URL`
 | `VITE_API_URL` | Web | URL base del backend consumido por el frontend. |
 | `NPM_CONFIG_PROXY`, `NPM_CONFIG_HTTPS_PROXY` | scripts | Configuración opcional para builds detrás de proxy. |
 
-## Base de datos, migraciones y semillas
+## Base de datos y esquema (sin migraciones)
 
-- Prisma gestiona el esquema de datos en `api/prisma/schema.prisma` y genera migraciones en `api/prisma/migrations/`.
-- Durante el arranque con Docker, la API ejecuta `prisma migrate deploy`. Si corres el backend manualmente, ejecuta:
-  ```bash
-  npm run migrate:deploy --prefix api
-  ```
-- La semilla inicial se ejecuta con:
-  ```bash
-  npm run seed --prefix api
-  ```
-  Crea empresas de ejemplo, usuarios demo y un proyecto base con features activados.
+Este proyecto **no aplica Prisma Migrations en runtime**. En su lugar, usamos uno de estos enfoques:
+
+- **Enfoque simple (DEV):** `prisma db push` al inicio (sin historial de migraciones).
+- **Enfoque reproducible (PROD/CI):** `baseline.sql` con DDL inicial idempotente. El `docker-entrypoint.sh` aplica `baseline.sql` una sola vez y marca la aplicación en la tabla `__baseline_applied`.
+
+### Primer arranque (desarrollo)
+
+```bash
+cp .env.development .env
+npm install --prefix api
+npm install --prefix web
+./scripts/compose.sh up -d --build
+
+# Sincroniza esquema (si no lo hace el entrypoint):
+docker compose exec api npx prisma db push
+
+# Seeds (opcionales)
+docker compose exec api npm run seed
+```
+
+### Reset rápido (desarrollo)
+
+Esto borra datos y resuelve casos como el error P3009:
+
+```bash
+./scripts/compose.sh down -v
+rm -rf api/prisma/migrations    # no versionamos migraciones
+./scripts/compose.sh up -d --build
+docker compose exec api npx prisma db push
+docker compose exec api npm run seed
+```
+
+Nota: Si optas por baseline.sql, genera el archivo una vez con `pg_dump --schema-only` desde una DB inicial creada por db push. Luego cambia el entrypoint a la Opción B (SQL baseline).
 
 ## Scripts útiles
 
 | Comando | Ubicación | Descripción |
 | --- | --- | --- |
 | `npm run dev` | `api/` | Servidor Express con recarga en caliente. |
-| `npm run build` | `api/` | Genera bundle CJS en `dist/server.cjs`. |
+| `npm run build` | `api/` | Genera bundle CJS en `dist/main.cjs`. |
 | `npm run start` | `api/` | Arranca el bundle compilado. |
 | `npm run lint` | `api/`, `web/` | Ejecuta ESLint sobre el código fuente. |
 | `npm run test` | `api/` | Corre Jest con cobertura. |
@@ -250,7 +273,7 @@ El frontend quedará en `http://localhost:5173`. Recuerda ajustar `VITE_API_URL`
 | `npm run preview` | `web/` | Sirve el build generado por Vite. |
 | `npm run test` | `web/` | Ejecuta Vitest y Testing Library. |
 | `./scripts/compose.sh` | raíz | Wrapper de Docker Compose que valida variables de entorno. |
-| `./scripts/accept.sh` | raíz | Orquesta migraciones, seeds, espera salud y compila frontend. |
+| `./scripts/accept.sh` | raíz | Sincroniza esquema (db push), ejecuta seeds opcionales, espera salud y compila frontend. |
 
 ## Testing y calidad
 
@@ -272,7 +295,7 @@ Integra estos comandos en pipelines CI/CD para garantizar calidad antes de fusio
 ## Despliegue
 
 1. Construye imágenes usando los Dockerfiles de `api/` y `web/` o reutiliza `docker-compose.yml` como base.
-2. Ejecuta migraciones con `npm run migrate:deploy --prefix api` antes de arrancar la API en producción.
+2. Sincroniza el esquema con `npm run schema:push --prefix api` (o aplica `baseline.sql`) antes de arrancar la API en producción.
 3. Define variables de entorno seguras (`DATABASE_URL`, `JWT_SECRET`, `VITE_API_URL`, etc.).
 4. Expón los servicios detrás de un reverse proxy (Nginx, Traefik) con HTTPS.
 5. Automatiza pipelines que ejecuten lint, tests y builds antes de publicar.
@@ -282,12 +305,12 @@ Integra estos comandos en pipelines CI/CD para garantizar calidad antes de fusio
 
 | Síntoma | Causa probable | Acción sugerida |
 | --- | --- | --- |
-| La API no arranca | Postgres inaccesible o sin migraciones | Verifica `DATABASE_URL` y ejecuta `prisma migrate deploy`. |
+| La API no arranca | Postgres inaccesible o sin migraciones | Verifica `DATABASE_URL` y ejecuta `prisma db push`. |
 | Error `JWT_SECRET missing` | Variable ausente | Define `JWT_SECRET` en `.env` o en secretos del entorno. |
 | Login redirige al inicio de sesión constantemente | Token expirado o refresh inválido | Cierra sesión para limpiar tokens y vuelve a iniciar. |
 | `compose.sh` reclama archivo `.env` | No se generó `.env`/`.env.local` | Duplica `.env.development` antes de levantar servicios. |
 | Builds fallan con `ECONNRESET` | Proxy o conexión inestable | Configura variables de proxy o reintenta cuando la red sea estable. |
-| Endpoint `/api/projects/:id/surveys` responde 404 | Migraciones incompletas | Ejecuta `prisma migrate deploy` y `npm run seed`. |
+| Endpoint `/api/projects/:id/surveys` responde 404 | Esquema desactualizado | Ejecuta `prisma db push` y `npm run seed`. |
 | Datos inconsistentes tras pruebas | Seeds previos dejaron registros | Ejecuta el [reinicio limpio](#reinicio-limpio). |
 
 ## FAQ

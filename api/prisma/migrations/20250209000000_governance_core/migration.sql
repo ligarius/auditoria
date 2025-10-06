@@ -1,23 +1,37 @@
--- Create enum for approval status
-CREATE TYPE "ApprovalStatus" AS ENUM ('pending', 'approved', 'rejected');
+DO $$
+BEGIN
+    CREATE TYPE "ApprovalStatus" AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
--- Add new governance relation columns
-ALTER TABLE "Risk" ADD COLUMN "meetingId" TEXT;
+ALTER TABLE "Risk" ADD COLUMN IF NOT EXISTS "meetingId" TEXT;
 
--- Rename DecisionLog table and extend with governance metadata
-ALTER TABLE "DecisionLog" RENAME TO "Decision";
+DO $$
+BEGIN
+    IF to_regclass('"DecisionLog"') IS NOT NULL THEN
+        ALTER TABLE "DecisionLog" RENAME TO "Decision";
+    END IF;
+END $$;
 
-ALTER TABLE "Decision" ADD COLUMN "committeeId" TEXT;
-ALTER TABLE "Decision" ADD COLUMN "meetingId" TEXT;
-ALTER TABLE "Decision" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE "Decision" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "Decision" ADD COLUMN IF NOT EXISTS "committeeId" TEXT;
+ALTER TABLE "Decision" ADD COLUMN IF NOT EXISTS "meetingId" TEXT;
+ALTER TABLE "Decision" ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "Decision" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
 -- Drop old foreign key to recreate with new naming
 ALTER TABLE "Decision" DROP CONSTRAINT IF EXISTS "DecisionLog_projectId_fkey";
-ALTER TABLE "Decision" ADD CONSTRAINT "Decision_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Decision_projectId_fkey'
+    ) THEN
+        ALTER TABLE "Decision" ADD CONSTRAINT "Decision_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- Governance tables
-CREATE TABLE "Committee" (
+CREATE TABLE IF NOT EXISTS "Committee" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -28,12 +42,26 @@ CREATE TABLE "Committee" (
     CONSTRAINT "Committee_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "Committee_projectId_idx" ON "Committee"("projectId");
+CREATE INDEX IF NOT EXISTS "Committee_projectId_idx" ON "Committee"("projectId");
 
-ALTER TABLE "Committee" ADD CONSTRAINT "Committee_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "Committee" ADD CONSTRAINT "Committee_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Committee_projectId_fkey'
+    ) THEN
+        ALTER TABLE "Committee" ADD CONSTRAINT "Committee_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Committee_ownerId_fkey'
+    ) THEN
+        ALTER TABLE "Committee" ADD CONSTRAINT "Committee_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
-CREATE TABLE "Meeting" (
+CREATE TABLE IF NOT EXISTS "Meeting" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "committeeId" TEXT,
@@ -47,13 +75,27 @@ CREATE TABLE "Meeting" (
     CONSTRAINT "Meeting_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "Meeting_projectId_idx" ON "Meeting"("projectId");
-CREATE INDEX "Meeting_committeeId_idx" ON "Meeting"("committeeId");
+CREATE INDEX IF NOT EXISTS "Meeting_projectId_idx" ON "Meeting"("projectId");
+CREATE INDEX IF NOT EXISTS "Meeting_committeeId_idx" ON "Meeting"("committeeId");
 
-ALTER TABLE "Meeting" ADD CONSTRAINT "Meeting_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "Meeting" ADD CONSTRAINT "Meeting_committeeId_fkey" FOREIGN KEY ("committeeId") REFERENCES "Committee"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Meeting_projectId_fkey'
+    ) THEN
+        ALTER TABLE "Meeting" ADD CONSTRAINT "Meeting_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Meeting_committeeId_fkey'
+    ) THEN
+        ALTER TABLE "Meeting" ADD CONSTRAINT "Meeting_committeeId_fkey" FOREIGN KEY ("committeeId") REFERENCES "Committee"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
-CREATE TABLE "Minute" (
+CREATE TABLE IF NOT EXISTS "Minute" (
     "id" TEXT NOT NULL,
     "meetingId" TEXT NOT NULL,
     "authorId" TEXT,
@@ -62,12 +104,26 @@ CREATE TABLE "Minute" (
     CONSTRAINT "Minute_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "Minute_meetingId_idx" ON "Minute"("meetingId");
+CREATE INDEX IF NOT EXISTS "Minute_meetingId_idx" ON "Minute"("meetingId");
 
-ALTER TABLE "Minute" ADD CONSTRAINT "Minute_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "Meeting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "Minute" ADD CONSTRAINT "Minute_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Minute_meetingId_fkey'
+    ) THEN
+        ALTER TABLE "Minute" ADD CONSTRAINT "Minute_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "Meeting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Minute_authorId_fkey'
+    ) THEN
+        ALTER TABLE "Minute" ADD CONSTRAINT "Minute_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
-CREATE TABLE "ApprovalWorkflow" (
+CREATE TABLE IF NOT EXISTS "ApprovalWorkflow" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "resourceType" TEXT NOT NULL,
@@ -79,12 +135,19 @@ CREATE TABLE "ApprovalWorkflow" (
     CONSTRAINT "ApprovalWorkflow_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "ApprovalWorkflow_resource_unique" ON "ApprovalWorkflow"("resourceType", "resourceId");
-CREATE INDEX "ApprovalWorkflow_projectId_idx" ON "ApprovalWorkflow"("projectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "ApprovalWorkflow_resource_unique" ON "ApprovalWorkflow"("resourceType", "resourceId");
+CREATE INDEX IF NOT EXISTS "ApprovalWorkflow_projectId_idx" ON "ApprovalWorkflow"("projectId");
 
-ALTER TABLE "ApprovalWorkflow" ADD CONSTRAINT "ApprovalWorkflow_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'ApprovalWorkflow_projectId_fkey'
+    ) THEN
+        ALTER TABLE "ApprovalWorkflow" ADD CONSTRAINT "ApprovalWorkflow_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
-CREATE TABLE "ApprovalStep" (
+CREATE TABLE IF NOT EXISTS "ApprovalStep" (
     "id" TEXT NOT NULL,
     "workflowId" TEXT NOT NULL,
     "order" INTEGER NOT NULL,
@@ -96,13 +159,27 @@ CREATE TABLE "ApprovalStep" (
     CONSTRAINT "ApprovalStep_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "ApprovalStep_workflowId_idx" ON "ApprovalStep"("workflowId");
-CREATE INDEX "ApprovalStep_approverId_idx" ON "ApprovalStep"("approverId");
+CREATE INDEX IF NOT EXISTS "ApprovalStep_workflowId_idx" ON "ApprovalStep"("workflowId");
+CREATE INDEX IF NOT EXISTS "ApprovalStep_approverId_idx" ON "ApprovalStep"("approverId");
 
-ALTER TABLE "ApprovalStep" ADD CONSTRAINT "ApprovalStep_workflowId_fkey" FOREIGN KEY ("workflowId") REFERENCES "ApprovalWorkflow"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "ApprovalStep" ADD CONSTRAINT "ApprovalStep_approverId_fkey" FOREIGN KEY ("approverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'ApprovalStep_workflowId_fkey'
+    ) THEN
+        ALTER TABLE "ApprovalStep" ADD CONSTRAINT "ApprovalStep_workflowId_fkey" FOREIGN KEY ("workflowId") REFERENCES "ApprovalWorkflow"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'ApprovalStep_approverId_fkey'
+    ) THEN
+        ALTER TABLE "ApprovalStep" ADD CONSTRAINT "ApprovalStep_approverId_fkey" FOREIGN KEY ("approverId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
-CREATE TABLE "SlaTimer" (
+CREATE TABLE IF NOT EXISTS "SlaTimer" (
     "id" TEXT NOT NULL,
     "workflowId" TEXT NOT NULL,
     "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -112,11 +189,18 @@ CREATE TABLE "SlaTimer" (
     CONSTRAINT "SlaTimer_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "SlaTimer_workflowId_idx" ON "SlaTimer"("workflowId");
+CREATE INDEX IF NOT EXISTS "SlaTimer_workflowId_idx" ON "SlaTimer"("workflowId");
 
-ALTER TABLE "SlaTimer" ADD CONSTRAINT "SlaTimer_workflowId_fkey" FOREIGN KEY ("workflowId") REFERENCES "ApprovalWorkflow"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'SlaTimer_workflowId_fkey'
+    ) THEN
+        ALTER TABLE "SlaTimer" ADD CONSTRAINT "SlaTimer_workflowId_fkey" FOREIGN KEY ("workflowId") REFERENCES "ApprovalWorkflow"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
-CREATE TABLE "ScopeChange" (
+CREATE TABLE IF NOT EXISTS "ScopeChange" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "meetingId" TEXT,
@@ -132,15 +216,36 @@ CREATE TABLE "ScopeChange" (
     CONSTRAINT "ScopeChange_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "ScopeChange_approvalWorkflowId_key" ON "ScopeChange"("approvalWorkflowId");
-CREATE INDEX "ScopeChange_projectId_idx" ON "ScopeChange"("projectId");
-CREATE INDEX "ScopeChange_meetingId_idx" ON "ScopeChange"("meetingId");
+CREATE UNIQUE INDEX IF NOT EXISTS "ScopeChange_approvalWorkflowId_key" ON "ScopeChange"("approvalWorkflowId");
+CREATE INDEX IF NOT EXISTS "ScopeChange_projectId_idx" ON "ScopeChange"("projectId");
+CREATE INDEX IF NOT EXISTS "ScopeChange_meetingId_idx" ON "ScopeChange"("meetingId");
 
-ALTER TABLE "ScopeChange" ADD CONSTRAINT "ScopeChange_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "ScopeChange" ADD CONSTRAINT "ScopeChange_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "Meeting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "ScopeChange" ADD CONSTRAINT "ScopeChange_approvalWorkflowId_fkey" FOREIGN KEY ("approvalWorkflowId") REFERENCES "ApprovalWorkflow"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'ScopeChange_projectId_fkey'
+    ) THEN
+        ALTER TABLE "ScopeChange" ADD CONSTRAINT "ScopeChange_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'ScopeChange_meetingId_fkey'
+    ) THEN
+        ALTER TABLE "ScopeChange" ADD CONSTRAINT "ScopeChange_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "Meeting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'ScopeChange_approvalWorkflowId_fkey'
+    ) THEN
+        ALTER TABLE "ScopeChange" ADD CONSTRAINT "ScopeChange_approvalWorkflowId_fkey" FOREIGN KEY ("approvalWorkflowId") REFERENCES "ApprovalWorkflow"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
-CREATE TABLE "KpiSnapshot" (
+CREATE TABLE IF NOT EXISTS "KpiSnapshot" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
@@ -154,17 +259,45 @@ CREATE TABLE "KpiSnapshot" (
     CONSTRAINT "KpiSnapshot_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "KpiSnapshot_projectId_date_idx" ON "KpiSnapshot"("projectId", "date");
+CREATE INDEX IF NOT EXISTS "KpiSnapshot_projectId_date_idx" ON "KpiSnapshot"("projectId", "date");
 
-ALTER TABLE "KpiSnapshot" ADD CONSTRAINT "KpiSnapshot_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'KpiSnapshot_projectId_fkey'
+    ) THEN
+        ALTER TABLE "KpiSnapshot" ADD CONSTRAINT "KpiSnapshot_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- New indexes and foreign keys for Decision and Risk relations
-CREATE INDEX "Decision_projectId_idx" ON "Decision"("projectId");
-CREATE INDEX "Decision_committeeId_idx" ON "Decision"("committeeId");
-CREATE INDEX "Decision_meetingId_idx" ON "Decision"("meetingId");
+CREATE INDEX IF NOT EXISTS "Decision_projectId_idx" ON "Decision"("projectId");
+CREATE INDEX IF NOT EXISTS "Decision_committeeId_idx" ON "Decision"("committeeId");
+CREATE INDEX IF NOT EXISTS "Decision_meetingId_idx" ON "Decision"("meetingId");
 
-ALTER TABLE "Decision" ADD CONSTRAINT "Decision_committeeId_fkey" FOREIGN KEY ("committeeId") REFERENCES "Committee"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "Decision" ADD CONSTRAINT "Decision_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "Meeting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Decision_committeeId_fkey'
+    ) THEN
+        ALTER TABLE "Decision" ADD CONSTRAINT "Decision_committeeId_fkey" FOREIGN KEY ("committeeId") REFERENCES "Committee"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Decision_meetingId_fkey'
+    ) THEN
+        ALTER TABLE "Decision" ADD CONSTRAINT "Decision_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "Meeting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
-CREATE INDEX "Risk_meetingId_idx" ON "Risk"("meetingId");
-ALTER TABLE "Risk" ADD CONSTRAINT "Risk_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "Meeting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+CREATE INDEX IF NOT EXISTS "Risk_meetingId_idx" ON "Risk"("meetingId");
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Risk_meetingId_fkey'
+    ) THEN
+        ALTER TABLE "Risk" ADD CONSTRAINT "Risk_meetingId_fkey" FOREIGN KEY ("meetingId") REFERENCES "Meeting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;

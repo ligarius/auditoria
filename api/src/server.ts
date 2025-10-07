@@ -26,12 +26,13 @@ import { pdfCheck } from './routes/debug/pdf-check';
 
 const app = express();
 
+app.set('etag', false);
+
 const resolvedAppEnv =
   process.env.APP_ENV ?? process.env.NODE_ENV ?? env.nodeEnv ?? 'development';
 const isDev = resolvedAppEnv !== 'production';
 
 if (isDev) {
-  app.set('etag', false);
   app.use(noCacheDevMiddleware);
 }
 
@@ -125,6 +126,13 @@ app.use(
   })
 );
 app.use(globalRateLimiter);
+
+app.use((_, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
 
 app.get(['/health', '/api/health'], (_req, res) => res.json({ ok: true }));
 app.get('/metrics', async (_req, res) => {

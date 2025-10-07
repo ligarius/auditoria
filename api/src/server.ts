@@ -12,6 +12,7 @@ import { appRouter } from './app';
 import { env } from './core/config/env';
 import { metricsRegistry } from './core/metrics/registry';
 import { globalRateLimiter } from './core/middleware/rate-limit';
+import { noCacheDevMiddleware } from './core/middleware/no-cache-dev';
 import { errorHandler } from './core/errors/error-handler';
 import { logger } from './core/config/logger';
 import workflowRouter from './modules/workflow/workflow.router';
@@ -25,12 +26,13 @@ import { pdfCheck } from './routes/debug/pdf-check';
 
 const app = express();
 
-if (env.nodeEnv === 'development') {
+const resolvedAppEnv =
+  process.env.APP_ENV ?? process.env.NODE_ENV ?? env.nodeEnv ?? 'development';
+const isDev = resolvedAppEnv !== 'production';
+
+if (isDev) {
   app.set('etag', false);
-  app.use((_, res, next) => {
-    res.setHeader('Cache-Control', 'no-store');
-    next();
-  });
+  app.use(noCacheDevMiddleware);
 }
 
 const allowedOrigins = env.clientUrl

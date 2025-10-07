@@ -2,15 +2,15 @@
 set -euo pipefail
 
 echo "[api] generating Prisma client..."
-npx prisma generate
+npm run generate
 
 echo "[api] applying schema with Prisma db push (no migrations)..."
-npx prisma db push
+npm run db:push
 
 if [ "${SEED:-1}" = "1" ]; then
   echo "[api] seeding..."
-  npm run seed || true
+  npm run db:seed || true
 fi
 
 echo "[api] starting..."
-exec node dist/main.js
+exec npm run start

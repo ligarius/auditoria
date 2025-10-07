@@ -6,7 +6,7 @@ import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import dayjs from 'dayjs';
 
-import { prisma } from '../../core/config/db.js';
+import { prisma } from '../../core/config/db';
 
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });

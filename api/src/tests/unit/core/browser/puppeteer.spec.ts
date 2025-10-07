@@ -1,4 +1,4 @@
-import { createPuppeteerLaunchOptions } from '../../../../core/browser/puppeteer.js';
+import { createPuppeteerLaunchOptions } from '../../../../core/browser/puppeteer';
 
 const ORIGINAL_EXECUTABLE_PATH = process.env.PUPPETEER_EXECUTABLE_PATH;
 

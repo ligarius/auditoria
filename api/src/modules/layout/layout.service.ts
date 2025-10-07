@@ -6,8 +6,8 @@ import {
   type File as FileRecord
 } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { fileService } from '../files/file.service.js';
+import { prisma } from '../../core/config/db';
+import { fileService } from '../files/file.service';
 
 interface SimulationRow {
   zoneId: string;

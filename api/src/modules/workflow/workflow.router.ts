@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
-import { getWorkflow, transition } from './workflow.service.js';
+import { getWorkflow, transition } from './workflow.service';
 
 const router = Router();
 

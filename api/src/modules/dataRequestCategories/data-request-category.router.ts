@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { authenticate, requireRole } from '../../core/middleware/auth.js';
+import { authenticate, requireRole } from '../../core/middleware/auth';
 
-import { dataRequestCategoryService } from './data-request-category.service.js';
+import { dataRequestCategoryService } from './data-request-category.service';
 
 const dataRequestCategoryRouter = Router();
 

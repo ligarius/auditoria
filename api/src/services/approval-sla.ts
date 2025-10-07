@@ -1,7 +1,7 @@
-import { logger } from '../core/config/logger.js';
-import { approvalService } from '../modules/governance/approval.service.js';
+import { logger } from '../core/config/logger';
+import { approvalService } from '../modules/governance/approval.service';
 
-import { notificationService } from './notification.js';
+import { notificationService } from './notification';
 
 const DEFAULT_INTERVAL_MS = 60 * 1000;
 

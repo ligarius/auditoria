@@ -1,9 +1,9 @@
 import { Queue, Worker, type JobsOptions } from 'bullmq';
 import { Redis } from 'ioredis';
 
-import { env } from '../core/config/env.js';
-import { prisma } from '../core/config/db.js';
-import { logger } from '../core/config/logger.js';
+import { env } from '../core/config/env';
+import { prisma } from '../core/config/db';
+import { logger } from '../core/config/logger';
 
 interface SurveyInviteJobData {
   surveyLinkId: string;
@@ -114,10 +114,28 @@ const createQueueInfrastructure = (): QueueInitialization => {
     } catch (error) {
       queuesAvailable = false;
       workersInitialized = false;
-      logger.error(
-        { err: error },
-        'BullMQ deshabilitado: no se pudo establecer conexión con Redis'
-      );
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : '';
+
+      if (
+        typeof message === 'string' &&
+        (message.includes('Redis is already connecting') ||
+          message.includes('Redis is already connected'))
+      ) {
+        logger.warn(
+          { err: error },
+          'BullMQ deshabilitado: Redis ya estaba conectado'
+        );
+      } else {
+        logger.error(
+          { err: error },
+          'BullMQ deshabilitado: no se pudo establecer conexión con Redis'
+        );
+      }
       connection.disconnect();
       return;
     }
@@ -292,7 +310,9 @@ const noopQueueService: QueueServiceImpl = {
 let queueServiceImplementation: QueueServiceImpl = noopQueueService;
 let initializeQueueWorkersImplementation: () => Promise<void> = async () => {};
 
-if (env.nodeEnv !== 'test') {
+const queuesDisabled = process.env.DISABLE_QUEUES === 'true';
+
+if (env.nodeEnv !== 'test' && !queuesDisabled) {
   const { queueService, initializeQueueWorkers } = createQueueInfrastructure();
   queueServiceImplementation = queueService;
   initializeQueueWorkersImplementation = initializeQueueWorkers;

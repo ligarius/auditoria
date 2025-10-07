@@ -1,16 +1,16 @@
 import express from 'express';
 import request from 'supertest';
 
-import reportRouter from '../../../modules/export/report.router.js';
-import { HttpError } from '../../../core/errors/http-error.js';
-import { generateProjectReportPdf } from '../../../modules/export/report.service.js';
-import { logger } from '../../../core/config/logger.js';
+import reportRouter from '../../../modules/export/report.router';
+import { HttpError } from '../../../core/errors/http-error';
+import { generateProjectReportPdf } from '../../../modules/export/report.service';
+import { logger } from '../../../core/config/logger';
 
-jest.mock('../../../modules/export/report.service.js', () => ({
+jest.mock('../../../modules/export/report.service', () => ({
   generateProjectReportPdf: jest.fn()
 }));
 
-jest.mock('../../../core/config/logger.js', () => ({
+jest.mock('../../../core/config/logger', () => ({
   logger: {
     error: jest.fn()
   }

@@ -8,19 +8,20 @@ import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { pino } from 'pino';
 
-import { appRouter } from './app.js';
-import { env } from './core/config/env.js';
-import { metricsRegistry } from './core/metrics/registry.js';
-import { globalRateLimiter } from './core/middleware/rate-limit.js';
-import { errorHandler } from './core/errors/error-handler.js';
-import { logger } from './core/config/logger.js';
-import workflowRouter from './modules/workflow/workflow.router.js';
-import reportRouter from './modules/export/report.router.js';
-import { initializeQueueWorkers } from './services/queue.js';
-import { startApprovalSlaMonitor } from './services/approval-sla.js';
-import surveysRouter from './routes/surveys.js';
-import { zodErrorHandler } from './common/validation/zod-error.middleware.js';
-import { startKpiSnapshotCron } from './modules/kpis/kpi-snapshot.job.js';
+import { appRouter } from './app';
+import { env } from './core/config/env';
+import { metricsRegistry } from './core/metrics/registry';
+import { globalRateLimiter } from './core/middleware/rate-limit';
+import { errorHandler } from './core/errors/error-handler';
+import { logger } from './core/config/logger';
+import workflowRouter from './modules/workflow/workflow.router';
+import reportRouter from './modules/export/report.router';
+import { initializeQueueWorkers } from './services/queue';
+import { startApprovalSlaMonitor } from './services/approval-sla';
+import surveysRouter from './routes/surveys';
+import { zodErrorHandler } from './common/validation/zod-error.middleware';
+import { startKpiSnapshotCron } from './modules/kpis/kpi-snapshot.job';
+import { pdfCheck } from './routes/debug/pdf-check';
 
 const app = express();
 
@@ -133,6 +134,7 @@ app.use('/api', appRouter);
 app.use('/api/workflow', workflowRouter);
 app.use('/api/export', reportRouter);
 app.use('/api/surveys', surveysRouter);
+app.get('/api/debug/pdf-check', pdfCheck);
 app.use((req, res) => {
   const problem = {
     type: 'https://httpstatuses.com/404',
@@ -151,12 +153,37 @@ const server = app.listen(env.port, () => {
   logger.info(`API running on port ${env.port}`);
 });
 
-initializeQueueWorkers().catch((error) => {
-  logger.error(
-    { err: error },
-    'No se pudieron inicializar los workers de la cola'
-  );
-});
+const shouldInitQueues = process.env.DISABLE_QUEUES !== 'true';
+
+if (shouldInitQueues) {
+  initializeQueueWorkers().catch((error) => {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
+          : '';
+
+    if (
+      typeof message === 'string' &&
+      (message.includes('Redis is already connecting') ||
+        message.includes('Redis is already connected'))
+    ) {
+      logger.warn(
+        { err: error },
+        'BullMQ deshabilitado: Redis ya estaba conectado'
+      );
+      return;
+    }
+
+    logger.error(
+      { err: error },
+      'No se pudieron inicializar los workers de la cola'
+    );
+  });
+} else {
+  logger.warn('BullMQ deshabilitado por DISABLE_QUEUES=true');
+}
 
 if (env.nodeEnv !== 'test') {
   startApprovalSlaMonitor();

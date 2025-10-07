@@ -1,7 +1,7 @@
 import { ProjectWorkflowState } from '@prisma/client';
 import type { ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
+import { prisma } from '../../core/config/db';
 
 const allowed: Record<ProjectWorkflowStateType, ProjectWorkflowStateType[]> = {
   planificacion: [ProjectWorkflowState.recoleccion_datos],

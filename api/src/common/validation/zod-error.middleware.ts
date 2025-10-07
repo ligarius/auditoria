@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
 
-import { formatZodIssues } from './helpers.js';
+import { formatZodIssues } from './helpers';
 
 export const zodErrorHandler = (
   err: unknown,

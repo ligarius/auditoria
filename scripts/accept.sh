@@ -63,11 +63,11 @@ run_in_dir "$ROOT_DIR/web" npx tsc --noEmit
 
 echo
 echo "[accept] Syncing schema (no migrations)"
-docker compose exec api npx prisma db push
+run_api npm run db:push
 
 echo
 echo "[accept] Seeding (if available)"
-docker compose exec api npm run seed || true
+run_api npm run db:seed || true
 
 info "Waiting for API health at $HEALTH_URL"
 "$WAIT_SCRIPT" "$HEALTH_URL" "$WAIT_TIMEOUT" "$WAIT_INTERVAL"
@@ -79,8 +79,8 @@ info "Checking PDF generation at $PDF_CHECK_URL"
 tmp_pdf="$(mktemp)"
 TMP_FILES+=("$tmp_pdf")
 curl --fail --show-error --silent --output "$tmp_pdf" "$PDF_CHECK_URL"
-pdf_header="$(head -c 4 "$tmp_pdf")"
-if [[ "$pdf_header" != "%PDF" ]]; then
+pdf_header="$(head -c 5 "$tmp_pdf")"
+if [[ "$pdf_header" != "%PDF-" ]]; then
   echo "PDF check did not return a valid PDF header" >&2
   exit 1
 fi

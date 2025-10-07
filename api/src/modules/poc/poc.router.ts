@@ -1,11 +1,8 @@
 import { Router } from 'express';
 
-import {
-  authenticate,
-  requireProjectRole
-} from '../../core/middleware/auth.js';
+import { authenticate, requireProjectRole } from '../../core/middleware/auth';
 
-import { pocService } from './poc.service.js';
+import { pocService } from './poc.service';
 
 const pocRouter = Router();
 

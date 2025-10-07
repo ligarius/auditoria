@@ -4,10 +4,10 @@ import type {
 } from '@prisma/client';
 import { ProjectWorkflowState } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
 
 const WORKFLOW_STATES: readonly ProjectWorkflowStateType[] = [
   ProjectWorkflowState.planificacion,

@@ -1,11 +1,11 @@
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { auditService } from '../audit/audit.service';
 
 import {
   computeReceptionTimes,
   ReceptionTimesInput
-} from './reception.metrics.js';
+} from './reception.metrics';
 
 type MetricsAccumulator = {
   dwellSum: number;

@@ -3,7 +3,7 @@ import bwipjs from 'bwip-js';
 import { parse } from 'csv-parse/sync';
 import PDFDocument from 'pdfkit';
 
-import { prisma } from '../../core/config/db.js';
+import { prisma } from '../../core/config/db';
 
 interface CsvSkuRow {
   code?: string;

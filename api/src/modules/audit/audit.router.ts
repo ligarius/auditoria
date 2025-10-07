@@ -1,11 +1,8 @@
 import { Router } from 'express';
 
-import {
-  authenticate,
-  requireProjectRole
-} from '../../core/middleware/auth.js';
+import { authenticate, requireProjectRole } from '../../core/middleware/auth';
 
-import { auditService } from './audit.service.js';
+import { auditService } from './audit.service';
 
 const auditRouter = Router();
 

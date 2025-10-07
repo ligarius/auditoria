@@ -8,10 +8,10 @@ import {
   authenticate,
   requireProjectRole,
   type AuthenticatedRequest
-} from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+} from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
 
-import { layoutService } from './layout.service.js';
+import { layoutService } from './layout.service';
 
 const upload = multer({
   dest: path.join(process.cwd(), 'tmp'),

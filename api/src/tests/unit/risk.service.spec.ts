@@ -1,4 +1,4 @@
-import { computeRiskValues } from '../../modules/risks/risk.utils.js';
+import { computeRiskValues } from '../../modules/risks/risk.utils';
 
 describe('computeRisk', () => {
   it('marca rojo cuando severidad >= 15', () => {

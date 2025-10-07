@@ -48,6 +48,7 @@ FROM deps AS build
 
 COPY . .
 RUN npm run build
+RUN test -f dist/main.js || (echo "❌ dist/main.js no fue generado" >&2; exit 1)
 RUN mkdir -p dist/templates && cp -R src/templates/*.hbs dist/templates/
 RUN npm prune --omit=dev
 
@@ -101,6 +102,7 @@ RUN ln -sf /usr/bin/chromium /usr/bin/chromium-browser
 
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
+RUN test -f dist/main.js || (echo "❌ dist/main.js no está en la imagen final" >&2; exit 1)
 COPY --from=deps /usr/src/app/prisma ./prisma
 # Crear alias para templates en ruta estable usada por el runtime
 RUN mkdir -p /usr/src/dist && \

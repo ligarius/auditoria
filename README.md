@@ -10,23 +10,24 @@ Suite full-stack para gestionar auditorías operacionales multiempresa. El proye
 4. [Stack tecnológico](#stack-tecnológico)
 5. [Estructura del repositorio](#estructura-del-repositorio)
 6. [Requisitos previos](#requisitos-previos)
-7. [Guía rápida: primera ejecución](#guía-rápida-primera-ejecución)
-8. [Configuración local con Docker](#configuración-local-con-docker)
-9. [Configuración sin Docker](#configuración-sin-docker)
-10. [Variables de entorno](#variables-de-entorno)
-11. [Base de datos, migraciones y semillas](#base-de-datos-migraciones-y-semillas)
-12. [Scripts útiles](#scripts-útiles)
-13. [Testing y calidad](#testing-y-calidad)
-14. [Flujo de desarrollo sugerido](#flujo-de-desarrollo-sugerido)
-15. [Despliegue](#despliegue)
-16. [Resolución de problemas](#resolución-de-problemas)
-17. [FAQ](#faq)
-18. [Contribuir](#contribuir)
-19. [Licencia](#licencia)
-20. [Getting Started](#getting-started)
-21. [Verification](#verification)
-22. [Development notes](#development-notes)
-23. [Troubleshooting](#troubleshooting)
+7. [🏁 Setup rápido](#-setup-rápido)
+8. [Guía rápida: primera ejecución](#guía-rápida-primera-ejecución)
+9. [Configuración local con Docker](#configuración-local-con-docker)
+10. [Configuración sin Docker](#configuración-sin-docker)
+11. [Variables de entorno](#variables-de-entorno)
+12. [Base de datos, migraciones y semillas](#base-de-datos-migraciones-y-semillas)
+13. [Scripts útiles](#scripts-útiles)
+14. [Testing y calidad](#testing-y-calidad)
+15. [Flujo de desarrollo sugerido](#flujo-de-desarrollo-sugerido)
+16. [Despliegue](#despliegue)
+17. [Resolución de problemas](#resolución-de-problemas)
+18. [FAQ](#faq)
+19. [Contribuir](#contribuir)
+20. [Licencia](#licencia)
+21. [Getting Started](#getting-started)
+22. [Verification](#verification)
+23. [Development notes](#development-notes)
+24. [🛠 Troubleshooting](#-troubleshooting)
 
 ## Visión general
 
@@ -66,7 +67,7 @@ root
 
 | Capa | Tecnologías clave | Detalles |
 | --- | --- | --- |
-| Backend | Node.js 18, Express, Prisma, Zod, Pino | API REST, validaciones y observabilidad |
+| Backend | Node.js 20, Express, Prisma, Zod, Pino | API REST, validaciones y observabilidad |
 | Frontend | React 18, Vite, TypeScript, Tailwind, shadcn/ui | SPA modular con tabs por módulo de auditoría |
 | Base de datos | PostgreSQL 15 | Sincronización de esquema con Prisma (db push/baseline) |
 | Jobs & archivos | BullMQ, Redis, ExcelJS, PDFKit, Puppeteer | Procesamiento de reportes y exportables |
@@ -101,11 +102,43 @@ Consulta el directorio `docs/` para notas puntuales (por ejemplo, análisis de f
 
 ## Requisitos previos
 
-- Node.js 18 o superior.
+- Node.js 20 o superior.
 - npm 9+ (puedes usar pnpm/yarn si ajustas los comandos).
 - Docker + Docker Compose (recomendado para un entorno consistente).
 - PostgreSQL 15 si decides ejecutar los servicios fuera de Docker.
 - Redis opcional cuando habilites colas BullMQ fuera de Docker.
+
+## 🏁 Setup rápido
+
+**Requisitos**
+
+- Docker y Docker Compose instalados.
+- Node.js 20.x en tu máquina anfitrión.
+
+**Actualizar rama local desde remoto**
+
+```bash
+git fetch --all --prune
+git switch main
+git reset --hard origin/main
+git clean -fd
+```
+
+**Levantar limpio**
+
+```bash
+docker compose down -v
+docker builder prune -f
+npm ci --prefix api
+npm ci --prefix web
+./scripts/compose.sh up -d --build
+./scripts/accept.sh
+```
+
+**Accesos**
+
+- API: http://localhost:4000/health
+- Web: http://localhost:8080/
 
 ## Guía rápida: primera ejecución
 
@@ -380,9 +413,12 @@ file /tmp/test.pdf        # Debe decir: PDF document, version 1.x
   docker compose logs api --tail=200
   ```
 
-## Troubleshooting
+## 🛠 Troubleshooting
 
-- **PDF devuelve JSON** → El endpoint está serializando cadenas en lugar de binarios. Asegúrate de enviar el `Buffer` con `res.end(pdfBuffer)` y `Content-Type: application/pdf` sin charset.
-- **ESLint rompe por ESM** → Usa `eslint.config.mjs` tanto en `api/` como en `web/`. Evita forzar ESM en la API; la base es CommonJS.
-- **TS Option 'module' must be 'NodeNext'** → La API está configurada para CommonJS. Verifica que `tsconfig.json` tenga `"module": "CommonJS"` y `"moduleResolution": "node"`.
-- **Redis ya conectado** → Si BullMQ intenta reutilizar conexiones, mantén `DISABLE_QUEUES=true` o evita inicializaciones duplicadas. Los errores "Redis is already connecting/connected" ahora se registran y no detienen la API.
+- **Error**: `Cannot find module '/usr/src/app/dist/main.js'`
+  - **Causa**: la etapa de build no generó/copió `dist` al runner.
+  - **Solución**: reconstruye la imagen con `docker compose build api --no-cache`, verifica que exista `COPY --from=build /usr/src/app/dist ./dist` y que los checks `RUN test -f dist/main.js` pasen sin errores.
+- **PDF no válido** (no empieza con `%PDF-` o `file` no lo reconoce)
+  - Revisa los logs del servicio `api` (`docker compose logs api --tail=200`) y confirma que Chromium esté instalado en la imagen runner.
+- **DB schema**
+  - Usamos `prisma db push` (sin migraciones versionadas). Si el schema cambió, reconstruye los contenedores y ejecuta `./scripts/accept.sh` para sincronizar y reseedear.

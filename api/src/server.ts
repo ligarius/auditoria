@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import 'express-async-errors';
 
+import type { Server } from 'http';
+
 import cookieParser from 'cookie-parser';
-import cors from 'cors';
 import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
@@ -25,6 +26,7 @@ import { startKpiSnapshotCron } from './modules/kpis/kpi-snapshot.job';
 import { pdfCheck } from './routes/debug/pdf-check';
 
 const app = express();
+let serverInstance: Server | null = null;
 
 app.set('etag', false);
 
@@ -35,10 +37,6 @@ const isDev = resolvedAppEnv !== 'production';
 if (isDev) {
   app.use(noCacheDevMiddleware);
 }
-
-const allowedOrigins = env.clientUrl
-  ? Array.from(new Set([env.clientUrl, ...env.corsAllowlist]))
-  : env.corsAllowlist;
 
 const sanitizeHeaders = (
   headers: Record<string, string | string[] | undefined>
@@ -107,24 +105,6 @@ app.use(
 app.use(json());
 app.use(urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.includes('*') ||
-        allowedOrigins.includes(origin)
-      ) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error('Origen no permitido por CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  })
-);
 app.use(globalRateLimiter);
 
 app.use((_, res, next) => {
@@ -159,45 +139,53 @@ app.use((req, res) => {
 app.use(zodErrorHandler);
 app.use(errorHandler);
 
-const server = app.listen(env.port, () => {
-  logger.info(`API running on port ${env.port}`);
-});
+const startServer = (): Server => {
+  if (serverInstance) {
+    return serverInstance;
+  }
 
-const shouldInitQueues = process.env.DISABLE_QUEUES !== 'true';
-
-if (shouldInitQueues) {
-  initializeQueueWorkers().catch((error) => {
-    const message =
-      error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : '';
-
-    if (
-      typeof message === 'string' &&
-      (message.includes('Redis is already connecting') ||
-        message.includes('Redis is already connected'))
-    ) {
-      logger.warn(
-        { err: error },
-        'BullMQ deshabilitado: Redis ya estaba conectado'
-      );
-      return;
-    }
-
-    logger.error(
-      { err: error },
-      'No se pudieron inicializar los workers de la cola'
-    );
+  serverInstance = app.listen(env.port, () => {
+    logger.info(`API running on port ${env.port}`);
   });
-} else {
-  logger.warn('BullMQ deshabilitado por DISABLE_QUEUES=true');
-}
 
-if (env.nodeEnv !== 'test') {
-  startApprovalSlaMonitor();
-  startKpiSnapshotCron();
-}
+  const shouldInitQueues = process.env.DISABLE_QUEUES !== 'true';
 
-export { app, server };
+  if (shouldInitQueues) {
+    initializeQueueWorkers().catch((error) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : '';
+
+      if (
+        typeof message === 'string' &&
+        (message.includes('Redis is already connecting') ||
+          message.includes('Redis is already connected'))
+      ) {
+        logger.warn(
+          { err: error },
+          'BullMQ deshabilitado: Redis ya estaba conectado'
+        );
+        return;
+      }
+
+      logger.error(
+        { err: error },
+        'No se pudieron inicializar los workers de la cola'
+      );
+    });
+  } else {
+    logger.warn('BullMQ deshabilitado por DISABLE_QUEUES=true');
+  }
+
+  if (env.nodeEnv !== 'test') {
+    startApprovalSlaMonitor();
+    startKpiSnapshotCron();
+  }
+
+  return serverInstance;
+};
+
+export { app, startServer };

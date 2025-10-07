@@ -26,8 +26,9 @@ Suite full-stack para gestionar auditorías operacionales multiempresa. El proye
 20. [Licencia](#licencia)
 21. [Getting Started](#getting-started)
 22. [Verification](#verification)
-23. [Development notes](#development-notes)
-24. [🛠 Troubleshooting](#-troubleshooting)
+23. [Verificación CORS](#verificación-cors)
+24. [Development notes](#development-notes)
+25. [🛠 Troubleshooting](#-troubleshooting)
 
 ## Visión general
 
@@ -394,6 +395,31 @@ curl -v http://localhost:4000/api/debug/pdf-check -o /tmp/test.pdf
 head -c 5 /tmp/test.pdf   # Debe imprimir: %PDF-
 file /tmp/test.pdf        # Debe decir: PDF document, version 1.x
 ```
+
+## Verificación CORS
+
+Comprueba que las cabeceras del preflight y la llamada real respondan como espera el navegador:
+
+```bash
+# Preflight
+curl -i -X OPTIONS http://localhost:4000/api/auth/login \
+  -H 'Origin: http://localhost:8080' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: authorization,cache-control,content-type,pragma'
+
+# Llamada real (ajusta credenciales)
+curl -i http://localhost:4000/api/auth/login \
+  -H 'Origin: http://localhost:8080' \
+  -H 'Content-Type: application/json' \
+  --data '{"email":"admin@demo.com","password":"demo"}'
+```
+
+Checklist post-fix para limpiar el estado del navegador:
+
+- Borrar Local/Session Storage del origen http://localhost:8080
+- Hard reload (Ctrl+F5)
+- Desactivar cualquier Service Worker en dev
+- Si no se usan cookies, quitar `withCredentials` en el cliente; si se usan, mantenerlo y no usar `*` como origin.
 
 ## Development notes
 

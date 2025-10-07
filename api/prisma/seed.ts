@@ -1,6 +1,3 @@
-import { execSync } from 'node:child_process';
-import { resolve } from 'node:path';
-
 import {
   PrismaClient,
   ProjectWorkflowState,
@@ -9,31 +6,10 @@ import {
   SopStatus,
   ChecklistStatus,
   ActionCategory,
-  ActionStatus
+  ActionStatus,
 } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 
-const syncSchema = (): void => {
-  if (process.env.SKIP_MIGRATE_ON_SEED === 'true') {
-    console.log('[seed] SKIP_MIGRATE_ON_SEED=true, omitiendo prisma db push');
-    return;
-  }
-
-  // seed.cjs se emite en dist/prisma → subir dos niveles hasta la raíz del paquete API
-  const apiRoot = resolve(__dirname, '..', '..');
-  console.log('[seed] Ejecutando prisma db push antes de sembrar datos…');
-  try {
-    execSync('npx prisma db push', {
-      cwd: apiRoot,
-      stdio: 'inherit',
-    });
-  } catch (error) {
-    console.error('\n[seed] No se pudo sincronizar el esquema automáticamente. Ejecuta `npx prisma db push` y reintenta.');
-    throw error;
-  }
-};
-
-syncSchema();
+const DEFAULT_PASSWORD_HASH = '$2a$10$CnHasewbf2Hu1FwEJa6dhOHh4ndZEteDX3Aj6bixxaG5faUJOquk6';
 
 const prisma = new PrismaClient();
 
@@ -59,11 +35,15 @@ const ensureWorkflowEnum = (): void => {
 
 type UserRole = Prisma.UserCreateInput['role'];
 
-async function upsertUser(email: string, name: string, role: UserRole, password: string) {
-  const passwordHash = await bcrypt.hash(password, 10);
+async function upsertUser(
+  email: string,
+  name: string,
+  role: UserRole,
+  passwordHash: string = DEFAULT_PASSWORD_HASH,
+) {
   return prisma.user.upsert({
     where: { email },
-    update: {},
+    update: { name, role, passwordHash },
     create: { email, name, role, passwordHash },
   });
 }
@@ -81,9 +61,9 @@ async function main(): Promise<void> {
   const nutrial = await findOrCreateCompany('Nutrial', '76.543.210-9');
   const democorp = await findOrCreateCompany('DemoCorp', '76.000.000-0');
 
-  const admin = await upsertUser('admin@demo.com', 'Admin', 'admin', 'Cambiar123!');
-  const consultor = await upsertUser('consultor@demo.com', 'Consultor', 'consultor', 'Cambiar123!');
-  const cliente = await upsertUser('cliente@demo.com', 'Cliente', 'cliente', 'Cambiar123!');
+  const admin = await upsertUser('admin@demo.com', 'Admin', 'admin');
+  const consultor = await upsertUser('consultor@demo.com', 'Consultor', 'consultor');
+  const cliente = await upsertUser('cliente@demo.com', 'Cliente', 'cliente');
 
   const nutrialProject = await prisma.project.upsert({
     where: {

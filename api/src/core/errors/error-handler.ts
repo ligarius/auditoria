@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { logger } from '../config/logger.js';
+import { logger } from '../config/logger';
 
-import { HttpError } from './http-error.js';
+import { HttpError } from './http-error';
 
 const buildProblemDetails = (
   status: number,

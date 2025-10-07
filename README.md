@@ -23,6 +23,10 @@ Suite full-stack para gestionar auditorías operacionales multiempresa. El proye
 17. [FAQ](#faq)
 18. [Contribuir](#contribuir)
 19. [Licencia](#licencia)
+20. [Getting Started](#getting-started)
+21. [Verification](#verification)
+22. [Development notes](#development-notes)
+23. [Troubleshooting](#troubleshooting)
 
 ## Visión general
 
@@ -162,8 +166,8 @@ Cuando necesites limpiar el estado (por ejemplo, repetir seeds):
 ./scripts/compose.sh down -v
 ./scripts/compose.sh up -d db
 ./scripts/compose.sh up -d api
-./scripts/compose.sh exec api npx prisma db push
-./scripts/compose.sh exec api npm run seed
+./scripts/compose.sh exec api npm run db:push
+./scripts/compose.sh exec api npm run db:seed
 ./scripts/compose.sh up -d web
 ```
 
@@ -237,8 +241,8 @@ npm install --prefix web
 ./scripts/compose.sh up -d --build
 
 # Si fuera necesario:
-docker compose exec api npx prisma db push
-docker compose exec api npm run seed
+docker compose exec api npm run db:push
+docker compose exec api npm run db:seed
 ```
 
 Reset limpio (dev)
@@ -247,8 +251,8 @@ Esto elimina datos y resuelve estados previos como P3009:
 
 ./scripts/compose.sh down -v
 ./scripts/compose.sh up -d --build
-docker compose exec api npx prisma db push
-docker compose exec api npm run seed
+docker compose exec api npm run db:push
+docker compose exec api npm run db:seed
 
 
 Prohibido usar prisma migrate deploy. Un guardián CI verifica que no exista esa cadena en el repo.
@@ -257,13 +261,13 @@ Prohibido usar prisma migrate deploy. Un guardián CI verifica que no exista esa
 
 | Comando | Ubicación | Descripción |
 | --- | --- | --- |
-| `npm run dev` | `api/` | Servidor Express con recarga en caliente. |
-| `npm run build` | `api/` | Genera bundle CJS en `dist/main.js`. |
-| `npm run start` | `api/` | Arranca el bundle compilado. |
+| `npm run build` | `api/` | Compila TypeScript y copia plantillas a `dist/`. |
+| `npm run start` | `api/` | Ejecuta `dist/main.js` en modo producción. |
 | `npm run lint` | `api/`, `web/` | Ejecuta ESLint sobre el código fuente. |
-| `npm run test` | `api/` | Corre Jest con cobertura. |
-| `npm run test:e2e` | `api/` | Corre pruebas E2E con Jest + Supertest. |
-| `npm run seed` | `api/` | Ejecuta `prisma/seed.ts`. |
+| `npm run typecheck` | `api/` | Valida tipos con `tsc --noEmit`. |
+| `npm run db:push` | `api/` | Sincroniza el esquema con Prisma sin migraciones. |
+| `npm run db:seed` | `api/` | Compila y ejecuta `prisma/seed.ts`. |
+| `npm run generate` | `api/` | Genera el cliente de Prisma. |
 | `npm run dev` | `web/` | Arranca Vite en modo desarrollo. |
 | `npm run build` | `web/` | Construye assets listos para producción. |
 | `npm run preview` | `web/` | Sirve el build generado por Vite. |
@@ -291,7 +295,7 @@ Integra estos comandos en pipelines CI/CD para garantizar calidad antes de fusio
 ## Despliegue
 
 1. Construye imágenes usando los Dockerfiles de `api/` y `web/` o reutiliza `docker-compose.yml` como base.
-2. Sincroniza el esquema con `npm run schema:push --prefix api` (o aplica `baseline.sql`) antes de arrancar la API en producción.
+2. Sincroniza el esquema con `npm run db:push --prefix api` (o aplica `baseline.sql`) antes de arrancar la API en producción.
 3. Define variables de entorno seguras (`DATABASE_URL`, `JWT_SECRET`, `VITE_API_URL`, etc.).
 4. Expón los servicios detrás de un reverse proxy (Nginx, Traefik) con HTTPS.
 5. Automatiza pipelines que ejecuten lint, tests y builds antes de publicar.
@@ -306,7 +310,7 @@ Integra estos comandos en pipelines CI/CD para garantizar calidad antes de fusio
 | Login redirige al inicio de sesión constantemente | Token expirado o refresh inválido | Cierra sesión para limpiar tokens y vuelve a iniciar. |
 | `compose.sh` reclama archivo `.env` | No se generó `.env`/`.env.local` | Duplica `.env.development` antes de levantar servicios. |
 | Builds fallan con `ECONNRESET` | Proxy o conexión inestable | Configura variables de proxy o reintenta cuando la red sea estable. |
-| Endpoint `/api/projects/:id/surveys` responde 404 | Esquema desactualizado | Ejecuta `prisma db push` y `npm run seed`. |
+| Endpoint `/api/projects/:id/surveys` responde 404 | Esquema desactualizado | Ejecuta `prisma db push` y `npm run db:seed`. |
 | Datos inconsistentes tras pruebas | Seeds previos dejaron registros | Ejecuta el [reinicio limpio](#reinicio-limpio). |
 
 ## FAQ
@@ -331,3 +335,54 @@ Se aceptan issues para proponer mejoras, reportar bugs o sugerir documentación 
 ## Licencia
 
 El proyecto no cuenta con una licencia pública definida. Contacta a la mantención si deseas usar el código en un contexto comercial.
+
+## Getting Started
+
+### Docker quickstart
+
+Ejecuta estos comandos en orden para levantar la pila completa con la configuración probada más reciente:
+
+```bash
+cp .env.development .env
+./scripts/compose.sh up -d --build
+./scripts/accept.sh
+```
+
+## Verification
+
+Valida el estado de la API y del generador de PDF con las siguientes llamadas:
+
+```bash
+# Salud general (debe responder {"ok": true})
+curl -v http://localhost:4000/health
+
+# Generación de PDF y validación de cabecera
+curl -v http://localhost:4000/api/debug/pdf-check -o /tmp/test.pdf
+head -c 5 /tmp/test.pdf   # Debe imprimir: %PDF-
+file /tmp/test.pdf        # Debe decir: PDF document, version 1.x
+```
+
+## Development notes
+
+- **Prisma sin migraciones**: la sincronización del esquema se realiza con `prisma db push`. Los seeds viven en `prisma/seed.ts` y se ejecutan automáticamente en los flujos de arranque (`docker-entrypoint.sh`) y en `./scripts/accept.sh`.
+- **Redis/BullMQ opcional**: las colas se encuentran deshabilitadas por defecto en desarrollo. Ajusta `DISABLE_QUEUES=false` en tu `.env` y reinicia la API si necesitas procesarlas.
+- **Puppeteer / Chromium**: la imagen usa el Chromium del sistema. Puedes fijar la ruta con `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium` (valor por defecto en los ejemplos).
+- **Comandos CI locales**:
+
+  ```bash
+  # build & up
+  ./scripts/compose.sh up -d --build
+
+  # validación integral
+  ./scripts/accept.sh
+
+  # logs API
+  docker compose logs api --tail=200
+  ```
+
+## Troubleshooting
+
+- **PDF devuelve JSON** → El endpoint está serializando cadenas en lugar de binarios. Asegúrate de enviar el `Buffer` con `res.end(pdfBuffer)` y `Content-Type: application/pdf` sin charset.
+- **ESLint rompe por ESM** → Usa `eslint.config.mjs` tanto en `api/` como en `web/`. Evita forzar ESM en la API; la base es CommonJS.
+- **TS Option 'module' must be 'NodeNext'** → La API está configurada para CommonJS. Verifica que `tsconfig.json` tenga `"module": "CommonJS"` y `"moduleResolution": "node"`.
+- **Redis ya conectado** → Si BullMQ intenta reutilizar conexiones, mantén `DISABLE_QUEUES=true` o evita inicializaciones duplicadas. Los errores "Redis is already connecting/connected" ahora se registran y no detienen la API.

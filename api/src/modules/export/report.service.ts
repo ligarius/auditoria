@@ -5,9 +5,9 @@ import dayjs from 'dayjs';
 import * as puppeteer from 'puppeteer';
 import { type ProjectWorkflowState as ProjectWorkflowStateType } from '@prisma/client';
 
-import { createPuppeteerLaunchOptions } from '../../core/browser/puppeteer.js';
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
+import { createPuppeteerLaunchOptions } from '../../core/browser/puppeteer';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
 
 const chartRenderer = new ChartJSNodeCanvas({
   width: 960,

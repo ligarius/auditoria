@@ -1,11 +1,8 @@
 import { Router } from 'express';
 
-import {
-  authenticate,
-  requireProjectRole
-} from '../../core/middleware/auth.js';
+import { authenticate, requireProjectRole } from '../../core/middleware/auth';
 
-import { dataRequestService } from './data-request.service.js';
+import { dataRequestService } from './data-request.service';
 
 const dataRequestRouter = Router();
 

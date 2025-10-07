@@ -1,12 +1,12 @@
 import type { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { logger } from '../../core/config/logger.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import type { AuthenticatedRequest } from '../../core/middleware/auth.js';
-import { scoringService } from '../../services/scoring.js';
-import { tokenService } from '../../services/token.js';
-import { queueService } from '../../services/queue.js';
+import { prisma } from '../../core/config/db';
+import { logger } from '../../core/config/logger';
+import { HttpError } from '../../core/errors/http-error';
+import type { AuthenticatedRequest } from '../../core/middleware/auth';
+import { scoringService } from '../../services/scoring';
+import { tokenService } from '../../services/token';
+import { queueService } from '../../services/queue';
 
 interface UserContext {
   id: string;

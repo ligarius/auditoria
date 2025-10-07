@@ -5,13 +5,10 @@ import {
   authenticate,
   requireProjectMembership,
   requireRole
-} from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+} from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
 
-import {
-  checklistService,
-  type ChecklistItemInput
-} from './checklist.service.js';
+import { checklistService, type ChecklistItemInput } from './checklist.service';
 
 const checklistRouter = Router();
 

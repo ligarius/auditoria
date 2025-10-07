@@ -5,10 +5,10 @@ import {
   authenticate,
   requireProjectMembership,
   requireRole
-} from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+} from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
 
-import { sopService } from './sop.service.js';
+import { sopService } from './sop.service';
 
 const sopRouter = Router();
 

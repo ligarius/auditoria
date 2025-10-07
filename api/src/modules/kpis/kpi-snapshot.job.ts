@@ -1,5 +1,5 @@
-import { prisma } from '../../core/config/db.js';
-import { logger } from '../../core/config/logger.js';
+import { prisma } from '../../core/config/db';
+import { logger } from '../../core/config/logger';
 
 const startOfUtcDay = (date: Date) =>
   new Date(

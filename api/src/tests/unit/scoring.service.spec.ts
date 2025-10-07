@@ -1,4 +1,4 @@
-import { scoringService } from '../../services/scoring.js';
+import { scoringService } from '../../services/scoring';
 
 describe('scoringService.calculate', () => {
   it('returns null total when there is no scoring config', () => {

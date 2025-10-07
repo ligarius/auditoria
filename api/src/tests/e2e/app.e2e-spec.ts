@@ -1,7 +1,7 @@
 import type { Express } from 'express';
 import request from 'supertest';
 
-import { signAccessToken } from '../../core/utils/jwt.js';
+import { signAccessToken } from '../../core/utils/jwt';
 interface MockMembership {
   userId: string;
   projectId: string;
@@ -369,7 +369,7 @@ afterEach(() => {
 });
 
 beforeAll(async () => {
-  ({ app } = await import('../../server.js'));
+  ({ app } = await import('../../server'));
 });
 
 describe('GET /api/projects/:id/features', () => {

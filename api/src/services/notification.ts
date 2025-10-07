@@ -1,5 +1,5 @@
-import { env } from '../core/config/env.js';
-import { logger } from '../core/config/logger.js';
+import { env } from '../core/config/env';
+import { logger } from '../core/config/logger';
 
 type EmailPayload = {
   to: string[];

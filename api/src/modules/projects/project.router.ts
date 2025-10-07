@@ -5,14 +5,14 @@ import {
   authenticate,
   requireRole,
   type AuthenticatedRequest
-} from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import { generateProjectReportPdf } from '../export/report.service.js';
-import { getHttpErrorPayload } from '../../core/errors/http-error.js';
-import { logger } from '../../core/config/logger.js';
+} from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import { generateProjectReportPdf } from '../export/report.service';
+import { getHttpErrorPayload } from '../../core/errors/http-error';
+import { logger } from '../../core/config/logger';
 
-import { projectService } from './project.service.js';
-import { projectSurveyService } from './project-survey.service.js';
+import { projectService } from './project.service';
+import { projectSurveyService } from './project-survey.service';
 
 const projectRouter = Router();
 

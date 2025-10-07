@@ -1,9 +1,9 @@
 import { Router } from 'express';
 
-import { getHttpErrorPayload } from '../../core/errors/http-error.js';
-import { logger } from '../../core/config/logger.js';
+import { getHttpErrorPayload } from '../../core/errors/http-error';
+import { logger } from '../../core/config/logger';
 
-import { generateProjectReportPdf } from './report.service.js';
+import { generateProjectReportPdf } from './report.service';
 
 const router = Router();
 

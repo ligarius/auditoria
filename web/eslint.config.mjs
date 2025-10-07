@@ -7,7 +7,7 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import prettierPlugin from 'eslint-plugin-prettier';
 
 const reactHooksRecommended = reactHooksPlugin.configs.recommended;
-const tsRecommended = tsPlugin.configs['flat/recommended'];
+const tsRecommendedConfig = tsPlugin.configs.recommended ?? {};
 
 export default [
   {
@@ -15,7 +15,6 @@ export default [
   },
   js.configs.recommended,
   reactPlugin.configs.flat.recommended,
-  ...(Array.isArray(tsRecommended) ? tsRecommended : [tsRecommended]),
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
@@ -32,6 +31,7 @@ export default [
       },
     },
     plugins: {
+      '@typescript-eslint': tsPlugin,
       'react-hooks': reactHooksPlugin,
       prettier: prettierPlugin,
     },
@@ -41,7 +41,9 @@ export default [
       },
     },
     rules: {
+      ...(tsRecommendedConfig.rules ?? {}),
       ...reactHooksRecommended.rules,
+      'no-undef': 'off',
       'prettier/prettier': ['error'],
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',

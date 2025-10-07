@@ -1,8 +1,8 @@
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db.js';
-import { auditService } from '../audit/audit.service.js';
+import { prisma } from '../../core/config/db';
+import { auditService } from '../audit/audit.service';
 
 const optionalString = z
   .string()

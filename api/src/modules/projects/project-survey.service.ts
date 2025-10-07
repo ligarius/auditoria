@@ -1,9 +1,9 @@
 import type { Prisma } from '@prisma/client';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
-import type { AuthenticatedRequest } from '../../core/middleware/auth.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
+import type { AuthenticatedRequest } from '../../core/middleware/auth';
 
 const isLikertType = (value: string) => value.toLowerCase().includes('likert');
 

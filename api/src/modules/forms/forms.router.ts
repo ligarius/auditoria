@@ -3,17 +3,17 @@ import type { Request } from 'express';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db.js';
-import { HttpError } from '../../core/errors/http-error.js';
+import { prisma } from '../../core/config/db';
+import { HttpError } from '../../core/errors/http-error';
 import {
   authenticate,
   requireProjectMembership,
   requireRole,
   type AuthenticatedRequest
-} from '../../core/middleware/auth.js';
-import { verifyAccessToken } from '../../core/utils/jwt.js';
+} from '../../core/middleware/auth';
+import { verifyAccessToken } from '../../core/utils/jwt';
 
-import { formsService } from './forms.service.js';
+import { formsService } from './forms.service';
 
 const formsRouter = Router();
 

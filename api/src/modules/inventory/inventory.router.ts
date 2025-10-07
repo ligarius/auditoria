@@ -6,13 +6,13 @@ import {
   authenticate,
   requireProjectRole,
   type AuthenticatedRequest
-} from '../../core/middleware/auth.js';
-import { enforceProjectAccess } from '../../core/security/enforce-project-access.js';
+} from '../../core/middleware/auth';
+import { enforceProjectAccess } from '../../core/security/enforce-project-access';
 
 import {
   inventoryService,
   type LocationRangeDefinition
-} from './inventory.service.js';
+} from './inventory.service';
 
 const upload = multer({ storage: multer.memoryStorage() });
 

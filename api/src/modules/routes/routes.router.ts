@@ -2,15 +2,15 @@ import { RoutePlanStatus } from '@prisma/client';
 import { NextFunction, Response, Router } from 'express';
 import { z } from 'zod';
 
-import { prisma } from '../../core/config/db.js';
+import { prisma } from '../../core/config/db';
 import {
   authenticate,
   type AuthenticatedRequest,
   requireProjectMembership
-} from '../../core/middleware/auth.js';
-import { HttpError } from '../../core/errors/http-error.js';
+} from '../../core/middleware/auth';
+import { HttpError } from '../../core/errors/http-error';
 
-import { routeExportService } from './routes-export.service.js';
+import { routeExportService } from './routes-export.service';
 
 const viewerRoles = ['ConsultorLider', 'Auditor', 'SponsorPM', 'Invitado'];
 const editorRoles = ['ConsultorLider', 'Auditor'];

@@ -4,9 +4,9 @@ import { randomUUID } from 'crypto';
 import { Router } from 'express';
 import multer from 'multer';
 
-import { authenticate } from '../../core/middleware/auth.js';
+import { authenticate } from '../../core/middleware/auth';
 
-import { fileService } from './file.service.js';
+import { fileService } from './file.service';
 
 const upload = multer({
   dest: path.join(process.cwd(), 'tmp'),

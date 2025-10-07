@@ -63,19 +63,11 @@ run_in_dir "$ROOT_DIR/web" npx tsc --noEmit
 
 echo
 echo "[accept] Syncing schema (no migrations)"
-if [[ "$USE_DOCKER" == "1" ]]; then
-  "$COMPOSE_CMD" exec -T api npx prisma db push
-else
-  run_in_dir "$ROOT_DIR/api" npx prisma db push
-fi
+docker compose exec api npx prisma db push
 
 echo
 echo "[accept] Seeding (if available)"
-if [[ "$USE_DOCKER" == "1" ]]; then
-  "$COMPOSE_CMD" exec -T api npm run seed || true
-else
-  run_in_dir "$ROOT_DIR/api" npm run seed || true
-fi
+docker compose exec api npm run seed || true
 
 info "Waiting for API health at $HEALTH_URL"
 "$WAIT_SCRIPT" "$HEALTH_URL" "$WAIT_TIMEOUT" "$WAIT_INTERVAL"

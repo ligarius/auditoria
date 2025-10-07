@@ -125,7 +125,7 @@ Sigue estos pasos para levantar toda la suite desde una máquina limpia utilizan
    ```bash
    ./scripts/compose.sh up -d --build
    ```
-5. **Ejecuta el flujo de aceptación.** Aplicará migraciones, cargará semillas, verificará la salud de la API y compilará el frontend.
+5. **Ejecuta el flujo de aceptación.** Sincroniza el esquema con `prisma db push`, aplica semillas, verifica la salud de la API y compila el frontend.
    ```bash
    ./scripts/accept.sh
    ```
@@ -223,12 +223,12 @@ El frontend quedará en `http://localhost:5173`. Recuerda ajustar `VITE_API_URL`
 
 ## Base de datos y esquema (sin migraciones)
 
-Este proyecto **no aplica Prisma Migrations en runtime**. En su lugar, usamos uno de estos enfoques:
+Este proyecto **no aplica Prisma Migrations en runtime**. En su lugar, se sincroniza el esquema con:
 
-- **Enfoque simple (DEV):** `prisma db push` al inicio (sin historial de migraciones).
-- **Enfoque reproducible (PROD/CI):** `baseline.sql` con DDL inicial idempotente. El `docker-entrypoint.sh` aplica `baseline.sql` una sola vez y marca la aplicación en la tabla `__baseline_applied`.
+- **Desarrollo**: `prisma db push` al inicio (sin historial de migraciones).
+- **Opción reproducible**: `baseline.sql` (DDL inicial idempotente) aplicado por `docker-entrypoint.sh` una sola vez (si se desea en futuro).
 
-### Primer arranque (desarrollo)
+### Primer arranque (dev)
 
 ```bash
 cp .env.development .env
@@ -236,33 +236,29 @@ npm install --prefix api
 npm install --prefix web
 ./scripts/compose.sh up -d --build
 
-# Sincroniza esquema (si no lo hace el entrypoint):
+# Si fuera necesario:
 docker compose exec api npx prisma db push
-
-# Seeds (opcionales)
 docker compose exec api npm run seed
 ```
 
-### Reset rápido (desarrollo)
+Reset limpio (dev)
 
-Esto borra datos y resuelve casos como el error P3009:
+Esto elimina datos y resuelve estados previos como P3009:
 
-```bash
 ./scripts/compose.sh down -v
-rm -rf api/prisma/migrations    # no versionamos migraciones
 ./scripts/compose.sh up -d --build
 docker compose exec api npx prisma db push
 docker compose exec api npm run seed
-```
 
-Nota: Si optas por baseline.sql, genera el archivo una vez con `pg_dump --schema-only` desde una DB inicial creada por db push. Luego cambia el entrypoint a la Opción B (SQL baseline).
+
+Prohibido usar prisma migrate deploy. Un guardián CI verifica que no exista esa cadena en el repo.
 
 ## Scripts útiles
 
 | Comando | Ubicación | Descripción |
 | --- | --- | --- |
 | `npm run dev` | `api/` | Servidor Express con recarga en caliente. |
-| `npm run build` | `api/` | Genera bundle CJS en `dist/main.cjs`. |
+| `npm run build` | `api/` | Genera bundle CJS en `dist/main.js`. |
 | `npm run start` | `api/` | Arranca el bundle compilado. |
 | `npm run lint` | `api/`, `web/` | Ejecuta ESLint sobre el código fuente. |
 | `npm run test` | `api/` | Corre Jest con cobertura. |
@@ -305,7 +301,7 @@ Integra estos comandos en pipelines CI/CD para garantizar calidad antes de fusio
 
 | Síntoma | Causa probable | Acción sugerida |
 | --- | --- | --- |
-| La API no arranca | Postgres inaccesible o sin migraciones | Verifica `DATABASE_URL` y ejecuta `prisma db push`. |
+| La API no arranca | Postgres inaccesible o esquema sin sincronizar | Verifica `DATABASE_URL` y ejecuta `prisma db push`. |
 | Error `JWT_SECRET missing` | Variable ausente | Define `JWT_SECRET` en `.env` o en secretos del entorno. |
 | Login redirige al inicio de sesión constantemente | Token expirado o refresh inválido | Cierra sesión para limpiar tokens y vuelve a iniciar. |
 | `compose.sh` reclama archivo `.env` | No se generó `.env`/`.env.local` | Duplica `.env.development` antes de levantar servicios. |

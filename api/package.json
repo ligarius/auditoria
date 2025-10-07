@@ -5,17 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --watch src/server.ts",
-    "build": "esbuild src/server.ts --platform=node --bundle --format=cjs --outfile=dist/main.cjs --sourcemap --packages=external",
+    "build": "esbuild src/server.ts --platform=node --bundle --format=cjs --outfile=dist/main.js --sourcemap --packages=external",
     "postbuild": "mkdir -p dist/templates && cp -R src/templates/*.hbs dist/templates/",
-    "start": "node dist/main.cjs",
+    "start": "node dist/main.js",
     "prisma": "prisma",
-    "dev:db:migrate": "prisma migrate dev",
-    "db:seed": "esbuild prisma/seed.ts --platform=node --bundle --format=cjs --outfile=dist/seed.cjs && node dist/seed.cjs",
-    "migrate:deploy": "echo \"[blocked] prisma migrate deploy is disabled\" && exit 0",
-    "migrate:dev": "prisma migrate dev",
-    "seed": "node dist/seed.cjs || true",
     "generate": "prisma generate",
     "schema:push": "prisma db push",
+    "migrate:deploy": "echo \"[bloqueado] Comando deshabilitado; usa prisma db push\" && exit 0",
+    "db:seed": "esbuild prisma/seed.ts --platform=node --bundle --format=cjs --outfile=dist/prisma/seed.cjs",
+    "seed": "npm run db:seed && node dist/prisma/seed.cjs",
     "postinstall": "prisma generate",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,json}'",
@@ -101,6 +99,6 @@
     "typescript": "^5.9.2"
   },
   "prisma": {
-    "seed": "esbuild prisma/seed.ts --platform=node --bundle --format=cjs --outfile=dist/seed.cjs && node dist/seed.cjs"
+    "seed": "npm run seed"
   }
 }

@@ -7,7 +7,8 @@
     "lint": "npm run lint --prefix api && npm run lint --prefix web",
     "format": "npm run format --prefix api && npm run format --prefix web",
     "test": "npm test --prefix api",
-    "lint-staged": "lint-staged"
+    "lint-staged": "lint-staged",
+    "verify:no-migrate": "bash ./scripts/verify:no-migrate.sh"
   },
   "devDependencies": {
     "husky": "^9.1.7",

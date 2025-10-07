@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Form } from '@formio/react';
 
+import { apiFetch, apiFetchJson } from '../../lib/api';
+
 /**
  * Componente mínimo para renderizar un formulario Form.io.
  *
@@ -39,13 +41,9 @@ export default function FormRunner({ formJson, initialData, onSubmit }: Props) {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(
-          `/api/forms/links/${encodeURIComponent(token)}`
+        const payload = await apiFetchJson<{ formJson?: FormSchema }>(
+          `/forms/links/${encodeURIComponent(token)}`
         );
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        const payload = (await res.json()) as {
-          formJson?: FormSchema;
-        };
         setSchema(payload.formJson);
         setError(null);
       } catch (error: unknown) {
@@ -92,8 +90,8 @@ export default function FormRunner({ formJson, initialData, onSubmit }: Props) {
             const parts = window.location.pathname.split('/');
             const token = parts[parts.length - 1];
             if (!token) throw new Error('Token no encontrado en la URL.');
-            const res = await fetch(
-              `/api/forms/submit/${encodeURIComponent(token)}`,
+            const res = await apiFetch(
+              `/forms/submit/${encodeURIComponent(token)}`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

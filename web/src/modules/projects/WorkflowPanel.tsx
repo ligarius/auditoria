@@ -6,13 +6,10 @@ import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
 
 import { useEffect, useRef, useState } from 'react';
 import { ES } from '../../i18n/es';
+import { apiFetch, apiFetchJson } from '../../lib/api';
 import { getAccessToken } from '../../lib/session';
 
 type Estado = keyof typeof ES.projectStatus;
-
-const API_BASE = (
-  import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
-).replace(/\/$/, '');
 
 type WorkflowDefinition =
   | string
@@ -47,9 +44,9 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     const token = getAccessToken();
-    const headers: Record<string, string> = token
+    const authHeaders = token
       ? { Authorization: `Bearer ${token}` }
-      : {};
+      : undefined;
 
     let cancelled = false;
 
@@ -67,27 +64,19 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
         if (!cancelled) {
           setDiagramError(null);
         }
-        const processAssetsResponse = await fetch(
-          `${API_BASE}/process-assets/${projectId}`,
-          { headers }
-        );
-        const workflowResponse = await fetch(
-          `${API_BASE}/workflow/${projectId}`,
-          {
-            headers,
-          }
+        const processAssetsResponse = await apiFetch(
+          `/process-assets/${projectId}`,
+          authHeaders ? { headers: authHeaders } : undefined
         );
 
         const assets: ProcessAsset[] = processAssetsResponse.ok
           ? ((await processAssetsResponse.json()) as ProcessAsset[])
           : [];
 
-        if (!workflowResponse.ok) {
-          throw new Error('No workflow data');
-        }
-
-        const workflowJson =
-          (await workflowResponse.json()) as WorkflowResponse;
+        const workflowJson = await apiFetchJson<WorkflowResponse>(
+          `/workflow/${projectId}`,
+          authHeaders ? { headers: authHeaders } : undefined
+        );
         if (cancelled) return;
         setData(workflowJson);
         setDiagramError(null);
@@ -128,8 +117,9 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
                     headers: {
                       Authorization: `Bearer ${token}`,
                     },
+                    cache: 'no-store',
                   }
-                : undefined
+                : { cache: 'no-store' }
             );
             if (!response.ok) {
               throw new Error('No se pudo cargar el BPMN');
@@ -148,7 +138,9 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
         }
 
         sources.push(async () => {
-          const response = await fetch('/demo/recepcion-demo.bpmn');
+          const response = await fetch('/demo/recepcion-demo.bpmn', {
+            cache: 'no-store',
+          });
           if (!response.ok) {
             throw new Error('No se pudo cargar el demo');
           }
@@ -201,7 +193,7 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    const res = await fetch(`${API_BASE}/workflow/${projectId}/transition`, {
+    const res = await apiFetch(`/workflow/${projectId}/transition`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ next }),
@@ -209,12 +201,11 @@ export default function WorkflowPanel({ projectId }: { projectId: string }) {
     const json = (await res.json()) as { error?: string };
     if (json.error) return alert(json.error);
     // recargar
-    const fresh = await (
-      await fetch(`${API_BASE}/workflow/${projectId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      })
-    ).json();
-    setData(fresh as WorkflowResponse);
+    const fresh = await apiFetchJson<WorkflowResponse>(
+      `/workflow/${projectId}`,
+      token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+    );
+    setData(fresh);
   };
 
   if (!data) {

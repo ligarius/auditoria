@@ -4,6 +4,7 @@ import 'express-async-errors';
 import type { Server } from 'http';
 
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import type { Express, RequestHandler } from 'express';
 import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
@@ -12,6 +13,7 @@ import { pinoHttp } from 'pino-http';
 
 import { appRouter } from './app';
 import { env } from './core/config/env';
+import { corsOptions } from './core/config/cors-options';
 import { metricsRegistry } from './core/metrics/registry';
 import { globalRateLimiter } from './core/middleware/rate-limit';
 import { noCacheDevMiddleware } from './core/middleware/no-cache-dev';
@@ -109,6 +111,7 @@ const configureApp = (app: Express): Express => {
   app.use(urlencoded({ extended: true }));
   app.use(cookieParser());
   app.use(globalRateLimiter);
+  app.use(cors(corsOptions));
 
   app.use((_, res, next) => {
     res.setHeader('Cache-Control', 'no-store');

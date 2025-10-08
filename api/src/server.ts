@@ -122,13 +122,7 @@ const configureApp = (app: Express): Express => {
   };
 
   app.get('/api/health', respondHealth);
-  app.get('/health', (req, res, next) => {
-    const locals = app.locals as AppLocals;
-    if (locals?.nestBootstrapped) {
-      return next();
-    }
-    return respondHealth(req, res, next);
-  });
+  app.get('/health', respondHealth);
 
   app.get('/metrics', async (_req, res) => {
     res.setHeader('Content-Type', metricsRegistry.contentType);

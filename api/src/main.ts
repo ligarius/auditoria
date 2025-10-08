@@ -1,18 +1,27 @@
 import 'reflect-metadata';
 
 import { ValidationPipe } from '@nestjs/common';
+import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import express from 'express';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
-import { corsOptions } from './core/config/cors-options';
+import { corsOptions as configuredCorsOptions } from './core/config/cors-options';
 import { configureApp, startBackgroundProcesses } from './server';
 
 async function bootstrap() {
   const expressServer = express();
   configureApp(expressServer);
+
+  const corsOptions: CorsOptions = {
+    ...configuredCorsOptions,
+    origin: configuredCorsOptions.origin,
+    methods: configuredCorsOptions.methods,
+    allowedHeaders: configuredCorsOptions.allowedHeaders,
+    exposedHeaders: configuredCorsOptions.exposedHeaders
+  };
 
   const app = await NestFactory.create(
     AppModule,

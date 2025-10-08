@@ -7,6 +7,7 @@ import express from 'express';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
+import { corsOptions } from './core/config/cors-options';
 import { configureApp, startBackgroundProcesses } from './server';
 
 async function bootstrap() {
@@ -19,19 +20,7 @@ async function bootstrap() {
     { bufferLogs: true }
   );
 
-  const origin = process.env.FRONTEND_ORIGIN ?? 'http://localhost:8080';
-  app.enableCors({
-    origin,
-    credentials: true,
-    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Cache-Control',
-      'Pragma'
-    ],
-    exposedHeaders: ['ETag']
-  });
+  app.enableCors(corsOptions);
 
   const expressInstance = app.getHttpAdapter().getInstance();
   const locals = expressInstance.locals as {

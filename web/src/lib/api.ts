@@ -1,4 +1,3 @@
-// web/src/lib/api.ts
 import axios, { AxiosHeaders } from 'axios';
 
 import {
@@ -9,9 +8,28 @@ import {
   type SessionTokens,
 } from './session';
 
-const rawApiBaseUrl =
-  import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-export const API_BASE_URL = rawApiBaseUrl.replace(/\/$/, '');
+const resolveApiOrigin = (): string => {
+  const envBase =
+    import.meta.env.VITE_API_BASE ??
+    import.meta.env.VITE_API_URL ??
+    'http://localhost:4000';
+  const trimmed = envBase.replace(/\/$/, '');
+  if (trimmed.toLowerCase().endsWith('/api')) {
+    return trimmed.slice(0, -4);
+  }
+  return trimmed;
+};
+
+const API_ORIGIN = resolveApiOrigin();
+export const API_BASE_URL = `${API_ORIGIN}/api`;
+
+const ensureApiPath = (path: string): string => {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (normalizedPath === '/api' || normalizedPath.startsWith('/api/')) {
+    return normalizedPath;
+  }
+  return `/api${normalizedPath}`;
+};
 
 declare module 'axios' {
   export interface AxiosRequestConfig {
@@ -21,27 +39,31 @@ declare module 'axios' {
 }
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
+  baseURL: API_ORIGIN,
   headers: {
-    'Cache-Control': 'no-store',
-    Pragma: 'no-cache',
+    'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });
 
 api.interceptors.request.use((config) => {
-  const token = getAccessToken();
+  if (config.url && !/^https?:\/\//i.test(config.url)) {
+    config.url = ensureApiPath(config.url);
+  }
   const headers = AxiosHeaders.from(config.headers ?? {});
+  const token = getAccessToken();
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  } else {
+    headers.delete('Authorization');
   }
   headers.delete('If-None-Match');
   headers.delete('if-none-match');
   headers.delete('If-Modified-Since');
   headers.delete('if-modified-since');
-  headers.set('Cache-Control', 'no-store');
-  headers.set('Pragma', 'no-cache');
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   if (!headers.has('Accept')) {
     headers.set('Accept', 'application/json');
   }
@@ -56,23 +78,13 @@ const performRefresh = async (): Promise<SessionTokens> => {
   if (!refreshToken) {
     throw new Error('Token de refresco no encontrado');
   }
-  const response = await axios.post(
-    `${API_BASE_URL}/auth/refresh`,
-    { refreshToken },
-    {
-      withCredentials: true,
-      headers: {
-        'Cache-Control': 'no-store',
-        Pragma: 'no-cache',
-        Accept: 'application/json',
-      },
-    }
-  );
+  const response = await api.post('/api/auth/refresh', { refreshToken });
   const tokens = response.data as Partial<SessionTokens>;
   if (!tokens.accessToken || !tokens.refreshToken) {
     throw new Error('Respuesta de refresh incompleta');
   }
   storeTokens(tokens as SessionTokens);
+  api.defaults.headers.common['Authorization'] = `Bearer ${tokens.accessToken}`;
   return tokens as SessionTokens;
 };
 
@@ -89,10 +101,10 @@ api.interceptors.response.use(
     ) {
       originalRequest.__retriedNoStore = true;
       const resolvedBase =
-        originalRequest.baseURL || api.defaults.baseURL || API_BASE_URL;
+        originalRequest.baseURL || api.defaults.baseURL || API_ORIGIN;
       const requestUrl = new URL(
         originalRequest.url ?? '',
-        resolvedBase.endsWith('/') ? resolvedBase : `${resolvedBase}/`
+        resolvedBase.endsWith('/') ? resolvedBase : `${resolvedBase}/`,
       );
       requestUrl.searchParams.set('t', String(Date.now()));
       const retriedHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
@@ -100,8 +112,9 @@ api.interceptors.response.use(
       retriedHeaders.delete('if-none-match');
       retriedHeaders.delete('If-Modified-Since');
       retriedHeaders.delete('if-modified-since');
-      retriedHeaders.set('Cache-Control', 'no-store');
-      retriedHeaders.set('Pragma', 'no-cache');
+      if (!retriedHeaders.has('Content-Type')) {
+        retriedHeaders.set('Content-Type', 'application/json');
+      }
       if (!retriedHeaders.has('Accept')) {
         retriedHeaders.set('Accept', 'application/json');
       }
@@ -116,7 +129,7 @@ api.interceptors.response.use(
       status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !originalRequest.url?.endsWith('/auth/refresh')
+      !originalRequest.url?.includes('/auth/refresh')
     ) {
       originalRequest._retry = true;
       try {
@@ -129,8 +142,9 @@ api.interceptors.response.use(
         retryHeaders.delete('if-none-match');
         retryHeaders.delete('If-Modified-Since');
         retryHeaders.delete('if-modified-since');
-        retryHeaders.set('Cache-Control', 'no-store');
-        retryHeaders.set('Pragma', 'no-cache');
+        if (!retryHeaders.has('Content-Type')) {
+          retryHeaders.set('Content-Type', 'application/json');
+        }
         if (!retryHeaders.has('Accept')) {
           retryHeaders.set('Accept', 'application/json');
         }
@@ -150,33 +164,51 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
+
+export async function login(email: string, password: string) {
+  const { data } = await api.post('/api/auth/login', { email, password });
+  if (data?.accessToken || data?.token) {
+    const accessToken = data.accessToken ?? data.token;
+    api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+  }
+  return data;
+}
 
 const ensureAbsoluteApiUrl = (path: string): string => {
   if (/^https?:\/\//i.test(path)) {
     return path;
   }
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${API_BASE_URL}${normalizedPath}`;
+  const apiPath =
+    normalizedPath === '/api' || normalizedPath.startsWith('/api/')
+      ? normalizedPath
+      : `/api${normalizedPath}`;
+  return `${API_ORIGIN}${apiPath}`;
 };
 
 type ApiFetchInit = RequestInit;
 
 export async function apiFetch(
   path: string,
-  init: ApiFetchInit = {}
+  init: ApiFetchInit = {},
 ): Promise<Response> {
   const method = (init.method ?? 'GET').toUpperCase();
   const headers = new Headers(init.headers ?? {});
+  const token = getAccessToken();
+  if (token && !headers.has('authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
   headers.delete('if-none-match');
   headers.delete('if-modified-since');
-  headers.set('Cache-Control', 'no-store');
-  headers.set('Pragma', 'no-cache');
   if (!headers.has('accept')) {
     headers.set('Accept', 'application/json');
+  }
+  if (!headers.has('content-type') && method !== 'GET') {
+    headers.set('Content-Type', 'application/json');
   }
 
   const finalInit: RequestInit = {
@@ -184,7 +216,7 @@ export async function apiFetch(
     method,
     headers,
     cache: 'no-store',
-    credentials: init.credentials ?? 'include',
+    credentials: init.credentials ?? 'omit',
   };
 
   const initialUrl = ensureAbsoluteApiUrl(path);
@@ -201,12 +233,11 @@ export async function apiFetch(
 
 export async function apiFetchJson<T = unknown>(
   path: string,
-  init?: ApiFetchInit
+  init: ApiFetchInit = {},
 ): Promise<T> {
   const response = await apiFetch(path, init);
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(`API ${response.status} ${response.statusText} – ${text}`);
+    throw new Error(`Request failed with status ${response.status}`);
   }
   return (await response.json()) as T;
 }

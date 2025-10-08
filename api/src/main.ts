@@ -1,41 +1,36 @@
 import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
+
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  // Desactiva CORS automático de Nest para manejar preflight primero
-  const app = await NestFactory.create(AppModule, { cors: false });
+  const app = await NestFactory.create(AppModule);
 
-  const ALLOWED_ORIGIN = process.env.WEB_ORIGIN ?? 'http://localhost:8080';
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginOpenerPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
-  // Manejo explícito de OPTIONS antes de guards/filters
-  app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
-      res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Cache-Control, Pragma');
-      res.setHeader('Access-Control-Max-Age', '86400');
-      // Si se usan cookies/sesión, descomentar:
-      // res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.status(204).end();
-      return;
-    }
-    next();
-  });
-
-  // CORS para requests reales
   app.enableCors({
-    origin: (origin, cb) => {
-      if (!origin || origin === ALLOWED_ORIGIN) return cb(null, true);
-      return cb(new Error('CORS origin not allowed'), false);
-    },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'Cache-Control', 'Pragma'],
-    exposedHeaders: ['ETag'],
-    // credentials: true, // habilitar si usas cookies de sesión
+    origin: ['http://localhost:8080'],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Cache-Control',
+      'Pragma',
+      'X-Requested-With',
+    ],
+    exposedHeaders: ['Content-Length', 'ETag'],
+    credentials: false,
     maxAge: 86400,
+    optionsSuccessStatus: 204,
   });
 
   await app.listen(4000);
 }
+
 bootstrap();

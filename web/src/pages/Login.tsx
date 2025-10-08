@@ -1,9 +1,8 @@
 // web/src/pages/Login.tsx
-import axios from 'axios';
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import api, { API_BASE_URL } from '../lib/api';
+import api, { login as apiLogin } from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
 import { LAST_PROJECT_KEY, ROLE_KEY, storeTokens } from '../lib/session';
 
@@ -19,17 +18,10 @@ export default function Login() {
     setErr(null);
     setLoading(true);
     try {
-      const r = await axios.post(
-        `${API_BASE_URL}/auth/login`,
-        { email, password },
-        {
-          headers: { 'Content-Type': 'application/json' },
-          withCredentials: true,
-        },
-      );
-      const accessToken = r.data?.accessToken || r.data?.token;
-      const refreshToken = r.data?.refreshToken;
-      const role = r.data?.user?.role;
+      const data = await apiLogin(email, password);
+      const accessToken = data?.accessToken || data?.token;
+      const refreshToken = data?.refreshToken;
+      const role = data?.user?.role;
       if (!accessToken || !refreshToken)
         throw new Error('Respuesta sin tokens');
       storeTokens({ accessToken, refreshToken });

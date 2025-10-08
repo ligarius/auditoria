@@ -104,7 +104,7 @@ api.interceptors.response.use(
         originalRequest.baseURL || api.defaults.baseURL || API_ORIGIN;
       const requestUrl = new URL(
         originalRequest.url ?? '',
-        resolvedBase.endsWith('/') ? resolvedBase : `${resolvedBase}/`,
+        resolvedBase.endsWith('/') ? resolvedBase : `${resolvedBase}/`
       );
       requestUrl.searchParams.set('t', String(Date.now()));
       const retriedHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
@@ -164,7 +164,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;
@@ -194,7 +194,7 @@ type ApiFetchInit = RequestInit;
 
 export async function apiFetch(
   path: string,
-  init: ApiFetchInit = {},
+  init: ApiFetchInit = {}
 ): Promise<Response> {
   const method = (init.method ?? 'GET').toUpperCase();
   const headers = new Headers(init.headers ?? {});
@@ -233,7 +233,7 @@ export async function apiFetch(
 
 export async function apiFetchJson<T = unknown>(
   path: string,
-  init: ApiFetchInit = {},
+  init: ApiFetchInit = {}
 ): Promise<T> {
   const response = await apiFetch(path, init);
   if (!response.ok) {

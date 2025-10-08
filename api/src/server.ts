@@ -2,13 +2,13 @@ import 'dotenv/config';
 import 'express-async-errors';
 
 import type { Server } from 'http';
-import type { Express, RequestHandler } from 'express';
 
 import cookieParser from 'cookie-parser';
+import type { Express, RequestHandler } from 'express';
 import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
-import { pinoHttp } from 'pino-http';
 import { pino } from 'pino';
+import { pinoHttp } from 'pino-http';
 
 import { appRouter } from './app';
 import { env } from './core/config/env';
@@ -193,11 +193,17 @@ const startBackgroundProcesses = (): void => {
         (message.includes('Redis is already connecting') ||
           message.includes('Redis is already connected'))
       ) {
-        logger.warn({ err: error }, 'BullMQ deshabilitado: Redis ya estaba conectado');
+        logger.warn(
+          { err: error },
+          'BullMQ deshabilitado: Redis ya estaba conectado'
+        );
         return;
       }
 
-      logger.error({ err: error }, 'No se pudieron inicializar los workers de la cola');
+      logger.error(
+        { err: error },
+        'No se pudieron inicializar los workers de la cola'
+      );
     });
   } else {
     logger.warn('BullMQ deshabilitado por DISABLE_QUEUES=true');
@@ -224,4 +230,10 @@ const startServer = (): Server => {
   return serverInstance;
 };
 
-export { app, configureApp, ensureHelmet, startBackgroundProcesses, startServer };
+export {
+  app,
+  configureApp,
+  ensureHelmet,
+  startBackgroundProcesses,
+  startServer
+};

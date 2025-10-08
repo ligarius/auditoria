@@ -117,7 +117,14 @@ const configureApp = (app: Express): Express => {
     next();
   });
 
-  const respondHealth: RequestHandler = (_req, res) => {
+  const respondHealth: RequestHandler = (req, res, next) => {
+    const { nestBootstrapped } = req.app.locals as AppLocals;
+
+    if (nestBootstrapped) {
+      next();
+      return;
+    }
+
     res.json({ ok: true });
   };
 
@@ -134,7 +141,14 @@ const configureApp = (app: Express): Express => {
   app.use('/api/export', reportRouter);
   app.use('/api/surveys', surveysRouter);
   app.get('/api/debug/pdf-check', pdfCheck);
-  app.use((req, res) => {
+  app.use((req, res, next) => {
+    const { nestBootstrapped } = req.app.locals as AppLocals;
+
+    if (nestBootstrapped) {
+      next();
+      return;
+    }
+
     const problem = {
       type: 'https://httpstatuses.com/404',
       title: 'Not Found',

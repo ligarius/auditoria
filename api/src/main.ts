@@ -24,8 +24,13 @@ async function bootstrap() {
     origin,
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
-    exposedHeaders: ['ETag'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Cache-Control',
+      'Pragma'
+    ],
+    exposedHeaders: ['ETag']
   });
 
   const expressInstance = app.getHttpAdapter().getInstance();
@@ -44,7 +49,6 @@ async function bootstrap() {
   await app.listen(port);
   locals.nestBootstrapped = true;
   startBackgroundProcesses();
-  // eslint-disable-next-line no-console
   console.log(`API running on port ${port}`);
 }
 bootstrap();

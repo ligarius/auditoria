@@ -110,8 +110,12 @@ const configureApp = (app: Express): Express => {
   app.use(json());
   app.use(urlencoded({ extended: true }));
   app.use(cookieParser());
+
+  const corsMiddleware = cors(corsOptions);
+  app.use(corsMiddleware);
+  app.options('*', corsMiddleware);
+
   app.use(globalRateLimiter);
-  app.use(cors(corsOptions));
 
   app.use((_, res, next) => {
     res.setHeader('Cache-Control', 'no-store');

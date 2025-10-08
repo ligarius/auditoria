@@ -5,14 +5,16 @@
   "type": "commonjs",
   "scripts": {
     "generate": "prisma generate",
-    "db:push": "prisma db push",
     "db:seed": "esbuild prisma/seed.ts --platform=node --bundle --format=cjs --outfile=dist/prisma/seed.cjs && node dist/prisma/seed.cjs",
     "build:bundle": "esbuild src/main.ts --platform=node --bundle --format=cjs --outfile=dist/main.js --external:@nestjs/microservices --external:@nestjs/websockets --external:@nestjs/platform-socket.io --external:@grpc/grpc-js --external:@grpc/proto-loader --external:kafkajs --external:nats",
     "build": "tsc -p tsconfig.json && node ./scripts/copy-templates.js && npm run build:bundle",
     "start": "node dist/main.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "postinstall": "npm run generate"
+    "postinstall": "npm run generate",
+    "db:dev": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -95,5 +97,8 @@
   },
   "prisma": {
     "seed": "npm run db:seed"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

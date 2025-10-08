@@ -4,10 +4,10 @@ set -euo pipefail
 echo "[api] generating Prisma client..."
 npm run generate
 
-echo "[api] applying schema with Prisma db push (no migrations)..."
-npm run db:push
+echo "[api] applying migrations (deploy)..."
+npm run db:deploy
 
-if [ "${SEED:-1}" = "1" ]; then
+if [ "${SEED:-0}" = "1" ]; then
   echo "[api] seeding..."
   npm run db:seed || true
 fi

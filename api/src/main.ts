@@ -1,36 +1,50 @@
+import 'reflect-metadata';
+
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import express from 'express';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
+import { configureApp, startBackgroundProcesses } from './server';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const expressServer = express();
+  configureApp(expressServer);
 
-  app.use(
-    helmet({
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
-      crossOriginOpenerPolicy: false,
-      crossOriginEmbedderPolicy: false,
-    }),
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(expressServer),
+    { bufferLogs: true }
   );
 
+  const origin = process.env.FRONTEND_ORIGIN ?? 'http://localhost:8080';
   app.enableCors({
-    origin: ['http://localhost:8080'],
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Cache-Control',
-      'Pragma',
-      'X-Requested-With',
-    ],
-    exposedHeaders: ['Content-Length', 'ETag'],
-    credentials: false,
-    maxAge: 86400,
-    optionsSuccessStatus: 204,
+    origin,
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
+    exposedHeaders: ['ETag'],
   });
 
-  await app.listen(4000);
-}
+  const expressInstance = app.getHttpAdapter().getInstance();
+  const locals = expressInstance.locals as {
+    helmetConfigured?: boolean;
+    nestBootstrapped?: boolean;
+  };
+  if (!locals.helmetConfigured) {
+    app.use(helmet({ crossOriginResourcePolicy: false }));
+    locals.helmetConfigured = true;
+  }
 
+  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+
+  const port = Number(process.env.PORT || 4000);
+  await app.listen(port);
+  locals.nestBootstrapped = true;
+  startBackgroundProcesses();
+  // eslint-disable-next-line no-console
+  console.log(`API running on port ${port}`);
+}
 bootstrap();

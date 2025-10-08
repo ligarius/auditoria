@@ -10,6 +10,8 @@
       "@/*": ["./src/*"],
       "@/utils/resolveAsset": ["./src/utils/resolveAsset.ts"]
     },
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

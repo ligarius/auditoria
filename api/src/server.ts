@@ -120,14 +120,7 @@ const configureApp = (app: Express): Express => {
     next();
   });
 
-  const respondHealth: RequestHandler = (req, res, next) => {
-    const { nestBootstrapped } = req.app.locals as AppLocals;
-
-    if (nestBootstrapped) {
-      next();
-      return;
-    }
-
+  const respondHealth: RequestHandler = (_req, res) => {
     res.json({ ok: true });
   };
 

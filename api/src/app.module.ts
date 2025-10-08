@@ -6,6 +6,6 @@ import { HealthController } from './health.controller';
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
   controllers: [HealthController],
-  providers: [],
+  providers: []
 })
 export class AppModule {}

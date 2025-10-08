@@ -1,8 +1,9 @@
 // web/src/pages/Login.tsx
+import axios from 'axios';
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import api from '../lib/api';
+import api, { API_BASE_URL } from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
 import { LAST_PROJECT_KEY, ROLE_KEY, storeTokens } from '../lib/session';
 
@@ -18,7 +19,14 @@ export default function Login() {
     setErr(null);
     setLoading(true);
     try {
-      const r = await api.post('/auth/login', { email, password });
+      const r = await axios.post(
+        `${API_BASE_URL}/auth/login`,
+        { email, password },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          withCredentials: true,
+        },
+      );
       const accessToken = r.data?.accessToken || r.data?.token;
       const refreshToken = r.data?.refreshToken;
       const role = r.data?.user?.role;

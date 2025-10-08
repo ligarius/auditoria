@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/auditoria
+      VITE_API_URL: http://localhost:4000
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: auditoria
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d auditoria" \
+          --health-interval 5s \
+          --health-timeout 3s \
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            api/package-lock.json
+            web/package-lock.json
+
+      - name: Install API dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Install Web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Prisma validate
+        working-directory: api
+        run: npx prisma validate
+
+      - name: Prisma generate
+        working-directory: api
+        run: npx prisma generate
+
+      - name: Prisma migrate deploy
+        working-directory: api
+        run: npx prisma migrate deploy
+
+      - name: Lint API
+        working-directory: api
+        run: npm run lint
+
+      - name: Typecheck API
+        working-directory: api
+        run: npm run typecheck
+
+      - name: Build API
+        working-directory: api
+        run: npm run build
+
+      - name: Lint Web
+        working-directory: web
+        run: npm run lint
+
+      - name: Build Web
+        working-directory: web
+        run: npm run build

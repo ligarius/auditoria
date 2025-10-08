@@ -10,7 +10,6 @@ web/dist
 api/coverage
 
 # Prisma migrations no versionadas
-api/prisma/migrations/
 .docker-cache/
 
 # build

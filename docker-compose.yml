@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   db:
     image: postgres:15
@@ -10,16 +12,10 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   api:
     build:
@@ -28,18 +24,16 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@db:5432/auditoria
-      REDIS_URL: redis://redis:6379
-      FRONTEND_ORIGIN: http://localhost:8080
-      DISABLE_QUEUES: "true"
       PORT: "4000"
       JWT_SECRET: supersecret
       JWT_REFRESH_SECRET: supersecretrefresh
+      FRONTEND_ORIGIN: http://localhost:8080
       CLIENT_URL: http://localhost:8080
+      DISABLE_QUEUES: "true"
       FILE_STORAGE_PATH: /usr/src/app/storage
+    command: ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     ports:
       - "4000:4000"
@@ -50,10 +44,13 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:4000
     depends_on:
-      - api
+      api:
+        condition: service_started
     ports:
-      - "8080:80"
+      - "8080:8080"
 
 volumes:
   postgres-data:

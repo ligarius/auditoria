@@ -49,7 +49,7 @@ FROM deps AS build
 COPY . .
 RUN npm run build
 RUN test -f dist/main.js || (echo "❌ dist/main.js no fue generado" >&2; exit 1)
-RUN mkdir -p dist/templates && cp -R src/templates/*.hbs dist/templates/
+RUN mkdir -p dist/templates && cp -R src/templates/*.hbs dist/templates/ || true
 RUN npm prune --omit=dev
 
 # --- runner ---
@@ -106,7 +106,7 @@ RUN test -f dist/main.js || (echo "❌ dist/main.js no está en la imagen final"
 COPY --from=deps /usr/src/app/prisma ./prisma
 # Crear alias para templates en ruta estable usada por el runtime
 RUN mkdir -p /usr/src/dist && \
-    ln -s /usr/src/app/dist/templates /usr/src/dist/templates
+    ln -s /usr/src/app/dist/templates /usr/src/dist/templates || true
 COPY package*.json ./
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
